@@ -1,6 +1,8 @@
 let stage = 'title';
 let toastTimer = null;
 
+const DEADLINES = { takhyeon: 186, pyeongwon: 188 };
+
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
@@ -56,7 +58,7 @@ function getObjectives() {
   const list = [];
   if (stage === 'takhyeon_free') {
     const deungmuDone = ['recruited', 'resolved'].includes(gs.npcStatus['deungmu']);
-    if (!deungmuDone) list.push('황건적 두목 등무 처치하기');
+    if (!deungmuDone) list.push(`황건적 두목 등무 처치하기 (${DEADLINES.takhyeon}년까지)`);
 
     ['noshik', 'gongyung'].forEach((id) => {
       const rd = ROSTER[id];
@@ -73,7 +75,7 @@ function getObjectives() {
     if (deungmuDone && !gs.flags.act1) list.push('유비에게 보고하기');
     if (gs.flags.act1) list.push('평원현으로 이동하기');
   } else if (stage === 'pyeongwon_free') {
-    list.push('사수관으로 출정 준비하기');
+    list.push(`사수관으로 출정 준비하기 (${DEADLINES.pyeongwon}년까지)`);
   } else {
     list.push('전투에 집중하자!');
   }
@@ -381,6 +383,26 @@ function onFreeBattleEnd(id, result, afterCb) {
 }
 
 // ---------------- 스테이지 진행 ----------------
+// ---- 체류 시한: 정해진 기간을 넘기면 서사적으로 다음 단계로 강제 진행 ----
+function checkDeadlines() {
+  const gs = GameState;
+  if (stage === 'takhyeon_free' && gs.year > DEADLINES.takhyeon && !gs.flags.act1) {
+    const deungmuDone = ['recruited', 'resolved'].includes(gs.npcStatus['deungmu']);
+    if (!deungmuDone) {
+      gs.npcStatus['deungmu'] = 'resolved';
+      MapView.removeNpc('deungmu');
+    }
+    gs.flags.act1 = true;
+    Dialogue.show(STORY.act1_forced, () => { goPyeongwonFree(); });
+    return true;
+  }
+  if (stage === 'pyeongwon_free' && gs.year > DEADLINES.pyeongwon) {
+    Dialogue.show(STORY.act2_forced, () => { goSasugwan(); });
+    return true;
+  }
+  return false;
+}
+
 function goTakhyeonFree() {
   stage = 'takhyeon_free';
   showScreen('screen-explore');
@@ -508,8 +530,9 @@ document.querySelectorAll('#bottom-menu button').forEach((btn) => {
 
 document.getElementById('btn-nextmonth').onclick = () => {
   GameState.nextMonth();
-  toast(`${GameState.dateLabel()}이(가) 되었다. 행동력이 회복되었다.`);
   updateHUD();
+  if (checkDeadlines()) return;
+  toast(`${GameState.dateLabel()}이(가) 되었다. 행동력이 회복되었다.`);
 };
 
 document.getElementById('btn-restart').onclick = () => showScreen('screen-title');
