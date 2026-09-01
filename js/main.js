@@ -37,6 +37,15 @@ function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 function heroMaxHp() { return Battle.maxHP(GameState.heroData().stats); }
 function heroCurrentHp() { return GameState.heroHp != null ? GameState.heroHp : heroMaxHp(); }
 
+// 책사 1명당 매달 금 5 + 지력/5 수입 (성읍이 없는 챕터1이라 쌀 수입은 없음)
+function scholarGoldIncome() {
+  return GameState.recruited.reduce((sum, id) => {
+    const rd = ROSTER[id];
+    if (!rd || !isScholarType(rd)) return sum;
+    return sum + 5 + Math.round(rd.stats.int / 5);
+  }, 0);
+}
+
 function spend(n) {
   if (!GameState.spendAP(n)) { toast('행동력이 부족합니다. "휴식"을 눌러보세요.'); return false; }
   updateHUD();
@@ -532,9 +541,11 @@ document.getElementById('btn-train').onclick = () => {
 document.getElementById('btn-conscript').onclick = () => {
   if (GameState.resources.gold < 30) { toast('금이 부족합니다. (금 30 필요)'); return; }
   if (!spend(2)) return;
+  const hero = GameState.heroData();
+  const gained = 300 + hero.stats.cha * 2;
   GameState.resources.gold -= 30;
-  GameState.resources.troop += 10;
-  toast(`병사 10명을 징병했다. (금 30 소모, 병사 ${GameState.resources.troop})`);
+  GameState.resources.troop += gained;
+  toast(`병사 ${gained}명을 징병했다. (금 30 소모, 병사 ${GameState.resources.troop})`);
   updateHUD();
 };
 
@@ -585,9 +596,12 @@ document.querySelectorAll('#bottom-menu button').forEach((btn) => {
 document.getElementById('btn-nextmonth').onclick = () => {
   GameState.nextMonth();
   GameState.heroHp = null;
+  const income = scholarGoldIncome();
+  if (income > 0) GameState.addResource({ gold: income });
   updateHUD();
   if (checkDeadlines()) return;
-  toast(`${GameState.dateLabel()}이(가) 되었다. 휴식을 취해 체력과 행동력이 모두 회복되었다.`);
+  const incomeMsg = income > 0 ? ` (책사들의 수완으로 금 ${income} 획득)` : '';
+  toast(`${GameState.dateLabel()}이(가) 되었다. 휴식을 취해 체력과 행동력이 모두 회복되었다.${incomeMsg}`);
 };
 
 document.getElementById('btn-restart').onclick = () => showScreen('screen-title');
