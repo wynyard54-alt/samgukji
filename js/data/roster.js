@@ -79,3 +79,8 @@ const ROSTER = {
   gwaksa: { id:'gwaksa', name:'곽사', kind:'enemy', forced:'escape', affiliation:'동탁군',
     stats:{atk:57, def:46, spd:48, int:34, cha:26}, intro:'훗날 반드시 돌아오리라!' },
 };
+
+// 책사형(지력형) vs 무력형 판정 — 등용 경로가 갈리는 기준
+function isScholarType(rd) {
+  return !!(rd && rd.stats && rd.stats.int > rd.stats.atk);
+}

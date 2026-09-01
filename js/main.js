@@ -91,12 +91,7 @@ function interactNPC(id) {
   }
 
   if (rd.kind === 'recruit') {
-    Dialogue.show([{ speaker: rd.name, text: rd.intro }], () => {
-      showChoice(`${rd.name}을(를) 등용하시겠습니까?`, [
-        { label: '등용을 청한다 (행동력 3)', cb: () => attemptPersuade(id) },
-        { label: '인사만 나눈다', cb: () => {} },
-      ]);
-    });
+    if (isScholarType(rd)) visitScholar(id); else challengeWarrior(id);
     return;
   }
 
@@ -123,20 +118,81 @@ function handleYubi() {
   }
 }
 
-function attemptPersuade(id) {
-  if (!spend(3)) return;
+// ---- 책사형: 저택 방문 + 친밀도 게이지 ----
+const VISIT_LINES = [
+  '어서 오시오. 같이 차나 한 잔 하며 이야기 좀 나누시겠소?',
+  '또 와주셨구려. 요즘 돌아가는 세상 이야기나 나눕시다.',
+  '그대가 또 찾아올 줄 알았소. 앉으시오.',
+];
+
+function visitScholar(id) {
   const rd = ROSTER[id];
-  const hero = GameState.heroData();
-  const chance = clamp(50 + (hero.stats.cha - rd.stats.cha) * 0.6, 10, 95);
-  const roll = Math.random() * 100;
-  if (roll < chance) {
-    GameState.recruit(id);
-    MapView.removeNpc(id);
-    toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%)`);
-  } else {
-    toast(`${rd.name}이(가) 아직 마음을 정하지 못한 듯하다... (실패, 성공률 ${Math.round(chance)}%)`);
+  const firstTime = !GameState.npcStatus[id];
+  if (firstTime) {
+    GameState.npcStatus[id] = 'met';
+    GameState.friendship[id] = 0;
+    MapView.render();
+    Dialogue.show([{ speaker: rd.name, text: rd.intro }], () => {
+      toast(`${rd.name}의 저택을 알게 되었다. 이제 지도에서 방문(행동력3)할 수 있다.`);
+    });
+    return;
   }
-  updateHUD();
+  if (!spend(3)) return;
+  const hero = GameState.heroData();
+  const gain = Math.round(clamp(8 + hero.stats.cha * 0.12 + hero.stats.int * 0.08, 4, 30));
+  GameState.friendship[id] = Math.min(100, (GameState.friendship[id] || 0) + gain);
+  const fs = GameState.friendship[id];
+  const line = VISIT_LINES[Math.floor(Math.random() * VISIT_LINES.length)];
+  if (fs >= 100) {
+    Dialogue.show([
+      { speaker: rd.name, text: line },
+      { speaker: '내레이션', text: `[${rd.name}과(와) 친밀도 상승 (+${gain}) → 100/100]` },
+      { speaker: rd.name, text: '그대의 진심을 이제야 알겠소. 나 역시 함께하겠소!' },
+    ], () => {
+      GameState.recruit(id, 0);
+      MapView.removeNpc(id);
+      toast(`${rd.name}이(가) 등용되었습니다!`);
+      updateHUD();
+    });
+  } else {
+    Dialogue.show([
+      { speaker: rd.name, text: line },
+      { speaker: '내레이션', text: `[${rd.name}과(와) 친밀도 상승 (+${gain}) → ${fs}/100]` },
+    ]);
+  }
+}
+
+// ---- 무력형: 등용 제안 → 거절 + 일기토 → 승리 시 등용확률 상승 ----
+function challengeWarrior(id) {
+  const rd = ROSTER[id];
+  const firstTime = !GameState.npcStatus[id];
+  if (!firstTime && !spend(3)) return;
+  GameState.npcStatus[id] = 'met';
+  Dialogue.show([{ speaker: rd.name, text: '나는 실력없는 장수 밑으로 들어가고 싶지 않소. 그대의 실력, 이 자리에서 보여주시오!' }], () => {
+    Battle.start({
+      player: GameState.heroData(),
+      enemy: rd,
+      onEnd: (result) => {
+        if (result.outcome === 'win') {
+          const hero = GameState.heroData();
+          const chance = clamp(60 + (hero.stats.cha - rd.stats.cha) * 0.5, 20, 95);
+          const roll = Math.random() * 100;
+          if (roll < chance) {
+            Dialogue.show([{ speaker: rd.name, text: '…드디어 눈을 떴습니다. 함께하죠.' }], () => {
+              GameState.recruit(id);
+              MapView.removeNpc(id);
+              toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%)`);
+              updateHUD();
+            });
+          } else {
+            Dialogue.show([{ speaker: rd.name, text: '…다음에 다시 붙어 봅시다.' }]);
+          }
+        } else if (result.outcome === 'lose') {
+          toast(`${rd.name}에게 밀렸다... 실력을 더 키워야겠다.`);
+        }
+      },
+    });
+  });
 }
 
 function attemptPersuadeCaptured(id) {

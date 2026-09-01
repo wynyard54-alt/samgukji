@@ -55,11 +55,14 @@ const MapView = (function () {
     }
 
     for (const n of liveNpcs) {
-      drawToken(n.x, n.y, npcColor(n.id), (ROSTER[n.id] || {}).name || '?');
+      const rd = ROSTER[n.id];
+      const isResidence = GameState.npcStatus[n.id] === 'met' && rd.kind === 'recruit' && isScholarType(rd);
+      const label = isResidence ? `${rd.name}의 저택` : (n.label || rd.name);
+      drawToken(n.x, n.y, isResidence ? '#8a6a3a' : npcColor(n.id), rd.name);
       ctx.fillStyle = '#2b2620';
       ctx.font = '11px "Noto Sans KR", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(n.label || ROSTER[n.id].name, n.x * TILE + TILE / 2, n.y * TILE - 4);
+      ctx.fillText(label, n.x * TILE + TILE / 2, n.y * TILE - 4);
     }
 
     const heroName = ROSTER[GameState.mainHero].name;

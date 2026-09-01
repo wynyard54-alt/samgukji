@@ -17,7 +17,7 @@ const Battle = (function () {
 
   let p, e, round, maxRounds, onEnd, locked;
 
-  function maxHP(stats) { return Math.round(80 + stats.def * 0.5); }
+  function maxHP(stats) { return Math.round(60 + stats.def * 2); }
 
   function initFighter(charData) {
     return {
@@ -75,9 +75,9 @@ const Battle = (function () {
       log(`${defender.data.name}이(가) ${attacker.data.name}의 공격을 회피했다!`);
       return;
     }
-    let base = attacker.data.stats.atk - defender.data.stats.def * 0.5;
-    base = Math.max(5, base);
-    let mult = mode === 'ultimate' ? 2.2 : 1.3;
+    let base = attacker.data.stats.atk * 0.6 - defender.data.stats.def * 0.3;
+    base = Math.max(attacker.data.stats.atk * 0.2, base);
+    let mult = mode === 'ultimate' ? 2.3 : 1.3;
     const variance = 0.85 + Math.random() * 0.3;
     let dmg = Math.round(base * mult * variance);
     if (defender.defending && mode !== 'ultimate') dmg = Math.round(dmg * 0.55);

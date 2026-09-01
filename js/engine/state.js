@@ -6,7 +6,8 @@ const GameState = {
   apMax: 6,
   resources: { rice: 200, gold: 120, troop: 80 },
   recruited: [], // ids
-  npcStatus: {}, // id -> 'recruited' | 'declined' | 'fled' | 'dead' | 'resolved'
+  npcStatus: {}, // id -> 'met' | 'recruited' | 'fled' | 'dead' | 'resolved'
+  friendship: {}, // id -> 0~100 (책사형 친밀도 게이지)
   npcVisible: {}, // id -> bool (for chance-based npcs)
   flags: { act1: false, act2: false, sasugwan: false, horogwan: false, hamgokgwan: false },
   currentMap: 'takhyeon',
@@ -18,6 +19,7 @@ const GameState = {
     this.resources = { rice: 200, gold: 120, troop: 80 };
     this.recruited = [];
     this.npcStatus = {};
+    this.friendship = {};
     this.npcVisible = {};
     this.flags = { act1: false, act2: false, sasugwan: false, horogwan: false, hamgokgwan: false };
     this.currentMap = 'takhyeon';
@@ -43,9 +45,9 @@ const GameState = {
     for (const k in r) this.resources[k] = (this.resources[k] || 0) + r[k];
   },
 
-  recruit(id) {
+  recruit(id, troopGain) {
     if (!this.recruited.includes(id)) this.recruited.push(id);
     this.npcStatus[id] = 'recruited';
-    this.resources.troop += 15;
+    this.resources.troop += (troopGain == null ? 15 : troopGain);
   },
 };
