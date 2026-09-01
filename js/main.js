@@ -667,7 +667,7 @@ function openRosterPanel() {
 
 const ARMY_MIN_TROOP = 500;
 const ARMY_MAX_TROOP = 10000;
-const ARMY_GENERAL_BONUS_PCT = 0.10; // 부장 1명당 최대 +10% (자신 무력/100 만큼 반영), 최대 3명
+const ARMY_GENERAL_BONUS_PCT = 0.10; // 부장 1명당 자신의 무력3스텟합 × 10%를 가산, 최대 3명
 const ARMY_MAX_GENERALS = 3;
 
 let armySelectedGenerals = [];
@@ -700,7 +700,7 @@ function renderArmyGenerals() {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'army-general-chip' + (armySelectedGenerals.includes(id) ? ' selected' : '');
-    btn.textContent = `${rd.name} (무력 ${rd.stats.atk})`;
+    btn.textContent = `${rd.name} (무력 ${muryeok3(rd)})`;
     btn.onclick = () => {
       const idx = armySelectedGenerals.indexOf(id);
       if (idx >= 0) {
@@ -719,18 +719,32 @@ function renderArmyGenerals() {
   });
 }
 
+function muryeok3(rd) { return rd.stats.atk + rd.stats.def + rd.stats.spd; }
+
+const MURYEOK_GRADES = [[300, 'S'], [250, 'A'], [200, 'B'], [150, 'C']];
+const JIRYEOK_GRADES = [[90, 'S'], [80, 'A'], [70, 'B'], [60, 'C']];
+
+function gradeFor(value, thresholds) {
+  for (const [min, grade] of thresholds) {
+    if (value >= min) return grade;
+  }
+  return 'D';
+}
+
 function updateArmyPower() {
   const hero = GameState.heroData();
   const deputyId = document.getElementById('army-deputy').value;
   const deputy = deputyId ? ROSTER[deputyId] : null;
-  const baseMuryeok = hero.stats.atk + hero.stats.def + hero.stats.spd;
+  const baseMuryeok = muryeok3(hero);
   const bonus = armySelectedGenerals.reduce((sum, id) => {
     const rd = ROSTER[id];
-    return sum + (rd ? (rd.stats.atk / 100) * ARMY_GENERAL_BONUS_PCT : 0);
+    return sum + (rd ? muryeok3(rd) * ARMY_GENERAL_BONUS_PCT : 0);
   }, 0);
-  const muryeok = Math.round(baseMuryeok * (1 + bonus));
+  const muryeok = Math.round(baseMuryeok + bonus);
   const jiryeok = deputy ? deputy.stats.int : 0;
-  document.getElementById('army-power').textContent = `군세 능력치 — 무력 ${muryeok} · 지력 ${jiryeok}`;
+  const el = document.getElementById('army-power');
+  el.textContent = `군세 능력치 — 무력 ${gradeFor(muryeok, MURYEOK_GRADES)} · 지력 ${gradeFor(jiryeok, JIRYEOK_GRADES)}`;
+  el.title = `무력 ${muryeok} · 지력 ${jiryeok}`;
 }
 
 function wireArmyStepperButtons() {
