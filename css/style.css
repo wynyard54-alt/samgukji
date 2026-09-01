@@ -126,7 +126,10 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .stat-fill.stat-atk{ background:#5fa8d3; } .stat-fill.stat-def{ background:#c98a4b; }
 .stat-fill.stat-spd{ background:#8fbf6a; } .stat-fill.stat-int{ background:#8f7fd6; }
 .stat-fill.stat-cha{ background:#dcb24a; }
+.stat-fill.stat-hp{ background:linear-gradient(90deg,#8e2e25,#d26b45,#e0a95a); }
 .stat-val{ width:20px; text-align:right; color:#f5ecd6; }
+.hp-row{ margin-bottom:5px; padding-bottom:5px; border-bottom:1px solid rgba(233,214,168,.25); }
+.stat-val.hp-val{ width:48px; }
 
 /* 하단 중앙 메뉴 버튼 (준비중 스텁) */
 #bottom-menu{
@@ -349,6 +352,9 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   #player-info{ display:flex; flex-direction:column; }
   #player-name{ font-size:10px; margin-bottom:0; }
   .stat-row{ display:none; }
+  .hp-row{ display:flex; margin-bottom:0; padding-bottom:0; border-bottom:none; }
+  .hp-row .stat-bar{ width:44px; }
+  .hp-row .stat-val{ width:38px; font-size:9px; }
 
   #bottom-menu{
     bottom:6px; gap:3px; transform:translateX(-50%) scale(.72);

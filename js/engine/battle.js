@@ -19,11 +19,12 @@ const Battle = (function () {
 
   function maxHP(stats) { return Math.round(60 + stats.def * 2); }
 
-  function initFighter(charData) {
+  function initFighter(charData, startHp) {
+    const mh = maxHP(charData.stats);
     return {
       data: charData,
-      hp: maxHP(charData.stats),
-      maxHp: maxHP(charData.stats),
+      hp: startHp != null ? Math.max(0, Math.min(mh, startHp)) : mh,
+      maxHp: mh,
       gauge: 0,
       defending: false,
     };
@@ -188,12 +189,12 @@ const Battle = (function () {
       screen.classList.add('hidden');
       const cb = onEnd;
       onEnd = null;
-      if (cb) cb({ outcome });
+      if (cb) cb({ outcome, playerHp: Math.max(0, p.hp), playerMaxHp: p.maxHp });
     }, Math.max(0, payload.hold));
   }
 
   function start(opts) {
-    p = initFighter(opts.player);
+    p = initFighter(opts.player, opts.startHp);
     e = initFighter(opts.enemy);
     round = 0;
     maxRounds = opts.maxRounds || null;
@@ -221,5 +222,5 @@ const Battle = (function () {
     if (btn && !btn.disabled) { ev.preventDefault(); resolveRound(action); }
   });
 
-  return { start };
+  return { start, maxHP };
 })();

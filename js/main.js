@@ -34,8 +34,11 @@ function showChoice(text, options) {
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
+function heroMaxHp() { return Battle.maxHP(GameState.heroData().stats); }
+function heroCurrentHp() { return GameState.heroHp != null ? GameState.heroHp : heroMaxHp(); }
+
 function spend(n) {
-  if (!GameState.spendAP(n)) { toast('행동력이 부족합니다. "다음 달로"를 눌러보세요.'); return false; }
+  if (!GameState.spendAP(n)) { toast('행동력이 부족합니다. "휴식"을 눌러보세요.'); return false; }
   updateHUD();
   return true;
 }
@@ -140,6 +143,11 @@ function renderPlayerPanel() {
     fallback.style.background = GameState.mainHero === 'jangbi' ? '#8a3b2a' : '#555';
   }
 
+  const maxHp = heroMaxHp();
+  const curHp = clamp(heroCurrentHp(), 0, maxHp);
+  document.getElementById('stat-fill-hp').style.width = `${(curHp / maxHp) * 100}%`;
+  document.getElementById('stat-val-hp').textContent = `${curHp}/${maxHp}`;
+
   const stats = { atk: '공격', def: '방어', spd: '속도', int: '지력', cha: '매력' };
   Object.keys(stats).forEach((key) => {
     const val = hero.stats[key] || 0;
@@ -207,7 +215,7 @@ function interactNPC(id, context) {
   }
 
   if (rd.kind === 'enemy') {
-    startFreeBattle(id);
+    startFreeBattle(id, undefined, true);
     return;
   }
 }
@@ -314,7 +322,10 @@ function challengeWarrior(id) {
     Battle.start({
       player: GameState.heroData(),
       enemy: rd,
+      startHp: heroCurrentHp(),
       onEnd: (result) => {
+        GameState.heroHp = result.playerHp;
+        updateHUD();
         if (result.outcome === 'win') {
           const hero = GameState.heroData();
           const chance = clamp(60 + (hero.stats.cha - rd.stats.cha) * 0.5, 20, 95);
@@ -354,19 +365,21 @@ function attemptPersuadeCaptured(id) {
   updateHUD();
 }
 
-function startFreeBattle(id, afterCb) {
+function startFreeBattle(id, afterCb, persistHp) {
   const rd = ROSTER[id];
   Dialogue.show([{ speaker: rd.name, text: `${rd.name}이(가) 앞을 막아섰다!` }], () => {
     Battle.start({
       player: GameState.heroData(),
       enemy: rd,
-      onEnd: (result) => onFreeBattleEnd(id, result, afterCb),
+      startHp: persistHp ? heroCurrentHp() : undefined,
+      onEnd: (result) => onFreeBattleEnd(id, result, afterCb, persistHp),
     });
   });
 }
 
-function onFreeBattleEnd(id, result, afterCb) {
+function onFreeBattleEnd(id, result, afterCb, persistHp) {
   const rd = ROSTER[id];
+  if (persistHp) { GameState.heroHp = result.playerHp; updateHUD(); }
   if (result.outcome === 'win') {
     showChoice(rd.intro, [
       { label: '등용을 제안한다', cb: () => { attemptPersuadeCaptured(id); if (afterCb) afterCb(); } },
@@ -531,9 +544,10 @@ document.querySelectorAll('#bottom-menu button').forEach((btn) => {
 
 document.getElementById('btn-nextmonth').onclick = () => {
   GameState.nextMonth();
+  GameState.heroHp = null;
   updateHUD();
   if (checkDeadlines()) return;
-  toast(`${GameState.dateLabel()}이(가) 되었다. 행동력이 회복되었다.`);
+  toast(`${GameState.dateLabel()}이(가) 되었다. 휴식을 취해 체력과 행동력이 모두 회복되었다.`);
 };
 
 document.getElementById('btn-restart').onclick = () => showScreen('screen-title');

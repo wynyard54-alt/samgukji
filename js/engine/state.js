@@ -6,6 +6,7 @@ const GameState = {
   apMax: 6,
   resources: { rice: 200, gold: 120, troop: 80 },
   fame: 0, // 명성 (표시용 스텁 — 아직 획득 로직 없음)
+  heroHp: null, // 자유 등용전 사이 이월되는 현재 체력 (null = 최대치)
   recruited: [], // ids
   npcStatus: {}, // id -> 'met' | 'recruited' | 'fled' | 'dead' | 'resolved'
   friendship: {}, // id -> 0~100 (책사형 친밀도 게이지)
@@ -19,6 +20,7 @@ const GameState = {
     this.ap = 6; this.apMax = 6;
     this.resources = { rice: 200, gold: 120, troop: 80 };
     this.fame = 0;
+    this.heroHp = null;
     this.recruited = [];
     this.npcStatus = {};
     this.friendship = {};
