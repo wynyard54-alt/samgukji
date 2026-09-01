@@ -54,7 +54,12 @@ const Battle = (function () {
 
     document.getElementById('btn-ultimate').disabled = p.gauge < 100 || locked;
     document.getElementById('btn-ultimate').textContent =
-      p.gauge >= 100 ? `필살기: ${(p.data.skills && p.data.skills[0]) || '필살기'}` : `필살기 (기력 ${Math.floor(p.gauge)}%)`;
+      p.gauge >= 100 ? `필살기: ${(p.data.skills && p.data.skills[0]) || '필살기'} (4)` : `필살기 (기력 ${Math.floor(p.gauge)}%) (4)`;
+
+    if (!locked) {
+      const attackBtn = actionsEl.querySelector('[data-action="attack"]');
+      if (attackBtn) attackBtn.focus();
+    }
   }
 
   function colorFor(id) {
@@ -162,6 +167,15 @@ const Battle = (function () {
     const btn = ev.target.closest('button');
     if (!btn || btn.disabled) return;
     resolveRound(btn.dataset.action);
+  });
+
+  const KEY_ACTION = { '1': 'attack', '2': 'defend', '3': 'skill', '4': 'ultimate' };
+  window.addEventListener('keydown', (ev) => {
+    if (screen.classList.contains('hidden')) return;
+    const action = KEY_ACTION[ev.key];
+    if (!action) return;
+    const btn = actionsEl.querySelector(`[data-action="${action}"]`);
+    if (btn && !btn.disabled) { ev.preventDefault(); resolveRound(action); }
   });
 
   return { start };

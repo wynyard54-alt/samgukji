@@ -119,6 +119,8 @@ const MapView = (function () {
 
   window.addEventListener('keydown', (ev) => {
     if (Dialogue.isActive()) return;
+    if (!document.getElementById('choice-box').classList.contains('hidden')) return;
+    if (!document.getElementById('battle-screen').classList.contains('hidden')) return;
     if (!document.getElementById('screen-explore').classList.contains('active')) return;
     switch (ev.key) {
       case 'ArrowUp': case 'w': tryMove(0, -1); break;

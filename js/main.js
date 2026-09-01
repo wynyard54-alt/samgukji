@@ -26,6 +26,8 @@ function showChoice(text, options) {
     wrap.appendChild(b);
   });
   box.classList.remove('hidden');
+  const first = wrap.querySelector('button');
+  if (first) first.focus();
 }
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
@@ -158,7 +160,31 @@ function visitScholar(id) {
     Dialogue.show([
       { speaker: rd.name, text: line },
       { speaker: '내레이션', text: `[${rd.name}과(와) 친밀도 상승 (+${gain}) → ${fs}/100]` },
-    ]);
+    ], () => {
+      showChoice(`지금 ${rd.name}에게 등용을 제안해보시겠습니까? (현재 친밀도 ${fs}/100)`, [
+        { label: '등용을 제안한다', cb: () => proposeScholar(id) },
+        { label: '다음에 다시 오겠다', cb: () => {} },
+      ]);
+    });
+  }
+}
+
+function proposeScholar(id) {
+  const rd = ROSTER[id];
+  const fs = GameState.friendship[id] || 0;
+  const chance = clamp(fs, 5, 97);
+  const roll = Math.random() * 100;
+  if (roll < chance) {
+    Dialogue.show([{ speaker: rd.name, text: '그대의 진심을 이제야 알겠소. 나 역시 함께하겠소!' }], () => {
+      GameState.recruit(id, 0);
+      MapView.removeNpc(id);
+      toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%)`);
+      updateHUD();
+    });
+  } else {
+    Dialogue.show([{ speaker: rd.name, text: '아직은 때가 아닌 듯하오. 조금 더 지켜봅시다.' }], () => {
+      toast(`아쉽지만 아직 거절당했다. (실패, 성공률 ${Math.round(chance)}%) 친밀도를 더 쌓아보자.`);
+    });
   }
 }
 

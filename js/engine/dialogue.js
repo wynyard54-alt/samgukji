@@ -23,7 +23,7 @@ const Dialogue = (function () {
     nameEl.textContent = line.speaker;
     nameEl.dataset.kind = line.speaker === '내레이션' ? 'narration' : 'speech';
     textEl.textContent = line.text;
-    nextHint.textContent = idx < queue.length - 1 ? '▼ 클릭하여 계속' : '▼ 클릭하여 닫기';
+    nextHint.textContent = idx < queue.length - 1 ? '▼ 클릭 또는 Enter로 계속' : '▼ 클릭 또는 Enter로 닫기';
   }
 
   function advance() {
@@ -41,6 +41,11 @@ const Dialogue = (function () {
   }
 
   box.addEventListener('click', advance);
+
+  window.addEventListener('keydown', (ev) => {
+    if (!active) return;
+    if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); advance(); }
+  });
 
   return { show, isActive: () => active };
 })();
