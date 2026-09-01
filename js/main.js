@@ -46,12 +46,119 @@ function describeReward(r) {
   return parts.join(', ');
 }
 
+const LOCATION_NAMES = {
+  takhyeon: '탁현 · 장터',
+  pyeongwon: '평원현',
+};
+
+function getObjectives() {
+  const gs = GameState;
+  const list = [];
+  if (stage === 'takhyeon_free') {
+    const deungmuDone = ['recruited', 'resolved'].includes(gs.npcStatus['deungmu']);
+    if (!deungmuDone) list.push('황건적 두목 등무 처치하기');
+
+    ['noshik', 'gongyung'].forEach((id) => {
+      const rd = ROSTER[id];
+      if (!rd) return;
+      if (gs.npcVisible[id] === false) return;
+      const st = gs.npcStatus[id];
+      if (st === 'recruited' || st === 'resolved') return;
+      if (!st) { list.push(`${rd.name}과(와) 첫 만남 (미발견)`); return; }
+      const fs = gs.friendship[id] || 0;
+      if (fs <= 0) list.push(`${rd.name}의 집 방문 (미방문)`);
+      else list.push(`${rd.name}의 집 방문 중 (친밀도 ${fs}/100)`);
+    });
+
+    if (deungmuDone && !gs.flags.act1) list.push('유비에게 보고하기');
+    if (gs.flags.act1) list.push('평원현으로 이동하기');
+  } else if (stage === 'pyeongwon_free') {
+    list.push('사수관으로 출정 준비하기');
+  } else {
+    list.push('전투에 집중하자!');
+  }
+  return list.slice(0, 4);
+}
+
+function renderLocationBanner() {
+  const name = LOCATION_NAMES[stage === 'pyeongwon_free' ? 'pyeongwon' : 'takhyeon'] || '';
+  document.getElementById('location-name').textContent = name;
+  const objectives = getObjectives();
+  document.getElementById('location-task').textContent = objectives[0] ? `◆ ${objectives[0]}` : '';
+}
+
+function renderQuestPanel() {
+  const wrap = document.getElementById('quest-list');
+  wrap.innerHTML = '';
+  getObjectives().forEach((text) => {
+    const li = document.createElement('li');
+    li.textContent = text;
+    wrap.appendChild(li);
+  });
+}
+
+function renderMinimap() {
+  const canvas = document.getElementById('minimap-canvas');
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  const mapId = MapView.currentMapId;
+  document.getElementById('minimap-title').textContent = LOCATION_NAMES[mapId] ? LOCATION_NAMES[mapId].split(' ')[0] : (mapId || '');
+  if (!mapId) return;
+  const size = MapView.mapSize;
+  const pos = MapView.playerPos;
+  ctx.fillStyle = '#3a4a2f';
+  ctx.fillRect(0, 0, w, h);
+  const px = (pos.x / Math.max(1, size.w)) * w;
+  const py = (pos.y / Math.max(1, size.h)) * h;
+  ctx.fillStyle = '#f2c94c';
+  ctx.beginPath();
+  ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.25)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(0.5, 0.5, w - 1, h - 1);
+}
+
+function renderPlayerPanel() {
+  const hero = GameState.heroData();
+  if (!hero) return;
+  document.getElementById('player-name').textContent = hero.name;
+
+  const img = document.getElementById('player-portrait-img');
+  const fallback = document.getElementById('player-portrait-fallback');
+  if (GameState.mainHero === 'gwanwoo') {
+    img.src = 'assets/ui/portrait_gwanwoo.png';
+    img.classList.remove('hidden');
+    fallback.classList.add('hidden');
+  } else {
+    img.classList.add('hidden');
+    fallback.classList.remove('hidden');
+    fallback.textContent = hero.name ? hero.name[0] : '';
+    fallback.style.background = GameState.mainHero === 'jangbi' ? '#8a3b2a' : '#555';
+  }
+
+  const stats = { atk: '공격', def: '방어', spd: '속도', int: '지력', cha: '매력' };
+  Object.keys(stats).forEach((key) => {
+    const val = hero.stats[key] || 0;
+    document.getElementById(`stat-fill-${key}`).style.width = `${clamp(val, 0, 100)}%`;
+    document.getElementById(`stat-val-${key}`).textContent = val;
+  });
+}
+
 function updateHUD() {
   const gs = GameState;
   document.getElementById('hud-date').textContent = gs.dateLabel();
   document.getElementById('hud-ap').textContent = `행동력 ${gs.ap}/${gs.apMax}`;
-  document.getElementById('hud-res').textContent = `쌀 ${gs.resources.rice} · 금 ${gs.resources.gold} · 병사 ${gs.resources.troop}`;
-  document.getElementById('hud-recruit').textContent = `등용 ${gs.recruited.length}명`;
+  document.getElementById('hud-gold').textContent = `금 ${gs.resources.gold}`;
+  document.getElementById('hud-rice').textContent = `쌀 ${gs.resources.rice}`;
+  document.getElementById('hud-troop').textContent = `병사 ${gs.resources.troop}`;
+  document.getElementById('hud-fame').textContent = `명성 ${gs.fame}`;
+
+  renderLocationBanner();
+  renderQuestPanel();
+  renderMinimap();
+  renderPlayerPanel();
 
   const progressBtn = document.getElementById('btn-progress');
   if (stage === 'takhyeon_free') {
@@ -385,6 +492,19 @@ document.getElementById('btn-train').onclick = () => {
   hero.stats.atk = Math.min(100, hero.stats.atk + 1);
   toast(`훈련으로 ${hero.name}의 공격력이 소폭 올랐다. (공격 ${hero.stats.atk})`);
 };
+
+document.getElementById('btn-conscript').onclick = () => {
+  if (GameState.resources.gold < 30) { toast('금이 부족합니다. (금 30 필요)'); return; }
+  if (!spend(2)) return;
+  GameState.resources.gold -= 30;
+  GameState.resources.troop += 10;
+  toast(`병사 10명을 징병했다. (금 30 소모, 병사 ${GameState.resources.troop})`);
+  updateHUD();
+};
+
+document.querySelectorAll('#bottom-menu button').forEach((btn) => {
+  btn.onclick = () => toast('준비 중인 기능입니다.');
+});
 
 document.getElementById('btn-nextmonth').onclick = () => {
   GameState.nextMonth();

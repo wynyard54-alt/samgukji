@@ -5,6 +5,7 @@ const GameState = {
   ap: 6,
   apMax: 6,
   resources: { rice: 200, gold: 120, troop: 80 },
+  fame: 0, // 명성 (표시용 스텁 — 아직 획득 로직 없음)
   recruited: [], // ids
   npcStatus: {}, // id -> 'met' | 'recruited' | 'fled' | 'dead' | 'resolved'
   friendship: {}, // id -> 0~100 (책사형 친밀도 게이지)
@@ -17,6 +18,7 @@ const GameState = {
     this.year = 184; this.month = 3;
     this.ap = 6; this.apMax = 6;
     this.resources = { rice: 200, gold: 120, troop: 80 };
+    this.fame = 0;
     this.recruited = [];
     this.npcStatus = {};
     this.friendship = {};

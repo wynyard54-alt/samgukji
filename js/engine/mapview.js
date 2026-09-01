@@ -366,5 +366,7 @@ const MapView = (function () {
     load,render,removeNpc,tryMove,interactFacing,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},
+    get playerPos(){return {x:player.x,y:player.y,dir:player.dir};},
+    get mapSize(){return map ? {w:map.width,h:map.height} : {w:1,h:1};},
   };
 })();

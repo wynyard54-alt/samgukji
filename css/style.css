@@ -48,49 +48,122 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .hero-name{ font-weight:700; font-size:18px; }
 .hero-sub{ font-size:12px; color:var(--ink-soft); margin-top:4px; }
 
-/* 탐험 화면 */
+/* 탐험 화면 — 오버레이 HUD 레이아웃 */
 #screen-explore{ flex-direction:column; align-items:center; background:var(--paper-deep); }
-#hud{
-  width:100%; max-width:640px; display:flex; align-items:center; gap:14px;
-  padding:10px 14px; background:var(--panel); border-bottom:1px solid var(--panel-border);
-  font-size:13px; flex-wrap:wrap;
+#explore-viewport{
+  position:relative; width:min(800px,96vw); margin:14px auto 0;
+  border-radius:8px; overflow:hidden;
+  box-shadow:0 10px 28px rgba(54,44,31,.22);
 }
-#hud-actions{ margin-left:auto; display:flex; gap:8px; }
-#hud button{
-  font-family:inherit; font-size:12.5px; background:var(--accent); color:#fff8ea;
-  border:none; border-radius:6px; padding:6px 10px; cursor:pointer;
-}
-#hud button:hover{ background:var(--accent-strong); }
-#hud button.hidden{ display:none; }
 #game-canvas{
-  border:1px solid var(--panel-border); margin-top:14px; image-rendering:pixelated;
-  max-width:96vw; width:800px; height:auto; touch-action:none;
+  display:block; image-rendering:pixelated;
+  width:100%; height:auto; touch-action:none;
 }
 #map-hint{ font-size:11.5px; color:var(--ink-soft); margin-top:8px; text-align:center; }
 
-/* 모바일 터치 이동패드 */
+.hud-panel{
+  position:absolute; background:rgba(16,13,10,1); color:#f5ecd6;
+  border:1px solid rgba(233,214,168,.35); border-radius:8px;
+  pointer-events:none;
+}
+
+/* 상단 바: 좌측 자원/우측 행동버튼 */
+#hud-top{
+  position:absolute; top:0; left:0; right:0; z-index:5;
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:8px 12px; background:rgba(16,13,10,1); color:#f5ecd6;
+  border-bottom:1px solid rgba(233,214,168,.35);
+  font-size:12.5px; pointer-events:auto;
+}
+#hud-left{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+#hud-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+#hud-actions button{
+  font-family:inherit; font-size:12px; background:var(--accent); color:#fff8ea;
+  border:none; border-radius:6px; padding:6px 10px; cursor:pointer; white-space:nowrap;
+}
+#hud-actions button:hover{ background:var(--accent-strong); }
+#hud-actions button.hidden{ display:none; }
+
+/* 위치/현재 할 일 배너 (좌상단, 상단바 아래) */
+#location-banner{
+  top:46px; left:10px; z-index:4; padding:8px 12px; max-width:44%;
+}
+#location-name{ font-weight:700; font-size:13.5px; margin-bottom:3px; }
+#location-task{ font-size:12px; color:#e6d9b8; }
+
+/* 미니맵 (우상단, 상단바 아래) */
+#minimap-panel{
+  top:46px; right:10px; z-index:4; padding:6px 8px; text-align:center;
+}
+#minimap-title{ font-size:11px; margin-bottom:3px; }
+#minimap-canvas{ display:block; border-radius:4px; background:#3a4a2f; }
+
+/* 임무 트래커 (우측 가운데) */
+#quest-panel{
+  top:112px; right:10px; z-index:4; padding:8px 12px; max-width:46%;
+}
+#quest-title{ font-weight:700; font-size:12.5px; margin-bottom:5px; }
+#quest-list{ margin:0; padding:0; list-style:none; font-size:11.5px; line-height:1.7; }
+#quest-list li{ position:relative; padding-left:12px; color:#e6d9b8; }
+#quest-list li:before{ content:"◆"; position:absolute; left:0; font-size:8px; top:5px; color:#e2c07a; }
+
+/* 플레이어 초상화 + 스텟 패널 (좌하단) */
+#player-panel{
+  bottom:10px; left:10px; z-index:4; padding:8px; display:flex; gap:8px; align-items:flex-start;
+}
+#player-portrait{ width:52px; height:52px; border-radius:8px; overflow:hidden; border:2px solid rgba(233,214,168,.55); flex:none; }
+#player-portrait img{ width:100%; height:100%; object-fit:cover; }
+#player-portrait img.hidden{ display:none; }
+#player-portrait-fallback{
+  width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+  font-family:"Song Myung",serif; font-size:20px; color:#fff;
+}
+#player-name{ font-weight:700; font-size:12.5px; margin-bottom:4px; }
+.stat-row{ display:flex; align-items:center; gap:5px; font-size:10.5px; margin-bottom:2px; }
+.stat-label{ width:24px; color:#e6d9b8; }
+.stat-bar{ width:74px; height:6px; background:rgba(255,255,255,.14); border-radius:4px; overflow:hidden; }
+.stat-fill{ height:100%; }
+.stat-fill.stat-atk{ background:#5fa8d3; } .stat-fill.stat-def{ background:#c98a4b; }
+.stat-fill.stat-spd{ background:#8fbf6a; } .stat-fill.stat-int{ background:#8f7fd6; }
+.stat-fill.stat-cha{ background:#dcb24a; }
+.stat-val{ width:20px; text-align:right; color:#f5ecd6; }
+
+/* 하단 중앙 메뉴 버튼 (준비중 스텁) */
+#bottom-menu{
+  position:absolute; bottom:10px; left:50%; transform:translateX(-50%); z-index:4;
+  display:flex; gap:6px; pointer-events:auto;
+}
+#bottom-menu button{
+  font-family:inherit; font-size:10px; line-height:1.5; text-align:center;
+  background:rgba(16,13,10,1); color:#f5ecd6; border:1px solid rgba(233,214,168,.35);
+  border-radius:8px; padding:5px 10px; cursor:pointer;
+}
+#bottom-menu button:hover{ background:rgba(24,20,15,.9); }
+
+/* 터치패드 (우하단 오버레이) */
 #touchpad{
+  position:absolute; bottom:10px; right:10px; z-index:5;
   display:grid;
-  grid-template-columns:56px 56px 56px;
-  grid-template-rows:52px 52px 52px;
+  grid-template-columns:44px 44px 44px;
+  grid-template-rows:40px 40px 40px;
   grid-template-areas:
     ".    up      ."
     "left action  right"
     ".    down    .";
-  gap:6px;
-  margin-top:16px;
+  gap:4px;
   user-select:none;
   -webkit-user-select:none;
+  pointer-events:auto;
 }
 .tp-btn{
-  font-family:inherit; font-size:16px; font-weight:700;
-  background:var(--panel); border:1px solid var(--panel-border); border-radius:10px;
+  font-family:inherit; font-size:15px; font-weight:700;
+  background:rgba(241,233,212,.88); border:1px solid var(--panel-border); border-radius:8px;
   color:var(--ink); cursor:pointer; touch-action:manipulation;
 }
 .tp-btn:active{ background:var(--accent); color:#fff8ea; }
 .tp-up{ grid-area:up; } .tp-down{ grid-area:down; }
 .tp-left{ grid-area:left; } .tp-right{ grid-area:right; }
-.tp-action{ grid-area:action; font-size:12px; background:var(--accent); color:#fff8ea; }
+.tp-action{ grid-area:action; font-size:11px; background:var(--accent); color:#fff8ea; }
 
 /* 대화창 */
 #dialogue-box{
@@ -240,31 +313,55 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 @keyframes duel-quote{0%{opacity:0;transform:translate(-50%,14px)}22%,78%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-8px)}}
 
 /* Tak Market Vertical Slice v1 — 큰 월드맵을 카메라로 보는 탐험 화면 */
-#game-canvas{
-  width:min(800px,96vw);
-  max-width:96vw;
-  height:auto;
-  background:#8fa374;
-  border:2px solid #8d7a55;
-  border-radius:8px;
-  box-shadow:0 10px 28px rgba(54,44,31,.22);
-}
+#game-canvas{ background:#8fa374; }
 #map-hint{max-width:800px;padding:0 12px;}
-@media (max-height:760px){
-  #game-canvas{width:min(720px,94vw);}
-  #touchpad{margin-top:8px;transform:scale(.9);transform-origin:top center;}
-}
 
 /* ===== Field Art Pack v1 ===== */
 #screen-explore{background:#c7b896;}
-#game-canvas{
-  background:#87956f;
-  border:2px solid rgba(81,61,39,.45);
-  border-radius:4px;
-  box-shadow:0 10px 28px rgba(50,39,27,.22);
+#game-canvas{ background:#87956f; }
+
+/* ===== 오버레이 HUD 레이아웃 반응형 조정 ===== */
+@media (max-height:760px){
+  #explore-viewport{width:min(720px,94vw);}
 }
 @media (max-width:700px){
-  #hud{padding:7px 9px;gap:8px;font-size:11px}
-  #game-canvas{margin-top:6px}
-  #touchpad{margin-top:8px;transform:scale(.9);transform-origin:top center}
+  /* 모바일: 캔버스 세로폭이 크게 줄어들어 데스크톱 패널을 다 얹으면 겹침 →
+     보조 패널(미니맵/임무 트래커)은 숨기고 필수 요소만 컴팩트하게 배치 */
+  #hud-top{
+    padding:5px 7px; gap:5px; font-size:9.5px;
+    flex-wrap:nowrap;
+  }
+  #hud-left{ gap:5px; overflow-x:auto; flex:1 1 auto; -webkit-overflow-scrolling:touch; }
+  #hud-left span{ white-space:nowrap; }
+  #hud-actions{ flex:none; gap:4px; }
+  #hud-actions button{ font-size:9px; padding:4px 5px; }
+
+  #location-banner{ top:32px; left:6px; padding:4px 7px; max-width:56%; }
+  #location-name{ font-size:10.5px; margin-bottom:1px; }
+  #location-task{ font-size:9px; }
+
+  #minimap-panel, #quest-panel{ display:none; }
+
+  #player-panel{
+    bottom:6px; left:6px; padding:4px 6px; gap:5px; align-items:center;
+  }
+  #player-portrait{ width:30px; height:30px; border-radius:6px; }
+  #player-info{ display:flex; flex-direction:column; }
+  #player-name{ font-size:10px; margin-bottom:0; }
+  .stat-row{ display:none; }
+
+  #bottom-menu{
+    bottom:6px; gap:3px; transform:translateX(-50%) scale(.72);
+    transform-origin:bottom center;
+  }
+  #bottom-menu button{ padding:4px 6px; }
+
+  #touchpad{
+    bottom:6px; right:6px;
+    grid-template-columns:34px 34px 34px;
+    grid-template-rows:30px 30px 30px;
+    gap:3px;
+  }
+  .tp-btn{ font-size:12px; }
+  .tp-action{ font-size:9px; }
 }
