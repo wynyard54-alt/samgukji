@@ -169,8 +169,8 @@ function updateHUD() {
   const gs = GameState;
   document.getElementById('hud-date').textContent = gs.dateLabel();
   document.getElementById('hud-ap').textContent = `행동력 ${gs.ap}/${gs.apMax}`;
-  document.getElementById('hud-gold').textContent = `금 ${gs.resources.gold}`;
-  document.getElementById('hud-rice').textContent = `쌀 ${gs.resources.rice}`;
+  document.getElementById('hud-gold').textContent = `금 ${gs.resources.gold}(+${scholarGoldIncome()})`;
+  document.getElementById('hud-rice').textContent = `쌀 ${gs.resources.rice}(+0)`;
   document.getElementById('hud-troop').textContent = `병사 ${gs.resources.troop}`;
   document.getElementById('hud-fame').textContent = `명성 ${gs.fame}`;
 
@@ -549,22 +549,28 @@ document.getElementById('btn-conscript').onclick = () => {
   updateHUD();
 };
 
+function formatStatLine(stats) {
+  return `공${stats.atk} 방${stats.def} 속${stats.spd} 지${stats.int} 매${stats.cha}`;
+}
+
 function renderRosterPanel() {
   const wrap = document.getElementById('roster-list');
   wrap.innerHTML = '';
-  const rows = [
-    { role: '군주', name: '유비', lord: true },
-    { role: '장수', name: '관우' },
-    { role: '장수', name: '장비' },
+  const entries = [
+    { id: 'yubi', role: '군주', lord: true },
+    { id: 'gwanwoo', role: '장수' },
+    { id: 'jangbi', role: '장수' },
+    ...GameState.recruited.map((id) => ({ id, role: '장수' })),
   ];
-  GameState.recruited.forEach((id) => {
+  entries.forEach(({ id, role, lord }) => {
     const rd = ROSTER[id];
-    if (rd) rows.push({ role: '장수', name: rd.name });
-  });
-  rows.forEach((r) => {
+    if (!rd) return;
     const div = document.createElement('div');
-    div.className = 'roster-row' + (r.lord ? ' lord' : '');
-    div.innerHTML = `<span class="roster-role">${r.role}</span><span class="roster-name">${r.name}</span>`;
+    div.className = 'roster-row' + (lord ? ' lord' : '');
+    const statsLine = rd.stats
+      ? `<div class="roster-stats">${formatStatLine(rd.stats)}</div>`
+      : '';
+    div.innerHTML = `<div class="roster-row-main"><span class="roster-role">${role}</span><span class="roster-name">${rd.name}</span></div>${statsLine}`;
     wrap.appendChild(div);
   });
 }
