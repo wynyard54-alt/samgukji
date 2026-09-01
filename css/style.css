@@ -238,3 +238,19 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 @keyframes duel-defeat{0%{opacity:1}35%{transform:translateY(8px) rotate(5deg);opacity:1}100%{transform:translateY(48px) rotate(11deg);opacity:.18}}
 @keyframes duel-victor{0%,100%{transform:translateY(0) scale(1)}45%{transform:translateY(-8px) scale(1.05)}}
 @keyframes duel-quote{0%{opacity:0;transform:translate(-50%,14px)}22%,78%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(-50%,-8px)}}
+
+/* Tak Market Vertical Slice v1 — 큰 월드맵을 카메라로 보는 탐험 화면 */
+#game-canvas{
+  width:min(800px,96vw);
+  max-width:96vw;
+  height:auto;
+  background:#8fa374;
+  border:2px solid #8d7a55;
+  border-radius:8px;
+  box-shadow:0 10px 28px rgba(54,44,31,.22);
+}
+#map-hint{max-width:800px;padding:0 12px;}
+@media (max-height:760px){
+  #game-canvas{width:min(720px,94vw);}
+  #touchpad{margin-top:8px;transform:scale(.9);transform-origin:top center;}
+}

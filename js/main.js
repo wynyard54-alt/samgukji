@@ -73,7 +73,7 @@ function updateHUD() {
 }
 
 // ---------------- NPC interaction ----------------
-function interactNPC(id) {
+function interactNPC(id, context) {
   const rd = ROSTER[id];
   if (!rd) return;
   const st = GameState.npcStatus[id];
@@ -93,7 +93,7 @@ function interactNPC(id) {
   }
 
   if (rd.kind === 'recruit') {
-    if (isScholarType(rd)) visitScholar(id); else challengeWarrior(id);
+    if (isScholarType(rd)) visitScholar(id, context); else challengeWarrior(id);
     return;
   }
 
@@ -127,15 +127,22 @@ const VISIT_LINES = [
   '그대가 또 찾아올 줄 알았소. 앉으시오.',
 ];
 
-function visitScholar(id) {
+function visitScholar(id, context) {
   const rd = ROSTER[id];
   const firstTime = !GameState.npcStatus[id];
   if (firstTime) {
     GameState.npcStatus[id] = 'met';
     GameState.friendship[id] = 0;
     MapView.render();
-    Dialogue.show([{ speaker: rd.name, text: rd.intro }], () => {
-      toast(`${rd.name}의 저택을 알게 되었다. 이제 지도에서 방문(행동력3)할 수 있다.`);
+    const firstLines = [];
+    if (context && context.discoveryText) {
+      firstLines.push({ speaker: '내레이션', text: context.discoveryText });
+      firstLines.push({ speaker: '내레이션', text: '범상치 않은 인물을 발견했다!' });
+    }
+    firstLines.push({ speaker: rd.name, text: rd.intro });
+    Dialogue.show(firstLines, () => {
+      toast(`${rd.name}의 거처를 알게 되었다. 이제 지도에서 방문(행동력3)할 수 있다.`);
+      MapView.render();
     });
     return;
   }
