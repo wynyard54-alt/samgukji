@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>삼국지 키즈 — 챕터1: 도원의 형제</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div id="screen-title" class="screen active">
+  <div class="title-wrap">
+    <h1>도원의 형제</h1>
+    <p class="subtitle">삼국지 키즈 — 챕터1 프로토타입 (184~192)</p>
+    <button id="btn-start" class="big-btn">시작하기</button>
+  </div>
+</div>
+
+<div id="screen-select" class="screen">
+  <div class="select-wrap">
+    <h2>플레이할 장수를 고르세요</h2>
+    <div class="hero-cards">
+      <button class="hero-card" data-hero="gwanwoo">
+        <div class="hero-swatch" style="background:#2f6d3f">관</div>
+        <div class="hero-name">관우</div>
+        <div class="hero-sub">청룡언월도 · 공92 방71 속58</div>
+      </button>
+      <button class="hero-card" data-hero="jangbi">
+        <div class="hero-swatch" style="background:#8a3b2a">장</div>
+        <div class="hero-name">장비</div>
+        <div class="hero-sub">장팔사모 · 공94 방79 속61</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-explore" class="screen">
+  <div id="hud">
+    <div id="hud-date"></div>
+    <div id="hud-ap"></div>
+    <div id="hud-res"></div>
+    <div id="hud-recruit"></div>
+    <div id="hud-actions">
+      <button id="btn-train">훈련하기 (AP2)</button>
+      <button id="btn-nextmonth">다음 달로</button>
+      <button id="btn-progress" class="hidden">다음 사건으로</button>
+    </div>
+  </div>
+  <canvas id="game-canvas"></canvas>
+  <div id="map-hint">화살표/WASD로 이동, 인물 옆에서 Enter/스페이스 또는 클릭으로 대화</div>
+</div>
+
+<div id="screen-ending" class="screen">
+  <div class="ending-wrap">
+    <h2 id="ending-title">챕터1 클리어</h2>
+    <div id="ending-summary"></div>
+    <button id="btn-restart" class="big-btn">타이틀로</button>
+  </div>
+</div>
+
+<!-- 대화창 -->
+<div id="dialogue-box" class="hidden">
+  <div id="dialogue-name"></div>
+  <div id="dialogue-text"></div>
+  <div id="dialogue-next"></div>
+</div>
+
+<!-- 선택지 모달 -->
+<div id="choice-box" class="hidden">
+  <div id="choice-text"></div>
+  <div id="choice-buttons"></div>
+</div>
+
+<!-- 일기토 배틀 화면 -->
+<div id="battle-screen" class="hidden">
+  <div class="battle-side" id="battle-side-e">
+    <div class="battle-portrait" id="battle-e-portrait"></div>
+    <div class="battle-name" id="battle-e-name"></div>
+    <div class="bar hp"><div class="bar-fill" id="battle-e-hpfill"></div></div>
+    <div class="bar-text" id="battle-e-hptext"></div>
+    <div class="bar gauge"><div class="bar-fill" id="battle-e-gaugefill"></div></div>
+  </div>
+
+  <div class="battle-log" id="battle-log"></div>
+
+  <div class="battle-side" id="battle-side-p">
+    <div class="battle-portrait" id="battle-p-portrait"></div>
+    <div class="battle-name" id="battle-p-name"></div>
+    <div class="bar hp"><div class="bar-fill" id="battle-p-hpfill"></div></div>
+    <div class="bar-text" id="battle-p-hptext"></div>
+    <div class="bar gauge"><div class="bar-fill" id="battle-p-gaugefill"></div></div>
+  </div>
+
+  <div id="battle-actions">
+    <button data-action="attack">⚔ 공격중시</button>
+    <button data-action="defend">🛡 방어중시</button>
+    <button data-action="skill">✦ 특기사용</button>
+    <button id="btn-ultimate" data-action="ultimate" disabled>필살기</button>
+  </div>
+</div>
+
+<div id="toast" class="hidden"></div>
+
+<script src="js/data/roster.js"></script>
+<script src="js/data/maps.js"></script>
+<script src="js/data/story.js"></script>
+<script src="js/engine/state.js"></script>
+<script src="js/engine/dialogue.js"></script>
+<script src="js/engine/battle.js"></script>
+<script src="js/engine/mapview.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
