@@ -48,7 +48,15 @@
     </div>
   </div>
   <canvas id="game-canvas"></canvas>
-  <div id="map-hint">화살표/WASD로 이동, 인물 옆에서 Enter/스페이스 또는 클릭으로 대화</div>
+  <div id="map-hint">화살표/WASD로 이동, 인물 옆에서 Enter/스페이스 또는 클릭으로 대화 (모바일은 아래 버튼 사용)</div>
+
+  <div id="touchpad">
+    <button id="tp-up" class="tp-btn tp-up" aria-label="위로 이동">▲</button>
+    <button id="tp-left" class="tp-btn tp-left" aria-label="왼쪽으로 이동">◀</button>
+    <button id="tp-action" class="tp-btn tp-action" aria-label="대화/상호작용">대화</button>
+    <button id="tp-right" class="tp-btn tp-right" aria-label="오른쪽으로 이동">▶</button>
+    <button id="tp-down" class="tp-btn tp-down" aria-label="아래로 이동">▼</button>
+  </div>
 </div>
 
 <div id="screen-ending" class="screen">

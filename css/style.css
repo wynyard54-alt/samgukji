@@ -62,8 +62,35 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 #hud button:hover{ background:var(--accent-strong); }
 #hud button.hidden{ display:none; }
-#game-canvas{ border:1px solid var(--panel-border); margin-top:14px; image-rendering:pixelated; }
-#map-hint{ font-size:11.5px; color:var(--ink-soft); margin-top:8px; }
+#game-canvas{
+  border:1px solid var(--panel-border); margin-top:14px; image-rendering:pixelated;
+  max-width:94vw; width:560px; height:auto; touch-action:none;
+}
+#map-hint{ font-size:11.5px; color:var(--ink-soft); margin-top:8px; text-align:center; }
+
+/* 모바일 터치 이동패드 */
+#touchpad{
+  display:grid;
+  grid-template-columns:56px 56px 56px;
+  grid-template-rows:52px 52px 52px;
+  grid-template-areas:
+    ".    up      ."
+    "left action  right"
+    ".    down    .";
+  gap:6px;
+  margin-top:16px;
+  user-select:none;
+  -webkit-user-select:none;
+}
+.tp-btn{
+  font-family:inherit; font-size:16px; font-weight:700;
+  background:var(--panel); border:1px solid var(--panel-border); border-radius:10px;
+  color:var(--ink); cursor:pointer; touch-action:manipulation;
+}
+.tp-btn:active{ background:var(--accent); color:#fff8ea; }
+.tp-up{ grid-area:up; } .tp-down{ grid-area:down; }
+.tp-left{ grid-area:left; } .tp-right{ grid-area:right; }
+.tp-action{ grid-area:action; font-size:12px; background:var(--accent); color:#fff8ea; }
 
 /* 대화창 */
 #dialogue-box{

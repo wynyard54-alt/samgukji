@@ -131,11 +131,13 @@ const MapView = (function () {
 
   canvas.addEventListener('click', (ev) => {
     const rect = canvas.getBoundingClientRect();
-    const x = Math.floor((ev.clientX - rect.left) / TILE);
-    const y = Math.floor((ev.clientY - rect.top) / TILE);
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = Math.floor(((ev.clientX - rect.left) * scaleX) / TILE);
+    const y = Math.floor(((ev.clientY - rect.top) * scaleY) / TILE);
     const npc = npcAt(x, y);
     if (npc && Math.abs(npc.x - player.x) + Math.abs(npc.y - player.y) === 1) interact(npc);
   });
 
-  return { load, render, removeNpc, get currentMapId() { return mapId; } };
+  return { load, render, removeNpc, tryMove, interactFacing, get currentMapId() { return mapId; } };
 })();

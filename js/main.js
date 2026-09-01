@@ -360,3 +360,14 @@ document.getElementById('btn-nextmonth').onclick = () => {
 };
 
 document.getElementById('btn-restart').onclick = () => showScreen('screen-title');
+
+// 모바일 터치 이동패드 (클릭=탭으로 동일하게 동작)
+function guardedMove(dx, dy) {
+  if (Dialogue.isActive()) return;
+  MapView.tryMove(dx, dy);
+}
+document.getElementById('tp-up').onclick = () => guardedMove(0, -1);
+document.getElementById('tp-down').onclick = () => guardedMove(0, 1);
+document.getElementById('tp-left').onclick = () => guardedMove(-1, 0);
+document.getElementById('tp-right').onclick = () => guardedMove(1, 0);
+document.getElementById('tp-action').onclick = () => { if (!Dialogue.isActive()) MapView.interactFacing(); };
