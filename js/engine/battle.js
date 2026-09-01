@@ -174,14 +174,21 @@ const Battle = (function () {
   }
 
   function finish(outcome) {
-    BattleEvents.emit('battleEnd', {
+    // hold: 연출 레이어가 battleEnd 리스너 안에서 동기적으로 payload.hold(ms)를
+    // 늘려두면, 승리/패배 연출이 끝날 때까지 화면이 안 닫히고 기다려준다.
+    // 아무도 손대지 않으면 기존과 동일하게 즉시 닫힘(hold 기본값 0).
+    const payload = {
       outcome, playerId: p.data.id, enemyId: e.data.id,
       playerHp: Math.max(0, p.hp), enemyHp: Math.max(0, e.hp),
-    });
-    screen.classList.add('hidden');
-    const cb = onEnd;
-    onEnd = null;
-    if (cb) cb({ outcome });
+      hold: 0,
+    };
+    BattleEvents.emit('battleEnd', payload);
+    setTimeout(() => {
+      screen.classList.add('hidden');
+      const cb = onEnd;
+      onEnd = null;
+      if (cb) cb({ outcome });
+    }, Math.max(0, payload.hold));
   }
 
   function start(opts) {
