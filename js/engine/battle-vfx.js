@@ -129,7 +129,7 @@ const BattleVFX = (function () {
     const art = artFor(id, data);
     cutin.querySelector('.cutin-glyph').textContent = art.glyph;
     cutin.querySelector('.cutin-copy small').textContent = data.name || id;
-    cutin.querySelector('.cutin-copy strong').textContent = ev.skillName || '필살기';
+    cutin.querySelector('.cutin-copy strong').textContent = ev.skillName || '필살공격';
     cutin.className = ev.side;
     screen.classList.add('ultimate-dim');
     pulseClass(el, 'charge', 750);

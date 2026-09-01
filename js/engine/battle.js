@@ -54,7 +54,7 @@ const Battle = (function () {
 
     document.getElementById('btn-ultimate').disabled = p.gauge < 100 || locked;
     document.getElementById('btn-ultimate').textContent =
-      p.gauge >= 100 ? `필살기: ${(p.data.skills && p.data.skills[0]) || '필살기'} (4)` : `필살기 (기력 ${Math.floor(p.gauge)}%) (4)`;
+      p.gauge >= 100 ? `필살공격: ${(p.data.skills && p.data.skills[0]) || '필살공격'} (4)` : `필살공격 (기력 ${Math.floor(p.gauge)}%) (4)`;
 
     if (!locked) {
       const attackBtn = actionsEl.querySelector('[data-action="attack"]');
@@ -94,9 +94,9 @@ const Battle = (function () {
     let dmg = Math.round(base * mult * variance);
     if (defender.defending && mode !== 'ultimate') dmg = Math.round(dmg * 0.55);
     defender.hp -= dmg;
-    const skillName = mode === 'ultimate' ? (attacker.data.skills && attacker.data.skills[0]) || '필살기' : null;
+    const skillName = mode === 'ultimate' ? (attacker.data.skills && attacker.data.skills[0]) || '필살공격' : null;
     log(mode === 'ultimate'
-      ? `${attacker.data.name}의 필살기 【${skillName}】! ${defender.data.name}에게 ${dmg} 피해!`
+      ? `${attacker.data.name}의 필살공격 【${skillName}】! ${defender.data.name}에게 ${dmg} 피해!`
       : `${attacker.data.name}의 공격! ${defender.data.name}에게 ${dmg} 피해.`);
     BattleEvents.emit('hit', {
       attackerSide: side, defenderSide: oppSide,
@@ -124,7 +124,7 @@ const Battle = (function () {
       BattleEvents.emit('special', { side, actorId: actor.data.id, heal });
     } else if (action === 'ultimate') {
       actor.gauge = 0;
-      const skillName = (actor.data.skills && actor.data.skills[0]) || '필살기';
+      const skillName = (actor.data.skills && actor.data.skills[0]) || '필살공격';
       BattleEvents.emit('ultimateStart', { side, actorId: actor.data.id, skillName });
       dealDamage(actor, opponent, 'ultimate');
     }
@@ -163,6 +163,8 @@ const Battle = (function () {
     }
 
     round++;
+    const battleEnding = p.hp <= 0 || e.hp <= 0 || (maxRounds && round >= maxRounds);
+    if (!battleEnding) locked = false; // render()가 disabled 상태를 계산하기 전에 풀어야 필살공격 버튼이 실제로 눌린다
     render();
     emitStatus();
     BattleEvents.emit('roundEnd', { round });
@@ -170,7 +172,6 @@ const Battle = (function () {
     if (p.hp <= 0) { finish('lose'); return; }
     if (e.hp <= 0) { finish('win'); return; }
     if (maxRounds && round >= maxRounds) { finish('scripted-end'); return; }
-    locked = false;
   }
 
   function finish(outcome) {

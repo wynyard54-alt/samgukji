@@ -513,6 +513,7 @@ document.getElementById('btn-train').onclick = () => {
   const hero = GameState.heroData();
   hero.stats.atk = Math.min(100, hero.stats.atk + 1);
   toast(`훈련으로 ${hero.name}의 공격력이 소폭 올랐다. (공격 ${hero.stats.atk})`);
+  updateHUD();
 };
 
 document.getElementById('btn-conscript').onclick = () => {
