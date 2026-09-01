@@ -136,20 +136,34 @@
 
 <!-- 군세 편성 -->
 <div id="army-box" class="hidden">
+  <button id="army-close" aria-label="닫기">✕</button>
   <div id="army-title">유비군 군세 편성</div>
   <p id="army-desc">반동탁연합에 참전할 관우의 군세를 꾸리세요.</p>
   <div class="army-field">
-    <label for="army-deputy">부장 (등용한 책사)</label>
+    <label for="army-deputy">책사</label>
     <select id="army-deputy"><option value="">없음</option></select>
   </div>
   <div class="army-field">
-    <label for="army-troop">병사 수 (보유 <span id="army-troop-max"></span>명, 최소 500)</label>
-    <input type="number" id="army-troop" min="0" max="10000" step="100">
+    <label>부장 (무력형, 최대 3명)</label>
+    <div id="army-generals-list"></div>
   </div>
   <div class="army-field">
-    <label for="army-rice">군량 · 쌀 (보유 <span id="army-rice-max"></span>가마)</label>
-    <input type="number" id="army-rice" min="0" step="50">
+    <label>병사 수 (보유 <span id="army-troop-max"></span>명, 최소 500)</label>
+    <div class="stepper">
+      <button type="button" class="stepper-btn" data-target="army-troop" data-dir="-1">◀</button>
+      <div class="stepper-value" id="army-troop-value">0</div>
+      <button type="button" class="stepper-btn" data-target="army-troop" data-dir="1">▶</button>
+    </div>
   </div>
+  <div class="army-field">
+    <label>군량 · 쌀 (보유 <span id="army-rice-max"></span>가마)</label>
+    <div class="stepper">
+      <button type="button" class="stepper-btn" data-target="army-rice" data-dir="-1">◀</button>
+      <div class="stepper-value" id="army-rice-value">0</div>
+      <button type="button" class="stepper-btn" data-target="army-rice" data-dir="1">▶</button>
+    </div>
+  </div>
+  <div id="army-power">군세 능력치 — 무력 0 · 지력 0</div>
   <div id="army-hint"></div>
   <button id="army-confirm" class="big-btn">출정 준비 완료</button>
 </div>

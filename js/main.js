@@ -596,8 +596,9 @@ function learnRandomSkill(hero) {
 document.getElementById('btn-train').onclick = () => {
   if (!spend(2)) return;
   const hero = GameState.heroData();
-  GameState.trainingEv += 30;
-  let msg = `${hero.name}이(가) 훈련에 매진했다. (노력치 ${GameState.trainingEv}/100)`;
+  const gainedEv = 25 + Math.floor(Math.random() * 26); // 25~50
+  GameState.trainingEv += gainedEv;
+  let msg = `${hero.name}이(가) 훈련에 매진했다.${gainedEv >= 40 ? ' 이번 훈련은 훌륭했다!' : ''} (노력치 ${GameState.trainingEv}/100)`;
 
   while (GameState.trainingEv >= 100) {
     GameState.trainingEv -= 100;
@@ -666,6 +667,94 @@ function openRosterPanel() {
 
 const ARMY_MIN_TROOP = 500;
 const ARMY_MAX_TROOP = 10000;
+const ARMY_GENERAL_BONUS_PCT = 0.10; // 부장 1명당 최대 +10% (자신 무력/100 만큼 반영), 최대 3명
+const ARMY_MAX_GENERALS = 3;
+
+let armySelectedGenerals = [];
+let armySteppers = {};
+
+function makeArmyStepper(valueElId, min, maxGetter, step) {
+  const el = document.getElementById(valueElId);
+  return {
+    step,
+    get() { return Number(el.dataset.val || 0); },
+    set(v) {
+      v = clamp(Math.round(v / step) * step, min, maxGetter());
+      el.dataset.val = v;
+      el.textContent = v;
+      updateArmyPower();
+    },
+  };
+}
+
+function renderArmyGenerals() {
+  const wrap = document.getElementById('army-generals-list');
+  wrap.innerHTML = '';
+  const candidates = GameState.recruited.filter((id) => ROSTER[id] && !isScholarType(ROSTER[id]));
+  if (!candidates.length) {
+    wrap.innerHTML = '<div class="army-empty-hint">등용한 무력형 장수가 없습니다.</div>';
+    return;
+  }
+  candidates.forEach((id) => {
+    const rd = ROSTER[id];
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'army-general-chip' + (armySelectedGenerals.includes(id) ? ' selected' : '');
+    btn.textContent = `${rd.name} (무력 ${rd.stats.atk})`;
+    btn.onclick = () => {
+      const idx = armySelectedGenerals.indexOf(id);
+      if (idx >= 0) {
+        armySelectedGenerals.splice(idx, 1);
+      } else {
+        if (armySelectedGenerals.length >= ARMY_MAX_GENERALS) {
+          toast(`부장은 최대 ${ARMY_MAX_GENERALS}명까지 선택할 수 있습니다.`);
+          return;
+        }
+        armySelectedGenerals.push(id);
+      }
+      renderArmyGenerals();
+      updateArmyPower();
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+function updateArmyPower() {
+  const hero = GameState.heroData();
+  const deputyId = document.getElementById('army-deputy').value;
+  const deputy = deputyId ? ROSTER[deputyId] : null;
+  const baseMuryeok = hero.stats.atk + hero.stats.def + hero.stats.spd;
+  const bonus = armySelectedGenerals.reduce((sum, id) => {
+    const rd = ROSTER[id];
+    return sum + (rd ? (rd.stats.atk / 100) * ARMY_GENERAL_BONUS_PCT : 0);
+  }, 0);
+  const muryeok = Math.round(baseMuryeok * (1 + bonus));
+  const jiryeok = deputy ? deputy.stats.int : 0;
+  document.getElementById('army-power').textContent = `군세 능력치 — 무력 ${muryeok} · 지력 ${jiryeok}`;
+}
+
+function wireArmyStepperButtons() {
+  document.querySelectorAll('#army-box .stepper-btn').forEach((btn) => {
+    if (btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+    let holdTimeout = null;
+    let interval = null;
+    const fire = () => {
+      const stepper = armySteppers[btn.dataset.target];
+      if (!stepper) return;
+      stepper.set(stepper.get() + Number(btn.dataset.dir) * stepper.step);
+    };
+    const start = (ev) => {
+      ev.preventDefault();
+      fire();
+      holdTimeout = setTimeout(() => { interval = setInterval(fire, 100); }, 400);
+    };
+    const stop = () => { clearTimeout(holdTimeout); clearInterval(interval); };
+    btn.addEventListener('mousedown', start);
+    btn.addEventListener('touchstart', start, { passive: false });
+    ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach((ev) => btn.addEventListener(ev, stop));
+  });
+}
 
 function openArmyBox(onConfirm) {
   const select = document.getElementById('army-deputy');
@@ -678,21 +767,33 @@ function openArmyBox(onConfirm) {
     opt.textContent = rd.name;
     select.appendChild(opt);
   });
+  select.onchange = updateArmyPower;
+
+  armySelectedGenerals = [];
+  renderArmyGenerals();
 
   const troopMax = Math.min(ARMY_MAX_TROOP, GameState.resources.troop);
   document.getElementById('army-troop-max').textContent = GameState.resources.troop;
-  document.getElementById('army-troop').max = troopMax;
-  document.getElementById('army-troop').value = troopMax;
   document.getElementById('army-rice-max').textContent = GameState.resources.rice;
-  document.getElementById('army-rice').max = GameState.resources.rice;
-  document.getElementById('army-rice').value = Math.min(200, GameState.resources.rice);
+  armySteppers = {
+    'army-troop': makeArmyStepper('army-troop-value', 0, () => Math.min(ARMY_MAX_TROOP, GameState.resources.troop), 100),
+    'army-rice': makeArmyStepper('army-rice-value', 0, () => GameState.resources.rice, 50),
+  };
+  armySteppers['army-troop'].set(troopMax);
+  armySteppers['army-rice'].set(Math.min(200, GameState.resources.rice));
+  wireArmyStepperButtons();
   document.getElementById('army-hint').textContent = '';
+  updateArmyPower();
 
   document.getElementById('army-box').classList.remove('hidden');
 
+  document.getElementById('army-close').onclick = () => {
+    document.getElementById('army-box').classList.add('hidden');
+  };
+
   document.getElementById('army-confirm').onclick = () => {
-    const troop = clamp(Math.round(Number(document.getElementById('army-troop').value) || 0), 0, GameState.resources.troop);
-    const rice = clamp(Math.round(Number(document.getElementById('army-rice').value) || 0), 0, GameState.resources.rice);
+    const troop = armySteppers['army-troop'].get();
+    const rice = armySteppers['army-rice'].get();
     if (troop < ARMY_MIN_TROOP) {
       document.getElementById('army-hint').textContent = `병사가 부족합니다. 최소 ${ARMY_MIN_TROOP}명이 필요합니다. (탁현/평원현에서 징병하기를 이용하세요)`;
       return;
@@ -700,7 +801,7 @@ function openArmyBox(onConfirm) {
     const deputy = select.value || null;
     GameState.resources.troop -= troop;
     GameState.resources.rice -= rice;
-    GameState.army = { deputy, troop, rice };
+    GameState.army = { deputy, generals: armySelectedGenerals.slice(), troop, rice };
     document.getElementById('army-box').classList.add('hidden');
     updateHUD();
     onConfirm();

@@ -228,14 +228,39 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   border-radius:12px; padding:22px; box-shadow:0 12px 30px rgba(43,38,32,0.35); z-index:65;
 }
 #army-box.hidden{ display:none; }
-#army-title{ font-family:"Song Myung",serif; font-size:18px; margin-bottom:6px; }
+#army-close{
+  position:absolute; top:12px; right:14px; width:28px; height:28px; border-radius:50%;
+  border:1px solid var(--panel-border); background:#fff8ea; color:var(--ink);
+  font-size:14px; line-height:1; cursor:pointer;
+}
+#army-close:hover{ background:var(--accent); color:#fff8ea; }
+#army-title{ font-family:"Song Myung",serif; font-size:18px; margin-bottom:6px; padding-right:24px; }
 #army-desc{ font-size:13px; color:var(--ink-soft); margin:0 0 16px; line-height:1.5; }
 .army-field{ margin-bottom:14px; }
 .army-field label{ display:block; font-size:12.5px; margin-bottom:5px; color:var(--ink-soft); }
-.army-field select, .army-field input{
+.army-field select{
   width:100%; font-family:inherit; font-size:14px; padding:9px 10px;
   border-radius:8px; border:1px solid var(--panel-border); background:#fff8ea;
 }
+#army-generals-list{ display:flex; flex-wrap:wrap; gap:6px; }
+.army-general-chip{
+  font-family:inherit; font-size:12.5px; padding:7px 12px; border-radius:20px;
+  border:1px solid var(--panel-border); background:#fff8ea; color:var(--ink); cursor:pointer;
+}
+.army-general-chip.selected{ background:var(--accent); border-color:var(--accent-strong); color:#fff8ea; }
+.army-empty-hint{ font-size:12px; color:var(--ink-soft); }
+.stepper{ display:flex; align-items:center; gap:10px; }
+.stepper-btn{
+  font-family:inherit; font-size:16px; font-weight:700; width:42px; height:38px; flex:none;
+  border-radius:8px; border:1px solid var(--panel-border); background:#fff8ea; color:var(--ink);
+  cursor:pointer; touch-action:manipulation; user-select:none;
+}
+.stepper-btn:active{ background:var(--accent); color:#fff8ea; }
+.stepper-value{
+  flex:1; text-align:center; font-size:15px; font-weight:600; font-variant-numeric:tabular-nums;
+  padding:8px 10px; border-radius:8px; background:#fff8ea; border:1px solid var(--panel-border);
+}
+#army-power{ font-size:13px; color:var(--ink-soft); margin-bottom:8px; }
 #army-hint{ font-size:12px; color:var(--bad); min-height:18px; margin-bottom:10px; }
 
 /* 배틀 화면 */
