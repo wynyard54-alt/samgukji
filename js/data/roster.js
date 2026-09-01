@@ -11,11 +11,11 @@ const ROSTER = {
 
   gwanwoo: { id:'gwanwoo', name:'관우', role:'PC', kind:'playable', affiliation:'유비군',
     stats:{atk:92, def:71, spd:58, int:52, cha:76}, weapon:'청룡언월도',
-    skills:['참격','회심의 일섬'] },
+    skills:['samdanchigi'] },
 
   jangbi: { id:'jangbi', name:'장비', role:'PC', kind:'playable', affiliation:'유비군',
     stats:{atk:94, def:79, spd:61, int:29, cha:41}, weapon:'장팔사모',
-    skills:['내려치기','포효'] },
+    skills:['pohyo'] },
 
   // 탁현
   chujeong: { id:'chujeong', name:'추정', kind:'recruit', forced:null, affiliation:'무소속',

@@ -328,6 +328,33 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #battle-actions button:hover,#battle-actions button:focus{background:linear-gradient(#a64a37,#713126);outline:2px solid rgba(244,215,151,.65);outline-offset:1px}
 #battle-actions button:disabled{background:#504b43;color:#918a7d}
 
+/* 필살공격 스킬 선택 메뉴 */
+#battle-skill-menu{
+  position:fixed; inset:0; z-index:32; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:10px;
+  background:rgba(12,10,8,.72);
+}
+#battle-skill-menu.hidden{ display:none; }
+#battle-skill-title{
+  font-family:"Song Myung",serif; font-size:20px; color:#f5ecd6;
+  text-shadow:0 2px 4px #000; margin-bottom:4px;
+}
+#battle-skill-list{ display:flex; flex-direction:column; gap:8px; width:min(420px,90vw); }
+#battle-skill-list button{
+  font-family:inherit; text-align:left; padding:12px 16px; border-radius:10px;
+  border:1px solid rgba(231,208,156,.5); background:linear-gradient(#7b382d,#55271f);
+  color:#f5ecd6; cursor:pointer; display:flex; flex-direction:column; gap:3px;
+}
+#battle-skill-list button strong{ font-size:15px; }
+#battle-skill-list button span{ font-size:12px; color:#e7d8b8; }
+#battle-skill-list button:hover, #battle-skill-list button:focus{
+  background:linear-gradient(#a64a37,#713126); outline:2px solid rgba(244,215,151,.65);
+}
+#battle-skill-cancel{
+  font-family:inherit; font-size:13px; padding:8px 18px; border-radius:8px;
+  border:1px solid rgba(231,208,156,.4); background:rgba(25,22,18,.8); color:#e7d8b8; cursor:pointer;
+}
+
 #duel-fx-layer{position:absolute;inset:0;pointer-events:none;z-index:20}.duel-float{position:absolute;top:43%;font-family:"Song Myung",serif;font-weight:900;font-size:30px;color:white;text-shadow:0 3px 0 #402018,0 0 8px #000;animation:duel-float .9s ease-out forwards}.duel-float.player{left:28%}.duel-float.enemy{right:28%}.duel-float.heal{color:#aaf0b0}.duel-float.dodge-text{color:#e9f4ff;font-size:23px}.duel-float.guard-text{color:#c9e4ff;font-size:23px}.duel-float.ultimate{font-size:42px;color:#ffe68d}
 .duel-slash{position:absolute;top:43%;width:150px;height:14px;background:linear-gradient(90deg,transparent,#fff7cf 35%,white 55%,transparent);filter:drop-shadow(0 0 7px #ffd36a);transform:rotate(-28deg);animation:duel-slash .38s ease-out forwards}.duel-slash.enemy{right:22%}.duel-slash.player{left:22%}.duel-slash.ultimate{width:240px;height:22px;filter:drop-shadow(0 0 14px #ffb52d)}
 .duel-impact{position:absolute;top:43%;width:20px;height:20px}.duel-impact.player{left:28%}.duel-impact.enemy{right:28%}.duel-impact i{position:absolute;left:50%;top:50%;width:5px;height:70px;background:linear-gradient(#fff4bf,transparent);transform-origin:50% 0}.duel-impact i:nth-child(2){transform:rotate(90deg)}.duel-impact i:nth-child(3){transform:rotate(180deg)}.duel-impact i:nth-child(4){transform:rotate(270deg)}

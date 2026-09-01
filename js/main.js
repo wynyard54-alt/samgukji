@@ -2,6 +2,8 @@ let stage = 'title';
 let toastTimer = null;
 
 const DEADLINES = { takhyeon: 186, pyeongwon: 188 };
+const STAT_LABELS = { atk: '공격', def: '방어', spd: '속도', int: '지력', cha: '매력' };
+const COMBAT_STATS = ['atk', 'def', 'spd'];
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
@@ -163,8 +165,7 @@ function renderPlayerPanel() {
   document.getElementById('stat-fill-hp').style.width = `${(curHp / maxHp) * 100}%`;
   document.getElementById('stat-val-hp').textContent = `${curHp}/${maxHp}`;
 
-  const stats = { atk: '공격', def: '방어', spd: '속도', int: '지력', cha: '매력' };
-  Object.keys(stats).forEach((key) => {
+  Object.keys(STAT_LABELS).forEach((key) => {
     const val = hero.stats[key] || 0;
     document.getElementById(`stat-fill-${key}`).style.width = `${clamp(val, 0, 100)}%`;
     document.getElementById(`stat-val-${key}`).textContent = val;
@@ -582,11 +583,41 @@ document.querySelectorAll('.hero-card').forEach((card) => {
   };
 });
 
+function learnRandomSkill(hero) {
+  if (!hero.skills) hero.skills = [];
+  if (hero.skills.length >= 4) return null;
+  const available = Object.keys(SKILL_POOL).filter((id) => !hero.skills.includes(id));
+  if (!available.length) return null;
+  const pick = available[Math.floor(Math.random() * available.length)];
+  hero.skills.push(pick);
+  return SKILL_POOL[pick].name;
+}
+
 document.getElementById('btn-train').onclick = () => {
   if (!spend(2)) return;
   const hero = GameState.heroData();
-  hero.stats.atk = Math.min(100, hero.stats.atk + 1);
-  toast(`훈련으로 ${hero.name}의 공격력이 소폭 올랐다. (공격 ${hero.stats.atk})`);
+  GameState.trainingEv += 30;
+  let msg = `${hero.name}이(가) 훈련에 매진했다. (노력치 ${GameState.trainingEv}/100)`;
+
+  while (GameState.trainingEv >= 100) {
+    GameState.trainingEv -= 100;
+    const keys = Object.keys(STAT_LABELS);
+    const key = keys[Math.floor(Math.random() * keys.length)];
+    hero.stats[key] = Math.min(100, hero.stats[key] + 1);
+    msg = `훈련 끝에 ${hero.name}의 ${STAT_LABELS[key]}이(가) 1 올랐다! (${STAT_LABELS[key]} ${hero.stats[key]})`;
+
+    if (COMBAT_STATS.includes(key)) {
+      GameState.combatStatUps++;
+      if (GameState.combatStatUps >= GameState.skillThreshold) {
+        GameState.combatStatUps = 0;
+        GameState.skillThreshold = 2 + Math.floor(Math.random() * 2);
+        const learned = learnRandomSkill(hero);
+        if (learned) msg += ` 그리고 새로운 필살공격 【${learned}】을(를) 익혔다!`;
+      }
+    }
+  }
+
+  toast(msg);
   updateHUD();
 };
 

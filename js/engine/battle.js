@@ -55,7 +55,7 @@ const Battle = (function () {
 
     document.getElementById('btn-ultimate').disabled = p.gauge < 100 || locked;
     document.getElementById('btn-ultimate').textContent =
-      p.gauge >= 100 ? `필살공격: ${(p.data.skills && p.data.skills[0]) || '필살공격'} (4)` : `필살공격 (기력 ${Math.floor(p.gauge)}%) (4)`;
+      p.gauge >= 100 ? '필살공격 선택 (4)' : `필살공격 (기력 ${Math.floor(p.gauge)}%) (4)`;
 
     if (!locked) {
       const attackBtn = actionsEl.querySelector('[data-action="attack"]');
@@ -76,7 +76,7 @@ const Battle = (function () {
     return Math.random() * 100 < chance;
   }
 
-  function dealDamage(attacker, defender, mode) {
+  function dealDamage(attacker, defender, mode, skillDef) {
     const side = attacker === p ? 'player' : 'enemy';
     const oppSide = side === 'player' ? 'enemy' : 'player';
 
@@ -90,14 +90,31 @@ const Battle = (function () {
     }
     let base = attacker.data.stats.atk * 0.6 - defender.data.stats.def * 0.3;
     base = Math.max(attacker.data.stats.atk * 0.2, base);
-    let mult = mode === 'ultimate' ? 2.3 : 1.3;
+    let mult = mode === 'ultimate' ? (skillDef ? skillDef.dmgMult : 2.3) : 1.3;
     const variance = 0.85 + Math.random() * 0.3;
     let dmg = Math.round(base * mult * variance);
     if (defender.defending && mode !== 'ultimate') dmg = Math.round(dmg * 0.55);
     defender.hp -= dmg;
-    const skillName = mode === 'ultimate' ? (attacker.data.skills && attacker.data.skills[0]) || '필살공격' : null;
+
+    let extra = '';
+    if (mode === 'ultimate' && skillDef) {
+      if (skillDef.healSelfPct) {
+        attacker.hp = Math.min(attacker.maxHp, attacker.hp + Math.round(attacker.maxHp * skillDef.healSelfPct));
+        extra = ' (체력 회복!)';
+      }
+      if (skillDef.healFromDmgPct) {
+        attacker.hp = Math.min(attacker.maxHp, attacker.hp + Math.round(dmg * skillDef.healFromDmgPct));
+        extra = ' (체력 회복!)';
+      }
+      if (skillDef.selfCostPct) {
+        attacker.hp = Math.max(1, attacker.hp - Math.round(attacker.hp * skillDef.selfCostPct));
+        extra = ' (반동으로 체력 소모)';
+      }
+    }
+
+    const skillName = mode === 'ultimate' ? (skillDef ? skillDef.name : '필살공격') : null;
     log(mode === 'ultimate'
-      ? `${attacker.data.name}의 필살공격 【${skillName}】! ${defender.data.name}에게 ${dmg} 피해!`
+      ? `${attacker.data.name}의 필살공격 【${skillName}】! ${defender.data.name}에게 ${dmg} 피해!${extra}`
       : `${attacker.data.name}의 공격! ${defender.data.name}에게 ${dmg} 피해.`);
     BattleEvents.emit('hit', {
       attackerSide: side, defenderSide: oppSide,
@@ -106,7 +123,7 @@ const Battle = (function () {
     });
   }
 
-  function actGeneric(actor, opponent, action) {
+  function actGeneric(actor, opponent, action, skillId) {
     if (actor.hp <= 0) return;
     const side = actor === p ? 'player' : 'enemy';
     if (action === 'attack') {
@@ -125,9 +142,11 @@ const Battle = (function () {
       BattleEvents.emit('special', { side, actorId: actor.data.id, heal });
     } else if (action === 'ultimate') {
       actor.gauge = 0;
-      const skillName = (actor.data.skills && actor.data.skills[0]) || '필살공격';
-      BattleEvents.emit('ultimateStart', { side, actorId: actor.data.id, skillName });
-      dealDamage(actor, opponent, 'ultimate');
+      const pool = (actor.data.skills && actor.data.skills.length) ? actor.data.skills : [];
+      const pick = skillId || pool[Math.floor(Math.random() * pool.length)] || null;
+      const skillDef = pick ? SKILL_POOL[pick] : null;
+      BattleEvents.emit('ultimateStart', { side, actorId: actor.data.id, skillName: skillDef ? skillDef.name : '필살공격' });
+      dealDamage(actor, opponent, 'ultimate', skillDef);
     }
   }
 
@@ -147,7 +166,7 @@ const Battle = (function () {
     BattleEvents.emit('gaugeChange', { side: 'enemy', actorId: e.data.id, gauge: Math.min(100, e.gauge) });
   }
 
-  function resolveRound(playerAction) {
+  function resolveRound(playerAction, skillId) {
     if (locked) return;
     locked = true;
     p.defending = false; e.defending = false;
@@ -158,7 +177,7 @@ const Battle = (function () {
 
     const order = p.data.stats.spd >= e.data.stats.spd ? ['p', 'e'] : ['e', 'p'];
     for (const who of order) {
-      if (who === 'p') { if (p.hp > 0) actGeneric(p, e, playerAction); }
+      if (who === 'p') { if (p.hp > 0) actGeneric(p, e, playerAction, skillId); }
       else { if (e.hp > 0) actGeneric(e, p, eAction); }
       if (p.hp <= 0 || e.hp <= 0) break;
     }
@@ -203,6 +222,7 @@ const Battle = (function () {
     retreatAt = opts.retreatAt || null;
     onEnd = opts.onEnd;
     locked = false;
+    closeSkillMenu();
     screen.classList.remove('hidden');
     log(`— ${e.data.name}와(과)의 일기토 시작 —`);
     render();
@@ -210,19 +230,55 @@ const Battle = (function () {
     emitStatus();
   }
 
+  const skillMenu = document.getElementById('battle-skill-menu');
+  const skillList = document.getElementById('battle-skill-list');
+
+  function openSkillMenu() {
+    skillList.innerHTML = '';
+    const skills = (p.data.skills && p.data.skills.length) ? p.data.skills : [];
+    skills.slice(0, 4).forEach((id) => {
+      const def = SKILL_POOL[id];
+      if (!def) return;
+      const btn = document.createElement('button');
+      btn.innerHTML = `<strong>${def.name}</strong><span>${def.desc}</span>`;
+      btn.onclick = () => { closeSkillMenu(); resolveRound('ultimate', id); };
+      skillList.appendChild(btn);
+    });
+    skillMenu.classList.remove('hidden');
+    const first = skillList.querySelector('button');
+    if (first) first.focus();
+  }
+
+  function closeSkillMenu() {
+    skillMenu.classList.add('hidden');
+  }
+
+  document.getElementById('battle-skill-cancel').onclick = closeSkillMenu;
+
   actionsEl.addEventListener('click', (ev) => {
     const btn = ev.target.closest('button');
     if (!btn || btn.disabled) return;
+    if (btn.dataset.action === 'ultimate') { openSkillMenu(); return; }
     resolveRound(btn.dataset.action);
   });
 
   const KEY_ACTION = { '1': 'attack', '2': 'defend', '3': 'skill', '4': 'ultimate' };
   window.addEventListener('keydown', (ev) => {
     if (screen.classList.contains('hidden')) return;
+    if (!skillMenu.classList.contains('hidden')) {
+      if (ev.key === 'Escape') { closeSkillMenu(); return; }
+      const idx = Number(ev.key) - 1;
+      const buttons = skillList.querySelectorAll('button');
+      if (idx >= 0 && idx < buttons.length) { ev.preventDefault(); buttons[idx].click(); }
+      return;
+    }
     const action = KEY_ACTION[ev.key];
     if (!action) return;
     const btn = actionsEl.querySelector(`[data-action="${action}"]`);
-    if (btn && !btn.disabled) { ev.preventDefault(); resolveRound(action); }
+    if (btn && !btn.disabled) {
+      ev.preventDefault();
+      if (action === 'ultimate') { openSkillMenu(); } else { resolveRound(action); }
+    }
   });
 
   return { start, maxHP };
