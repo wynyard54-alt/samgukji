@@ -76,8 +76,15 @@ const Battle = (function () {
   }
 
   function dealDamage(attacker, defender, mode) {
+    const side = attacker === p ? 'player' : 'enemy';
+    const oppSide = side === 'player' ? 'enemy' : 'player';
+
     if (mode === 'attack' && evasionRoll(defender.data.stats.spd, attacker.data.stats.spd)) {
       log(`${defender.data.name}이(가) ${attacker.data.name}의 공격을 회피했다!`);
+      BattleEvents.emit('dodge', {
+        attackerSide: side, defenderSide: oppSide,
+        attackerId: attacker.data.id, defenderId: defender.data.id,
+      });
       return;
     }
     let base = attacker.data.stats.atk * 0.6 - defender.data.stats.def * 0.3;
@@ -91,10 +98,16 @@ const Battle = (function () {
     log(mode === 'ultimate'
       ? `${attacker.data.name}의 필살기 【${skillName}】! ${defender.data.name}에게 ${dmg} 피해!`
       : `${attacker.data.name}의 공격! ${defender.data.name}에게 ${dmg} 피해.`);
+    BattleEvents.emit('hit', {
+      attackerSide: side, defenderSide: oppSide,
+      attackerId: attacker.data.id, defenderId: defender.data.id,
+      damage: dmg, isUltimate: mode === 'ultimate', skillName,
+    });
   }
 
   function actGeneric(actor, opponent, action) {
     if (actor.hp <= 0) return;
+    const side = actor === p ? 'player' : 'enemy';
     if (action === 'attack') {
       actor.gauge += 12;
       dealDamage(actor, opponent, 'attack');
@@ -102,13 +115,17 @@ const Battle = (function () {
       actor.defending = true;
       actor.gauge += 20;
       log(`${actor.data.name}이(가) 방어 태세를 갖췄다.`);
+      BattleEvents.emit('defend', { side, actorId: actor.data.id });
     } else if (action === 'skill') {
       actor.gauge += 8;
       const heal = Math.round(actor.maxHp * 0.05);
       actor.hp = Math.min(actor.maxHp, actor.hp + heal);
       log(`${actor.data.name}이(가) 특기를 사용해 숨을 골랐다. (HP +${heal})`);
+      BattleEvents.emit('special', { side, actorId: actor.data.id, heal });
     } else if (action === 'ultimate') {
       actor.gauge = 0;
+      const skillName = (actor.data.skills && actor.data.skills[0]) || '필살기';
+      BattleEvents.emit('ultimateStart', { side, actorId: actor.data.id, skillName });
       dealDamage(actor, opponent, 'ultimate');
     }
   }
@@ -122,11 +139,21 @@ const Battle = (function () {
     return 'defend';
   }
 
+  function emitStatus() {
+    BattleEvents.emit('hpChange', { side: 'player', actorId: p.data.id, hp: Math.max(0, p.hp), maxHp: p.maxHp });
+    BattleEvents.emit('hpChange', { side: 'enemy', actorId: e.data.id, hp: Math.max(0, e.hp), maxHp: e.maxHp });
+    BattleEvents.emit('gaugeChange', { side: 'player', actorId: p.data.id, gauge: Math.min(100, p.gauge) });
+    BattleEvents.emit('gaugeChange', { side: 'enemy', actorId: e.data.id, gauge: Math.min(100, e.gauge) });
+  }
+
   function resolveRound(playerAction) {
     if (locked) return;
     locked = true;
     p.defending = false; e.defending = false;
     const eAction = enemyChoose();
+
+    BattleEvents.emit('actionStart', { side: 'player', action: playerAction, actorId: p.data.id });
+    BattleEvents.emit('actionStart', { side: 'enemy', action: eAction, actorId: e.data.id });
 
     const order = p.data.stats.spd >= e.data.stats.spd ? ['p', 'e'] : ['e', 'p'];
     for (const who of order) {
@@ -137,6 +164,8 @@ const Battle = (function () {
 
     round++;
     render();
+    emitStatus();
+    BattleEvents.emit('roundEnd', { round });
 
     if (p.hp <= 0) { finish('lose'); return; }
     if (e.hp <= 0) { finish('win'); return; }
@@ -145,6 +174,10 @@ const Battle = (function () {
   }
 
   function finish(outcome) {
+    BattleEvents.emit('battleEnd', {
+      outcome, playerId: p.data.id, enemyId: e.data.id,
+      playerHp: Math.max(0, p.hp), enemyHp: Math.max(0, e.hp),
+    });
     screen.classList.add('hidden');
     const cb = onEnd;
     onEnd = null;
@@ -161,6 +194,8 @@ const Battle = (function () {
     screen.classList.remove('hidden');
     log(`— ${e.data.name}와(과)의 일기토 시작 —`);
     render();
+    BattleEvents.emit('battleStart', { player: p.data, enemy: e.data, playerMaxHp: p.maxHp, enemyMaxHp: e.maxHp });
+    emitStatus();
   }
 
   actionsEl.addEventListener('click', (ev) => {
