@@ -538,8 +538,48 @@ document.getElementById('btn-conscript').onclick = () => {
   updateHUD();
 };
 
+function renderRosterPanel() {
+  const wrap = document.getElementById('roster-list');
+  wrap.innerHTML = '';
+  const rows = [
+    { role: '군주', name: '유비', lord: true },
+    { role: '장수', name: '관우' },
+    { role: '장수', name: '장비' },
+  ];
+  GameState.recruited.forEach((id) => {
+    const rd = ROSTER[id];
+    if (rd) rows.push({ role: '장수', name: rd.name });
+  });
+  rows.forEach((r) => {
+    const div = document.createElement('div');
+    div.className = 'roster-row' + (r.lord ? ' lord' : '');
+    div.innerHTML = `<span class="roster-role">${r.role}</span><span class="roster-name">${r.name}</span>`;
+    wrap.appendChild(div);
+  });
+}
+
+function openRosterPanel() {
+  renderRosterPanel();
+  document.getElementById('roster-box').classList.remove('hidden');
+  document.getElementById('roster-close').focus();
+}
+
+function closeRosterPanel() {
+  document.getElementById('roster-box').classList.add('hidden');
+}
+
+document.getElementById('roster-close').onclick = closeRosterPanel;
+window.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape' && !document.getElementById('roster-box').classList.contains('hidden')) {
+    closeRosterPanel();
+  }
+});
+
 document.querySelectorAll('#bottom-menu button').forEach((btn) => {
-  btn.onclick = () => toast('준비 중인 기능입니다.');
+  btn.onclick = () => {
+    if (btn.dataset.menu === 'generals') { openRosterPanel(); return; }
+    toast('준비 중인 기능입니다.');
+  };
 });
 
 document.getElementById('btn-nextmonth').onclick = () => {
