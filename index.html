@@ -134,6 +134,26 @@
   <button id="roster-close" class="big-btn">닫기</button>
 </div>
 
+<!-- 군세 편성 -->
+<div id="army-box" class="hidden">
+  <div id="army-title">유비군 군세 편성</div>
+  <p id="army-desc">반동탁연합에 참전할 관우의 군세를 꾸리세요.</p>
+  <div class="army-field">
+    <label for="army-deputy">부장 (등용한 책사)</label>
+    <select id="army-deputy"><option value="">없음</option></select>
+  </div>
+  <div class="army-field">
+    <label for="army-troop">병사 수 (보유 <span id="army-troop-max"></span>명, 최소 500)</label>
+    <input type="number" id="army-troop" min="0" max="10000" step="100">
+  </div>
+  <div class="army-field">
+    <label for="army-rice">군량 · 쌀 (보유 <span id="army-rice-max"></span>가마)</label>
+    <input type="number" id="army-rice" min="0" step="50">
+  </div>
+  <div id="army-hint"></div>
+  <button id="army-confirm" class="big-btn">출정 준비 완료</button>
+</div>
+
 <!-- 일기토 배틀 화면 -->
 <div id="battle-screen" class="hidden">
   <div class="battle-side" id="battle-side-e">

@@ -59,6 +59,16 @@ const ROSTER = {
   jindeung: { id:'jindeung', name:'진등', kind:'recruit', forced:null, affiliation:'서주', chance:0.15,
     stats:{atk:29, def:31, spd:34, int:83, cha:66}, intro:'서주의 진등이오. 지나는 길에 재미있는 사람들 이야기를 들었지.' },
 
+  // 반동탁연합 진영 (등용 불가, 서사 전용 인물)
+  wonso: { id:'wonso', name:'원소', kind:'flavor', affiliation:'반동탁연합',
+    intro:'맹주로 추대된 원소요. 각지의 제후들이 모였으나, 아직 누가 선봉에 설지 정하지 못했소.' },
+  jojo: { id:'jojo', name:'조조', kind:'flavor', affiliation:'반동탁연합',
+    intro:'맹덕이라 하오. 이런 촌구석 의용군에서도 쓸만한 인재가 나올 수 있는 법이지.' },
+  gongsonchan: { id:'gongsonchan', name:'공손찬', kind:'flavor', affiliation:'반동탁연합',
+    intro:'백규요. 자네들이 현덕의 아우들인가. 내 현덕과는 동문수학한 사이라네, 잘 부탁하네.' },
+  songyeon: { id:'songyeon', name:'손견', kind:'flavor', affiliation:'반동탁연합',
+    intro:'강동의 손문대요. 선봉은 이 몸이 서겠소. 동탁 따위, 단숨에 짓밟아주지!' },
+
   // 사수관
   hwaung: { id:'hwaung', name:'화웅', kind:'enemy', forced:'kill', affiliation:'동탁군',
     stats:{atk:81, def:62, spd:58, int:31, cha:22}, intro:'이런 촌뜨기들까지 나선단 말이냐? 목이나 내놓아라!' },

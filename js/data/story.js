@@ -42,16 +42,42 @@ const STORY = {
     { speaker: '장비', text: '형님, 정말 술이 식기도 전에 돌아오셨소!' },
   ],
 
-  horogwan_pre: [
-    { speaker: '내레이션', text: '호로관. 여포가 방천화극을 들고 홀로 앞을 막아섰다.' },
-    { speaker: '여포', text: '제후군 따위, 내 방천화극 앞에 몇이나 버틴다더냐!' },
-    { speaker: '장비', text: '그 큰소리, 내가 꺾어주마!' },
+  camp_arrive: [
+    { speaker: '내레이션', text: '유비 삼형제는 공손찬의 깃발 아래 낙양 인근 반동탁연합 진영에 도착했다.' },
+    { speaker: '공손찬', text: '자, 원소 어른께 인사드리세. 이들이 내가 말한 현덕의 아우들이오.' },
+    { speaker: '원소', text: '흠, 이름 없는 의용군이라… 두고 보겠소.' },
   ],
-  horogwan_assist1: [{ speaker: '관우', text: '아우 혼자 두어선 안 되겠군!' }],
-  horogwan_assist2: [{ speaker: '유비', text: '나도 돕겠소!' }],
-  horogwan_post: [
+  camp_songgyeon_battle: [
+    { speaker: '내레이션', text: '손견이 선봉을 자원해 사수관으로 나섰으나, 동탁의 맹장 화웅에게 크게 밀리고 있다는 전갈이 왔다.' },
+    { speaker: '손견', text: '크윽… 이 화웅이란 놈, 보통내기가 아니구나!' },
+    { speaker: '관우', text: '제가 상대하지요.' },
+    { speaker: '유비', text: '조심하시게, 아우.' },
+  ],
+
+  warmap_intro: [
+    { speaker: '내레이션', text: '사수관이 뚫리자 동탁군은 호로관으로 물러나 진을 쳤다. 제후 연합군도 뒤이어 진격했다.' },
+    { speaker: '관우', text: '아직 끝나지 않았다. 호로관까지 밀어붙인다!' },
+  ],
+  warmap_yeopo_taunt: [
+    { speaker: '여포', text: '흥, 사수관 하나 넘었다고 우쭐대지 마라! 이 여포가 살아있는 한 호로관은 못 넘는다!' },
+  ],
+  warmap_jangbi_out: [
+    { speaker: '장비', text: '내가 먼저 붙어보겠소!' },
+    { speaker: '내레이션', text: '장비가 장팔사모를 들고 여포에게 달려들었다.' },
+  ],
+  warmap_jangbi_push: [
+    { speaker: '내레이션', text: '몇 합 겨루지도 못하고 장비가 밀리기 시작했다.' },
+    { speaker: '관우', text: '(장비와 이 정도로 호각을 이루는 장수가 있다니…!)' },
+  ],
+  warmap_yubi_assist: [
+    { speaker: '유비', text: '아우 혼자 두어선 안 되겠소, 나도 돕겠소!' },
+  ],
+  warmap_yeopo_flee: [
     { speaker: '여포', text: '흥, 오늘은 이만하지. 다음에 또 보자!' },
-    { speaker: '내레이션', text: '여포는 관 안으로 사라졌다. 세 사람의 이름이 제후들 사이에 퍼지기 시작했다.' },
+    { speaker: '내레이션', text: '여포는 방천화극을 거두고 관 안으로 사라졌다.' },
+  ],
+  warmap_clear: [
+    { speaker: '내레이션', text: '호로관의 동탁군이 완전히 무너졌다. 제후 연합군은 여세를 몰아 장안으로 향하는 길목, 함곡관으로 진군했다.' },
   ],
 
   hamgokgwan_pre: [

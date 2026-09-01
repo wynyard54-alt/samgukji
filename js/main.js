@@ -63,6 +63,8 @@ function describeReward(r) {
 const LOCATION_NAMES = {
   takhyeon: '탁현 · 장터',
   pyeongwon: '평원현',
+  camp: '반동탁연합 진영',
+  warmap: '호로관 전선',
 };
 
 function getObjectives() {
@@ -87,7 +89,11 @@ function getObjectives() {
     if (deungmuDone && !gs.flags.act1) list.push('유비에게 보고하기');
     if (gs.flags.act1) list.push('평원현으로 이동하기');
   } else if (stage === 'pyeongwon_free') {
-    list.push(`사수관으로 출정 준비하기 (${DEADLINES.pyeongwon}년까지)`);
+    list.push(`반동탁연합 참전 준비하기 (${DEADLINES.pyeongwon}년까지)`);
+  } else if (stage === 'camp') {
+    list.push('제후들과 인사하고 손견을 도와 화웅과 맞서기');
+  } else if (stage === 'warmap') {
+    list.push('호로관의 적 군세를 모두 격파하기');
   } else {
     list.push('전투에 집중하자!');
   }
@@ -95,7 +101,7 @@ function getObjectives() {
 }
 
 function renderLocationBanner() {
-  const name = LOCATION_NAMES[stage === 'pyeongwon_free' ? 'pyeongwon' : 'takhyeon'] || '';
+  const name = LOCATION_NAMES[MapView.currentMapId] || '';
   document.getElementById('location-name').textContent = name;
   const objectives = getObjectives();
   document.getElementById('location-task').textContent = objectives[0] ? `◆ ${objectives[0]}` : '';
@@ -191,8 +197,8 @@ function updateHUD() {
     }
   } else if (stage === 'pyeongwon_free') {
     progressBtn.classList.remove('hidden');
-    progressBtn.textContent = '사수관으로 출정';
-    progressBtn.onclick = goSasugwan;
+    progressBtn.textContent = '반동탁연합 참전 준비';
+    progressBtn.onclick = () => openArmyBox(goCoalitionCamp);
   } else {
     progressBtn.classList.add('hidden');
   }
@@ -206,6 +212,17 @@ function interactNPC(id, context) {
   if (st === 'recruited' || st === 'resolved' || st === 'dead' || st === 'fled') return;
 
   if (id === 'yubi') { handleYubi(); return; }
+
+  if (id === 'songyeon' && stage === 'camp') {
+    GameState.npcStatus['songyeon'] = 'resolved';
+    startSongyeonBattleScene();
+    return;
+  }
+
+  if (rd.kind === 'flavor') {
+    Dialogue.show([{ speaker: rd.name, text: rd.intro }]);
+    return;
+  }
 
   if (rd.kind === 'resource') {
     Dialogue.show([{ speaker: rd.name, text: rd.intro }], () => {
@@ -223,8 +240,14 @@ function interactNPC(id, context) {
     return;
   }
 
+  if (id === 'yeopo' && stage === 'warmap') {
+    startYeopoAssistScene();
+    return;
+  }
+
   if (rd.kind === 'enemy') {
-    startFreeBattle(id, undefined, true);
+    const afterCb = stage === 'warmap' ? checkWarmapClear : undefined;
+    startFreeBattle(id, afterCb, true);
     return;
   }
 }
@@ -419,7 +442,7 @@ function checkDeadlines() {
     return true;
   }
   if (stage === 'pyeongwon_free' && gs.year > DEADLINES.pyeongwon) {
-    Dialogue.show(STORY.act2_forced, () => { goSasugwan(); });
+    Dialogue.show(STORY.act2_forced, () => { openArmyBox(goCoalitionCamp); });
     return true;
   }
   return false;
@@ -442,6 +465,18 @@ function goPyeongwonFree() {
   }
 }
 
+function goCoalitionCamp() {
+  stage = 'camp';
+  showScreen('screen-explore');
+  MapView.load('camp', { onInteract: interactNPC });
+  updateHUD();
+  Dialogue.show(STORY.camp_arrive);
+}
+
+function startSongyeonBattleScene() {
+  Dialogue.show(STORY.camp_songgyeon_battle, goSasugwan);
+}
+
 function goSasugwan() {
   stage = 'sasugwan';
   Dialogue.show(STORY.sasugwan_pre, () => {
@@ -451,12 +486,7 @@ function goSasugwan() {
       onEnd: (result) => {
         if (result.outcome === 'win') {
           GameState.npcStatus['hwaung'] = 'dead';
-          Dialogue.show(STORY.sasugwan_post, () => {
-            showChoice('전장 한쪽에서 동탁군의 또 다른 장수 호진이 병력을 수습하고 있다. 맞서시겠습니까?', [
-              { label: '도전한다', cb: () => startFreeBattle('hojin', goHorogwan) },
-              { label: '그냥 지나친다', cb: goHorogwan },
-            ]);
-          });
+          Dialogue.show(STORY.sasugwan_post, goWarmap);
         } else {
           toast('화웅에게 밀렸다... 다시 도전하자!');
           goSasugwan();
@@ -466,26 +496,48 @@ function goSasugwan() {
   });
 }
 
-function goHorogwan() {
-  stage = 'horogwan';
-  Dialogue.show(STORY.horogwan_pre, () => {
-    Battle.start({
-      player: GameState.heroData(),
-      enemy: ROSTER.yeopo,
-      maxRounds: 3,
-      onEnd: () => {
-        Dialogue.show(STORY.horogwan_assist1, () => {
-          Dialogue.show(STORY.horogwan_assist2, () => {
-            Dialogue.show(STORY.horogwan_post, () => {
-              GameState.npcStatus['yeopo'] = 'fled';
-              showChoice('여포의 부장 송헌과 위속이 남아 저항하고 있다. 소탕하시겠습니까?', [
-                { label: '맞선다', cb: () => startFreeBattle('songheon', () => startFreeBattle('wisok', goHamgokgwan)) },
-                { label: '그냥 넘어간다', cb: goHamgokgwan },
-              ]);
+function goWarmap() {
+  stage = 'warmap';
+  showScreen('screen-explore');
+  MapView.load('warmap', { onInteract: interactNPC });
+  updateHUD();
+  Dialogue.show(STORY.warmap_intro);
+}
+
+function checkWarmapClear() {
+  const ids = ['hojin', 'songheon', 'wisok', 'yeopo'];
+  const allDone = ids.every((id) => ['resolved', 'recruited', 'fled'].includes(GameState.npcStatus[id]));
+  if (allDone) Dialogue.show(STORY.warmap_clear, goHamgokgwan);
+}
+
+function startYeopoAssistScene() {
+  Dialogue.show(STORY.warmap_yeopo_taunt, () => {
+    Dialogue.show(STORY.warmap_jangbi_out, () => {
+      Dialogue.show(STORY.warmap_jangbi_push, () => {
+        showChoice('장비를 도와야 한다!', [
+          { label: '도와준다', cb: () => {
+            Battle.start({
+              player: GameState.heroData(),
+              enemy: ROSTER.yeopo,
+              startHp: heroCurrentHp(),
+              retreatAt: 0.3,
+              onEnd: (result) => {
+                GameState.heroHp = result.playerHp;
+                updateHUD();
+                if (result.outcome === 'lose') {
+                  toast('여포에게 밀렸다... 다시 도전하자!');
+                  return;
+                }
+                GameState.npcStatus['yeopo'] = 'fled';
+                MapView.removeNpc('yeopo');
+                Dialogue.show(STORY.warmap_yubi_assist, () => {
+                  Dialogue.show(STORY.warmap_yeopo_flee, checkWarmapClear);
+                });
+              },
             });
-          });
-        });
-      },
+          } },
+        ]);
+      });
     });
   });
 }
@@ -579,6 +631,49 @@ function openRosterPanel() {
   renderRosterPanel();
   document.getElementById('roster-box').classList.remove('hidden');
   document.getElementById('roster-close').focus();
+}
+
+const ARMY_MIN_TROOP = 500;
+const ARMY_MAX_TROOP = 10000;
+
+function openArmyBox(onConfirm) {
+  const select = document.getElementById('army-deputy');
+  select.innerHTML = '<option value="">없음</option>';
+  GameState.recruited.forEach((id) => {
+    const rd = ROSTER[id];
+    if (!rd || !isScholarType(rd)) return;
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = rd.name;
+    select.appendChild(opt);
+  });
+
+  const troopMax = Math.min(ARMY_MAX_TROOP, GameState.resources.troop);
+  document.getElementById('army-troop-max').textContent = GameState.resources.troop;
+  document.getElementById('army-troop').max = troopMax;
+  document.getElementById('army-troop').value = troopMax;
+  document.getElementById('army-rice-max').textContent = GameState.resources.rice;
+  document.getElementById('army-rice').max = GameState.resources.rice;
+  document.getElementById('army-rice').value = Math.min(200, GameState.resources.rice);
+  document.getElementById('army-hint').textContent = '';
+
+  document.getElementById('army-box').classList.remove('hidden');
+
+  document.getElementById('army-confirm').onclick = () => {
+    const troop = clamp(Math.round(Number(document.getElementById('army-troop').value) || 0), 0, GameState.resources.troop);
+    const rice = clamp(Math.round(Number(document.getElementById('army-rice').value) || 0), 0, GameState.resources.rice);
+    if (troop < ARMY_MIN_TROOP) {
+      document.getElementById('army-hint').textContent = `병사가 부족합니다. 최소 ${ARMY_MIN_TROOP}명이 필요합니다. (탁현/평원현에서 징병하기를 이용하세요)`;
+      return;
+    }
+    const deputy = select.value || null;
+    GameState.resources.troop -= troop;
+    GameState.resources.rice -= rice;
+    GameState.army = { deputy, troop, rice };
+    document.getElementById('army-box').classList.add('hidden');
+    updateHUD();
+    onConfirm();
+  };
 }
 
 function closeRosterPanel() {

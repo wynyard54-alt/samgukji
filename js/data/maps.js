@@ -151,3 +151,58 @@ const MAPS = {};
     ],
   };
 })();
+
+// ---------------- 반동탁연합 진영 ----------------
+(function () {
+  const w = 16, h = 11;
+  const grid = makeGrid(w, h, 0);
+  rectFill(grid, 0, 0, w - 1, 0, 4);
+  rectFill(grid, 0, h - 1, w - 1, h - 1, 4);
+  rectFill(grid, 0, 0, 0, h - 1, 4);
+  rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
+  rectFill(grid, 6, 1, 9, 2, 2);   // 원소 맹주 막사
+  rectFill(grid, 1, 4, 3, 5, 2);   // 조조 막사
+  rectFill(grid, 12, 4, 14, 5, 2); // 공손찬 막사
+  rectFill(grid, 6, 7, 9, 8, 2);   // 손견 막사
+  for (let x = 1; x < w - 1; x++) grid[6][x] = 1;
+
+  MAPS.camp = {
+    name: '반동탁연합 진영',
+    width: w, height: h,
+    tiles: grid,
+    playerStart: { x:7, y:6 },
+    npcs: [
+      { id:'wonso', x:7, y:3, label:'원소' },
+      { id:'jojo', x:2, y:6, label:'조조' },
+      { id:'gongsonchan', x:13, y:6, label:'공손찬' },
+      { id:'songyeon', x:7, y:9, label:'손견' },
+    ],
+  };
+})();
+
+// ---------------- 호로관 전선 (사수관 이후 잔당 소탕 + 여포) ----------------
+(function () {
+  const w = 20, h = 11;
+  const grid = makeGrid(w, h, 0);
+  rectFill(grid, 0, 0, w - 1, 0, 4);
+  rectFill(grid, 0, h - 1, w - 1, h - 1, 4);
+  rectFill(grid, 0, 0, 0, h - 1, 4);
+  rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
+  rectFill(grid, 9, 0, 10, 2, 2);  // 호로관 관문
+  for (let x = 1; x < w - 1; x++) grid[8][x] = 1;
+
+  MAPS.warmap = {
+    name: '호로관 전선',
+    width: w, height: h,
+    tiles: grid,
+    playerStart: { x:2, y:8 },
+    npcs: [
+      { id:'jojo', x:3, y:5, label:'조조 군세' },
+      { id:'wonso', x:3, y:3, label:'원소 군세' },
+      { id:'hojin', x:8, y:6, label:'호진 군세' },
+      { id:'songheon', x:12, y:4, label:'송헌 군세' },
+      { id:'wisok', x:12, y:9, label:'위속 군세' },
+      { id:'yeopo', x:17, y:6, label:'여포 군세' },
+    ],
+  };
+})();

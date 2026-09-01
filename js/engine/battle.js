@@ -15,7 +15,7 @@ const Battle = (function () {
   const eHpText = document.getElementById('battle-e-hptext');
   const eGaugeFill = document.getElementById('battle-e-gaugefill');
 
-  let p, e, round, maxRounds, onEnd, locked;
+  let p, e, round, maxRounds, retreatAt, onEnd, locked;
 
   function maxHP(stats) { return Math.round(60 + stats.def * 2); }
 
@@ -164,7 +164,8 @@ const Battle = (function () {
     }
 
     round++;
-    const battleEnding = p.hp <= 0 || e.hp <= 0 || (maxRounds && round >= maxRounds);
+    const retreatReady = retreatAt != null && e.hp > 0 && e.hp <= e.maxHp * retreatAt;
+    const battleEnding = p.hp <= 0 || e.hp <= 0 || retreatReady || (maxRounds && round >= maxRounds);
     if (!battleEnding) locked = false; // render()가 disabled 상태를 계산하기 전에 풀어야 필살공격 버튼이 실제로 눌린다
     render();
     emitStatus();
@@ -172,6 +173,7 @@ const Battle = (function () {
 
     if (p.hp <= 0) { finish('lose'); return; }
     if (e.hp <= 0) { finish('win'); return; }
+    if (retreatReady) { finish('retreat'); return; }
     if (maxRounds && round >= maxRounds) { finish('scripted-end'); return; }
   }
 
@@ -198,6 +200,7 @@ const Battle = (function () {
     e = initFighter(opts.enemy);
     round = 0;
     maxRounds = opts.maxRounds || null;
+    retreatAt = opts.retreatAt || null;
     onEnd = opts.onEnd;
     locked = false;
     screen.classList.remove('hidden');
