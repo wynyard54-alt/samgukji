@@ -489,6 +489,7 @@ function resolveArmyBattle(id) {
     });
   } else {
     Dialogue.show([{ speaker: '내레이션', text: `아군이 ${rd.name}의 군세에 밀려 물러났다. (아군 병력 ${result.playerTroopsLeft}명 남음)` }], () => {
+      releaseCapturedOnDefeat();
       toast('전열을 정비해 다시 도전하자.');
     });
   }
@@ -506,10 +507,41 @@ function startFreeBattle(id, afterCb, persistHp) {
   });
 }
 
+// 일기토는 항상 한쪽 체력이 0이 되어야 끝난다 - 승자(플레이어)가 자기 최대체력의 70%
+// 이상을 남긴 압도적 승리라면, 적 사령관을 포획해 전쟁이 끝난 뒤 등용을 제안할 수 있다.
+// 서사 강제(forced) 전투(화웅/여포/이각/곽사 등)는 이 메카닉에서 제외된다.
+const CAPTURE_HP_RATIO = 0.7;
+
+function isOverwhelmingWin(rd, result) {
+  return stage === 'warmap' && !rd.forced && result.playerMaxHp > 0 &&
+    (result.playerHp / result.playerMaxHp) >= CAPTURE_HP_RATIO;
+}
+
+function captureCommander(id, afterCb) {
+  const rd = ROSTER[id];
+  GameState.npcStatus[id] = 'captured';
+  GameState.capturedCommanders.push(id);
+  MapView.removeNpc(id);
+  Dialogue.show([{ speaker: '내레이션', text: `압도적인 실력차로 ${rd.name}을(를) 사로잡았다! 이번 전쟁이 끝나면 등용을 제안할 수 있을 것이다.` }], () => {
+    toast(`${rd.name}을(를) 포획했다!`);
+    if (afterCb) afterCb();
+  });
+}
+
+// 포획한 적장을 데리고 있는 동안 아군이 다른 전투에서 패배하면, 혼란을 틈타 모두 풀려난다.
+function releaseCapturedOnDefeat() {
+  if (!GameState.capturedCommanders.length) return;
+  const names = GameState.capturedCommanders.map((id) => ROSTER[id].name).join(', ');
+  for (const id of GameState.capturedCommanders) GameState.npcStatus[id] = 'resolved';
+  GameState.capturedCommanders = [];
+  toast(`포획해두었던 ${names}이(가) 혼란을 틈타 달아났다.`);
+}
+
 function onFreeBattleEnd(id, result, afterCb, persistHp) {
   const rd = ROSTER[id];
   if (persistHp) { GameState.heroHp = result.playerHp; updateHUD(); }
   if (result.outcome === 'win') {
+    if (isOverwhelmingWin(rd, result)) { captureCommander(id, afterCb); return; }
     showChoice(rd.intro, [
       { label: '등용을 제안한다', cb: () => { attemptPersuadeCaptured(id); if (afterCb) afterCb(); } },
       { label: '그냥 보내준다', cb: () => {
@@ -520,8 +552,31 @@ function onFreeBattleEnd(id, result, afterCb, persistHp) {
     ]);
   } else if (result.outcome === 'lose') {
     toast(`${rd.name}에게 밀렸다... 다시 도전할 수 있다.`);
+    if (stage === 'warmap') releaseCapturedOnDefeat();
     if (afterCb) afterCb();
   }
+}
+
+// 전쟁이 끝나면 포획해두었던 적장들에게 순서대로 등용을 제안한다.
+function offerCapturedRecruits(done) {
+  const captured = GameState.capturedCommanders.slice();
+  GameState.capturedCommanders = [];
+  function next(i) {
+    if (i >= captured.length) { done(); return; }
+    const id = captured[i];
+    const rd = ROSTER[id];
+    Dialogue.show([{ speaker: '내레이션', text: `포로로 잡아두었던 ${rd.name}을(를) 마주했다.` }], () => {
+      showChoice(rd.intro, [
+        { label: '등용을 제안한다', cb: () => { attemptPersuadeCaptured(id); next(i + 1); } },
+        { label: '그냥 풀어준다', cb: () => {
+            GameState.npcStatus[id] = 'resolved'; MapView.removeNpc(id);
+            toast(`${rd.name}을(를) 풀어주었다.`);
+            next(i + 1);
+          } },
+      ]);
+    });
+  }
+  next(0);
 }
 
 // ---------------- 스테이지 진행 ----------------
@@ -611,11 +666,11 @@ function goWarmap() {
 
 function checkWarmapClear() {
   const ids = ['hojin', 'songheon', 'wisok', 'yeopo'];
-  const allDone = ids.every((id) => ['resolved', 'recruited', 'fled'].includes(GameState.npcStatus[id]));
+  const allDone = ids.every((id) => ['resolved', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]));
   if (allDone) {
     GameState.addFame(30); // 메인퀘스트: 호로관 평정
     updateHUD();
-    Dialogue.show(STORY.warmap_clear, goHamgokgwan);
+    offerCapturedRecruits(() => Dialogue.show(STORY.warmap_clear, goHamgokgwan));
   }
 }
 
@@ -634,6 +689,7 @@ function startYeopoAssistScene() {
                 GameState.heroHp = result.playerHp;
                 updateHUD();
                 if (result.outcome === 'lose') {
+                  releaseCapturedOnDefeat();
                   toast('여포에게 밀렸다... 다시 도전하자!');
                   return;
                 }
@@ -955,6 +1011,7 @@ function openArmyBox(onConfirm) {
     GameState.resources.rice -= rice;
     GameState.army = { deputy, generals: armySelectedGenerals.slice(), troop, rice };
     GameState.morale = 100; // 출정시 사기 초기화
+    GameState.capturedCommanders = [];
     document.getElementById('army-box').classList.add('hidden');
     updateHUD();
     onConfirm();
