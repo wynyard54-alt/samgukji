@@ -253,6 +253,7 @@ function interactNPC(id, context) {
   }
 
   if (rd.kind === 'enemy') {
+    if (stage === 'warmap' && !rd.forced) { openWarCommandMenu(id); return; }
     const afterCb = stage === 'warmap' ? checkWarmapClear : undefined;
     startFreeBattle(id, afterCb, true);
     return;
@@ -404,6 +405,93 @@ function attemptPersuadeCaptured(id) {
     toast(`${rd.name}이(가) 결국 뜻을 굽히지 않고 떠났다. (실패, 성공률 ${Math.round(chance)}%)`);
   }
   updateHUD();
+}
+
+// ---- 군세간 전투 (전쟁맵 [일기토]/[전투] 커맨드) ----
+const GRADE_RANK = { S:1, A:2, B:3, C:4, D:5 };
+const GRADE_ATTACK_MOD = { S:0.10, A:0.05, B:0, C:-0.05, D:-0.10 };
+const GATE_TILES = { 2:true }; // 관문/요새 타일 - 방어측이 있으면 피해 -5%
+
+// 방어측 군세 등급이 도전측보다 낮을수록 일기토 수락 확률이 낮아진다 (등급차 1당 -20%)
+function duelAcceptChance(challengerGrade, defenderGrade) {
+  const diff = Math.max(0, GRADE_RANK[defenderGrade] - GRADE_RANK[challengerGrade]);
+  return Math.max(0, 100 - 20 * diff);
+}
+
+function enemyArmyGrade(rd) { return gradeFor(armyMuryeokValue(rd, []), MURYEOK_GRADES); }
+
+function npcOnGateTile(id) {
+  // 현재 챕터1 지도에는 관문/요새 타일에 서있는 적 군세가 없다 - 향후 지도 확장을 위한 훅
+  return false;
+}
+
+// 병사수 10% 기준 공격에 군세등급/사기/지형 보정을 더해 additive로 합산한다 (병종은 챕터2에서 반영)
+function armyAttackDamage(attackerTroops, attackerGrade, attackerMorale, defenderOnGate) {
+  const mult = 1 + GRADE_ATTACK_MOD[attackerGrade] + (attackerMorale - 100) / 100 - (defenderOnGate ? 0.05 : 0);
+  return Math.max(0, Math.round(attackerTroops * 0.10 * mult));
+}
+
+function simulateArmyBattle(player, enemy) {
+  // player/enemy: { troops, grade, morale, onGate }
+  if (player.morale <= 0) return { winner:'enemy', rounds:0, playerTroopsLeft:player.troops, enemyTroopsLeft:enemy.troops, surrender:'player' };
+  if (enemy.morale <= 0) return { winner:'player', rounds:0, playerTroopsLeft:player.troops, enemyTroopsLeft:enemy.troops, surrender:'enemy' };
+  let pT = player.troops, eT = enemy.troops, rounds = 0;
+  while (pT > 0 && eT > 0 && rounds < 50) {
+    const dmgToEnemy = armyAttackDamage(pT, player.grade, player.morale, enemy.onGate);
+    const dmgToPlayer = armyAttackDamage(eT, enemy.grade, enemy.morale, player.onGate);
+    eT = Math.max(0, eT - dmgToEnemy);
+    pT = Math.max(0, pT - dmgToPlayer);
+    rounds++;
+  }
+  const winner = eT <= 0 && pT <= 0 ? (player.troops >= enemy.troops ? 'player' : 'enemy') : eT <= 0 ? 'player' : 'enemy';
+  return { winner, rounds, playerTroopsLeft:pT, enemyTroopsLeft:eT };
+}
+
+function openWarCommandMenu(id) {
+  const rd = ROSTER[id];
+  showChoice(`${rd.name} 군세와 마주쳤다. 어떻게 하시겠습니까?`, [
+    { label: '일기토', cb: () => attemptDuelChallenge(id) },
+    { label: '전투', cb: () => resolveArmyBattle(id) },
+  ]);
+}
+
+function attemptDuelChallenge(id) {
+  const rd = ROSTER[id];
+  const challengerGrade = playerArmyGrade();
+  const defenderGrade = enemyArmyGrade(rd);
+  const chance = duelAcceptChance(challengerGrade, defenderGrade);
+  const roll = Math.random() * 100;
+  if (roll < chance) {
+    startFreeBattle(id, () => { if (stage === 'warmap') checkWarmapClear(); }, true);
+  } else {
+    Dialogue.show([{ speaker: rd.name, text: '흥, 그런 도발에 넘어갈 성싶으냐! 정정당당히 전군으로 붙어보자!' }], () => {
+      toast(`${rd.name}이(가) 일기토를 거절했다. (수락 확률 ${Math.round(chance)}%)`);
+      openWarCommandMenu(id);
+    });
+  }
+}
+
+function resolveArmyBattle(id) {
+  const rd = ROSTER[id];
+  const army = GameState.army;
+  const result = simulateArmyBattle(
+    { troops: army ? army.troop : 0, grade: playerArmyGrade(), morale: GameState.morale, onGate: false },
+    { troops: rd.troop || 1000, grade: enemyArmyGrade(rd), morale: 100, onGate: npcOnGateTile(id) },
+  );
+  if (army) army.troop = result.playerTroopsLeft;
+  updateHUD();
+  if (result.winner === 'player') {
+    Dialogue.show([{ speaker: '내레이션', text: `치열한 교전 끝에 ${rd.name}의 군세를 격파했다! (아군 병력 ${result.playerTroopsLeft}명, 적 병력 궤멸)` }], () => {
+      GameState.npcStatus[id] = 'resolved';
+      MapView.removeNpc(id);
+      toast(`${rd.name}이(가) 패주했다.`);
+      if (stage === 'warmap') checkWarmapClear();
+    });
+  } else {
+    Dialogue.show([{ speaker: '내레이션', text: `아군이 ${rd.name}의 군세에 밀려 물러났다. (아군 병력 ${result.playerTroopsLeft}명 남음)` }], () => {
+      toast('전열을 정비해 다시 도전하자.');
+    });
+  }
 }
 
 function startFreeBattle(id, afterCb, persistHp) {
@@ -602,6 +690,13 @@ BattleEvents.on('battleEnd', (payload) => {
   }
 });
 
+// 전쟁맵에서의 일기토 승패는 군세 사기에 반영된다 (승 +10, 패 -10)
+BattleEvents.on('battleEnd', (payload) => {
+  if (stage !== 'warmap') return;
+  if (payload.outcome === 'win') GameState.changeMorale(10);
+  else if (payload.outcome === 'lose') GameState.changeMorale(-10);
+});
+
 // ---------------- 부팅 ----------------
 document.getElementById('btn-start').onclick = () => showScreen('screen-select');
 
@@ -763,16 +858,27 @@ function gradeFor(value, thresholds) {
   return 'D';
 }
 
-function updateArmyPower() {
-  const hero = GameState.heroData();
-  const deputyId = document.getElementById('army-deputy').value;
-  const deputy = deputyId ? ROSTER[deputyId] : null;
-  const baseMuryeok = muryeok3(hero);
-  const bonus = armySelectedGenerals.reduce((sum, id) => {
+// 사령관(또는 포획시 책사) 무력3스텟 + 부장(최대 3명) 무력3스텟×10%의 합 - 군세 전투 계산에도 재사용된다
+function armyMuryeokValue(commanderRd, generalIds) {
+  const base = muryeok3(commanderRd);
+  const bonus = (generalIds || []).reduce((sum, id) => {
     const rd = ROSTER[id];
     return sum + (rd ? muryeok3(rd) * ARMY_GENERAL_BONUS_PCT : 0);
   }, 0);
-  const muryeok = Math.round(baseMuryeok + bonus);
+  return Math.round(base + bonus);
+}
+
+function playerArmyMuryeok() {
+  const hero = GameState.heroData();
+  return armyMuryeokValue(hero, GameState.army ? GameState.army.generals : []);
+}
+
+function playerArmyGrade() { return gradeFor(playerArmyMuryeok(), MURYEOK_GRADES); }
+
+function updateArmyPower() {
+  const deputyId = document.getElementById('army-deputy').value;
+  const deputy = deputyId ? ROSTER[deputyId] : null;
+  const muryeok = armyMuryeokValue(GameState.heroData(), armySelectedGenerals);
   const jiryeok = deputy ? deputy.stats.int : 0;
   const el = document.getElementById('army-power');
   el.textContent = `군세 능력치 — 무력 ${gradeFor(muryeok, MURYEOK_GRADES)} · 지력 ${gradeFor(jiryeok, JIRYEOK_GRADES)}`;
@@ -848,6 +954,7 @@ function openArmyBox(onConfirm) {
     GameState.resources.troop -= troop;
     GameState.resources.rice -= rice;
     GameState.army = { deputy, generals: armySelectedGenerals.slice(), troop, rice };
+    GameState.morale = 100; // 출정시 사기 초기화
     document.getElementById('army-box').classList.add('hidden');
     updateHUD();
     onConfirm();
@@ -878,6 +985,10 @@ document.getElementById('btn-nextmonth').onclick = () => {
   const inCampaign = stage === 'warmap';
   if (!inCampaign) GameState.heroHp = null;
   else GameState.ap = effectiveApMax();
+  if (inCampaign && GameState.army) {
+    GameState.army.rice = Math.max(0, GameState.army.rice - Math.ceil(GameState.army.troop / 100));
+    if (GameState.army.rice <= 0) GameState.changeMorale(-1); // 군량 고갈시 매턴 사기 하락
+  }
   const income = scholarGoldIncome();
   if (income > 0) GameState.addResource({ gold: income });
   updateHUD();

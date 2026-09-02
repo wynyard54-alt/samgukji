@@ -72,15 +72,15 @@ const ROSTER = {
   // 사수관
   hwaung: { id:'hwaung', name:'화웅', kind:'enemy', forced:'kill', affiliation:'동탁군',
     stats:{atk:81, def:62, spd:58, int:31, cha:22}, intro:'이런 촌뜨기들까지 나선단 말이냐? 목이나 내놓아라!' },
-  hojin: { id:'hojin', name:'호진', kind:'enemy', forced:null, affiliation:'동탁군',
+  hojin: { id:'hojin', name:'호진', kind:'enemy', forced:null, affiliation:'동탁군', troop:1500,
     stats:{atk:72, def:61, spd:49, int:38, cha:33}, intro:'…내가 졌다. 동탁을 섬긴 것도 딱히 충심은 아니었소. 그대들이라면 나쁘지 않겠군.' },
 
   // 호로관
-  yeopo: { id:'yeopo', name:'여포', kind:'enemy', forced:'escape', affiliation:'동탁군',
+  yeopo: { id:'yeopo', name:'여포', kind:'enemy', forced:'escape', affiliation:'동탁군', troop:5000,
     stats:{atk:99, def:88, spd:91, int:26, cha:14}, intro:'제후군 따위, 내 방천화극 앞에 몇이나 버틴다더냐!' },
-  songheon: { id:'songheon', name:'송헌', kind:'enemy', forced:null, affiliation:'여포군',
+  songheon: { id:'songheon', name:'송헌', kind:'enemy', forced:null, affiliation:'여포군', troop:2000,
     stats:{atk:58, def:52, spd:51, int:35, cha:30}, intro:'여포 밑에 있어봐야 하루하루가 살얼음판이었소. 차라리 잘 됐군.' },
-  wisok: { id:'wisok', name:'위속', kind:'enemy', forced:null, affiliation:'여포군',
+  wisok: { id:'wisok', name:'위속', kind:'enemy', forced:null, affiliation:'여포군', troop:1800,
     stats:{atk:55, def:54, spd:48, int:33, cha:29}, intro:'…나도 송헌과 같은 생각이오.' },
 
   // 함곡관 (챕터1 결선)

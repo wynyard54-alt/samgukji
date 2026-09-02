@@ -6,6 +6,7 @@ const GameState = {
   apMax: 6,
   resources: { rice: 200, gold: 120, troop: 80 },
   fame: 0, // 명성 (100당 최대 행동력 +1, 최대 1000)
+  morale: 100, // 군세 사기 (기본 100, 일기토 승패 ±10, 군량 고갈시 매턴 -1, 0 이하면 붕괴)
   heroHp: null, // 자유 등용전 사이 이월되는 현재 체력 (null = 최대치)
   army: null, // 반동탁연합 출정용 유비군 편성 {deputy, troop, rice}
   trainingEv: 0, // 훈련 노력치 (100마다 스텟 1 상승)
@@ -24,6 +25,7 @@ const GameState = {
     this.ap = 6; this.apMax = 6;
     this.resources = { rice: 200, gold: 120, troop: 80 };
     this.fame = 0;
+    this.morale = 100;
     this.heroHp = null;
     this.army = null;
     this.trainingEv = 0;
@@ -66,6 +68,10 @@ const GameState = {
       this.ap += (newMax - this.apMax);
       this.apMax = newMax;
     }
+  },
+
+  changeMorale(n) {
+    this.morale = Math.max(-100, Math.min(150, this.morale + n));
   },
 
   recruit(id, troopGain) {
