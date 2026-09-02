@@ -312,8 +312,16 @@ const MapView = (function () {
       drawPersonSprite(x,y,{palette,archetype:'hero',scale:1.17,dir:player.dir,heroId:id});
     }
     // Named hero marker stays subtle: unique color/weapon should do most of the work.
-    ctx.fillStyle='rgba(32,46,31,.82)';ctx.beginPath();ctx.roundRect(x-19,y-75,38,16,7);ctx.fill();
-    ctx.fillStyle='#e9dcae';ctx.font='bold 10px "Noto Sans KR",sans-serif';ctx.textAlign='center';ctx.fillText(ROSTER[id].name,x,y-64);
+    // 출정 중(군세 편성 완료)에는 적 군세와 같은 형식으로 [병력/무력/지력]을 함께 표기한다.
+    const army = GameState.army;
+    if (army) {
+      const deputy = army.deputy ? ROSTER[army.deputy] : null;
+      const jiryeok = gradeFor(deputy ? deputy.stats.int : 0, JIRYEOK_GRADES);
+      drawTag(x, y-64, `${ROSTER[id].name} · 병${army.troop} · 무${playerArmyGrade()} · 지${jiryeok}`, 'rgba(32,46,31,.82)');
+    } else {
+      ctx.fillStyle='rgba(32,46,31,.82)';ctx.beginPath();ctx.roundRect(x-19,y-75,38,16,7);ctx.fill();
+      ctx.fillStyle='#e9dcae';ctx.font='bold 10px "Noto Sans KR",sans-serif';ctx.textAlign='center';ctx.fillText(ROSTER[id].name,x,y-64);
+    }
   }
 
   // Fallback procedural person (used only while PNG assets are loading).
