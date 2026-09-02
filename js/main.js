@@ -676,7 +676,11 @@ function checkDeadlines() {
 function goTakhyeonFree() {
   stage = 'takhyeon_free';
   showScreen('screen-explore');
-  MapView.load('takhyeon', { onInteract: interactNPC, spawnDeadlineAbsMonth: absMonth(DEADLINES.takhyeon, 12) + 1 });
+  MapView.load('takhyeon', {
+    onInteract: interactNPC,
+    spawnDeadlineAbsMonth: absMonth(DEADLINES.takhyeon, 12) + 1,
+    onAmbientInteract: runAmbientEvent,
+  });
   updateHUD();
 }
 
@@ -690,6 +694,7 @@ function goPyeongwonFree() {
     spawnDeadlineAbsMonth: pyeongwonDeadlineAbsMonth(),
     onApSpent: updateHUD,
     onApBlocked: () => toast('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
+    onAmbientInteract: runAmbientEvent,
   });
   updateHUD();
   if (!GameState.flags.act2) {
@@ -1296,6 +1301,46 @@ function maybeRandomEvent() {
   return true;
 }
 
+// ---- 지나가는 백성 - 가끔 "…" 말풍선을 달고 나타나 말을 걸면 짧은 대화를 나눈다 ----
+// 매달 자동으로 뜨는 안내문구 대신, 돌아다니다 우연히 마주치는 이런 짧은 상호작용이
+// 마을에 더 살아있는 느낌을 준다.
+const AMBIENT_EVENTS = {
+  beggar: {
+    run: () => {
+      Dialogue.show([{ speaker: '가난한 백성', text: '나리, 부디 금 5냥만 도와주십시오...' }], () => {
+        const amount = Math.min(5, GameState.resources.gold);
+        GameState.resources.gold -= amount;
+        toast(amount > 0 ? `가엾은 백성에게 금 ${amount}을(를) 나누어 주었다.` : '가진 금이 없어 도와주지 못했다.');
+        updateHUD();
+      });
+    },
+  },
+  thanks: {
+    run: () => {
+      Dialogue.show([{ speaker: '낯익은 백성', text: '나리, 항상 감사합니다. 이것 좀 받으십시오.' }], () => {
+        GameState.addResource({ rice: 20 });
+        toast('백성에게서 쌀 20을 받았다.');
+        updateHUD();
+      });
+    },
+  },
+  festival: {
+    run: () => {
+      Dialogue.show([{ speaker: '마을 사람들', text: '나리! 마침 잘 오셨소, 우리와 함께 축제를 즐겨주시오!' }], () => {
+        GameState.addFame(5);
+        toast('마을 사람들과 즐거운 시간을 보냈다. (명성 +5)');
+        updateHUD();
+      });
+    },
+  },
+};
+const AMBIENT_EVENT_KINDS = Object.keys(AMBIENT_EVENTS);
+
+function runAmbientEvent(kind) {
+  const ev = AMBIENT_EVENTS[kind];
+  if (ev) ev.run();
+}
+
 document.getElementById('btn-nextmonth').onclick = () => {
   GameState.nextMonth();
   // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).
@@ -1328,12 +1373,23 @@ document.getElementById('btn-nextmonth').onclick = () => {
   const inTown = (stage === 'takhyeon_free' || stage === 'pyeongwon_free') && !inJangsunMarch;
   const spawned = inTown ? MapView.checkScheduledSpawns() : [];
   const spawnMsg = spawned.length ? ' 마을에 낯선 인물이 나타났다는 소문이 돈다. 돌아다니다 보면 마주칠지도 모른다.' : '';
-  const finishTurn = () => toast(`${GameState.dateLabel()}이(가) 되었다. ${hpMsg}${incomeMsg}${spawnMsg}`);
+  // 마을 체류 중에는 매달 뜨는 정형화된 안내문구를 없애고, 대신 지나가던 백성에게
+  // 가끔 말풍선이 걸려 돌아다니다 우연히 마주치는 편이 더 재미있다.
+  const finishTurn = () => {
+    if (inTown) {
+      const extra = `${incomeMsg}${spawnMsg}`.trim();
+      if (extra) toast(`${GameState.dateLabel()}이(가) 되었다. ${extra}`);
+      return;
+    }
+    toast(`${GameState.dateLabel()}이(가) 되었다. ${hpMsg}${incomeMsg}${spawnMsg}`);
+  };
   if (inCampaign) {
     // 적 군세의 턴: 한 칸씩 걸어서 접근하는 모습을 보여준 뒤, 사거리 안이면 공격한다.
     MapView.runAiTurn((aiBattle) => { if (!aiBattle) finishTurn(); }); // 전투가 발동했으면 턴종료 토스트는 생략
-  } else if (inTown && maybeRandomEvent()) {
-    // 이벤트 자체의 대사/토스트가 턴 진행 피드백을 대신하므로 별도 안내는 생략한다.
+  } else if (inTown) {
+    MapView.rollAmbientEvent(AMBIENT_EVENT_KINDS);
+    if (!maybeRandomEvent()) finishTurn();
+    // maybeRandomEvent가 발생했다면 그 자체의 대사/토스트가 턴 진행 피드백을 대신한다.
   } else {
     finishTurn();
   }

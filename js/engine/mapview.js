@@ -21,11 +21,13 @@ const MapView = (function () {
   let onInteract = null;
   let onApBlocked = null;
   let onApSpent = null;
+  let onAmbientInteract = null;
   let spawnDeadlineAbs = null; // 랜덤 등장 장수가 마감 기한의 50% 안쪽에 나오도록 하는 절대 개월수 상한
   let liveNpcs = [];
   let crowd = [];
   let crowdTimer = null;
   let animFrame = 0;
+  let ambientEvent = null; // { index, kind } - 지나가던 백성 중 한 명에게 지금 걸린 말풍선 이벤트
   window.addEventListener('fieldassetload', () => { if (map) render(); });
 
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
@@ -62,7 +64,9 @@ const MapView = (function () {
     onInteract = (opts && opts.onInteract) || null;
     onApBlocked = (opts && opts.onApBlocked) || null;
     onApSpent = (opts && opts.onApSpent) || null;
+    onAmbientInteract = (opts && opts.onAmbientInteract) || null;
     spawnDeadlineAbs = (opts && opts.spawnDeadlineAbsMonth) || null;
+    ambientEvent = null;
 
     liveNpcs = map.npcs.filter((n) => {
       const rd = ROSTER[n.id];
@@ -79,7 +83,11 @@ const MapView = (function () {
     for (const n of liveNpcs) {
       if (n.randomSpawn && GameState.npcSpawnPos[n.id]) { n.x = GameState.npcSpawnPos[n.id].x; n.y = GameState.npcSpawnPos[n.id].y; }
     }
-    for (const n0 of map.npcs) { if (n0.randomSpawn && !GameState.npcStatus[n0.id]) scheduleSpawn(n0.id); }
+    // chance 판정에서 이번 회차에 아예 등장하지 않기로 정해진 인물은 예약 대상에서도 제외한다.
+    for (const n0 of map.npcs) {
+      if (!n0.randomSpawn || GameState.npcStatus[n0.id] || isRolledInvisible(n0.id)) continue;
+      scheduleSpawn(n0.id);
+    }
 
     crowd = (map.ambient || []).map((a, i) => ({ ...a, _id:`ambient_${i}`, _homeX:a.x, _homeY:a.y, _dir:'down' }));
 
@@ -156,7 +164,7 @@ const MapView = (function () {
     drawAreaLabels();
 
     const actors = [];
-    for (const p of crowd) actors.push({ type:'ambient', y:p.y, data:p });
+    crowd.forEach((p, idx) => actors.push({ type:'ambient', y:p.y, data:p, idx }));
     for (const n0 of liveNpcs) {
       const n = effectiveNpc(n0);
       actors.push({ type:'npc', y:n.y, data:n });
@@ -165,7 +173,7 @@ const MapView = (function () {
     actors.sort((a,b) => a.y - b.y);
 
     for (const a of actors) {
-      if (a.type === 'ambient') drawAmbient(a.data);
+      if (a.type === 'ambient') drawAmbient(a.data, !!ambientEvent && ambientEvent.index === a.idx);
       else if (a.type === 'npc') drawNpc(a.data);
       else drawHero();
     }
@@ -278,12 +286,17 @@ const MapView = (function () {
     }
   }
 
-  function drawAmbient(p) {
+  function drawAmbient(p, hasEvent) {
     const x=worldX(p.x)+TILE/2, y=worldY(p.y)+TILE*.88;
     const role = ['merchant','farmer','woman','elder','guard','child','porter'].includes(p.archetype) ? p.archetype : 'farmer';
     const key=`npc_${role}`;
     if (!FieldAssets.sprite(ctx,key,x,y,p._dir||'down',animFrame,32,48,1.4,3)) {
       drawPersonSprite(x,y,{ palette:PALETTES[p.palette]||PALETTES.ash, archetype:p.archetype, scale:.9, dir:p._dir });
+    }
+    // 가끔 지나가는 백성 중 한 명에게 짧은 대화거리가 생기면, 말 걸 수 있다는 표시로 말풍선을 띄운다.
+    if (hasEvent) {
+      ctx.fillStyle='rgba(45,40,34,.82)';ctx.beginPath();ctx.roundRect(x-13,worldY(p.y)-18,26,17,7);ctx.fill();
+      ctx.fillStyle='#eadfca';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.fillText('…',x,worldY(p.y)-6);
     }
   }
 
@@ -422,6 +435,30 @@ const MapView = (function () {
       const npc=npcAt(player.x+dx,player.y+dy);
       if(npc){interact(npc,false);return;}
     }
+    if (ambientEvent) {
+      const p = crowd[ambientEvent.index];
+      if (p) {
+        for (const [dx,dy] of dirs) {
+          if (p.x === player.x+dx && p.y === player.y+dy) {
+            const kind = ambientEvent.kind;
+            ambientEvent = null;
+            render();
+            if (onAmbientInteract) onAmbientInteract(kind);
+            return;
+          }
+        }
+      }
+    }
+  }
+
+  // 마을 체류 중 가끔 지나가던 백성 한 명에게 짧은 대화거리를 걸어둔다 (이미 걸려있으면 그대로 둔다).
+  function rollAmbientEvent(kinds) {
+    if (ambientEvent || !crowd.length || !kinds || !kinds.length) return;
+    if (Math.random() >= 0.6) return;
+    const index = Math.floor(Math.random() * crowd.length);
+    const kind = kinds[Math.floor(Math.random() * kinds.length)];
+    ambientEvent = { index, kind };
+    render();
   }
 
   function removeNpc(id) { liveNpcs=liveNpcs.filter((n)=>n.id!==id); render(); }
@@ -435,14 +472,19 @@ const MapView = (function () {
 
   function absMonth(year, month) { return year * 12 + month; }
 
-  // 등장 시점을 (현재로부터 마감까지 남은 기간의) 50% 이내로 제한해, 마을 체류기한 막판에야
-  // 겨우 등장하는 일이 없도록 한다.
+  // chance 판정에서 이번 회차에는 등장하지 않기로 정해진 인물인지 (등장 확정 전에는 false를 반환).
+  function isRolledInvisible(id) {
+    const rd = ROSTER[id];
+    return !!(rd && rd.chance != null && GameState.npcVisible[id] === false);
+  }
+
+  // 예약된 인물은 늦어도 1~2개월 안에는 등장하도록 한다 - 예전에는 마감기한의 절반까지
+  // 늦어질 수 있어 "새 인물이 너무 안 나온다"는 체감으로 이어졌다.
   function scheduleSpawn(id) {
     if (GameState.npcSpawnMonth[id] != null) return;
     const nowAbs = absMonth(GameState.year, GameState.month);
-    const deadlineAbs = spawnDeadlineAbs || (nowAbs + 24);
-    const windowMonths = Math.max(2, deadlineAbs - nowAbs);
-    const maxOffset = Math.max(1, Math.floor(windowMonths * 0.5));
+    const cap = spawnDeadlineAbs ? Math.max(1, spawnDeadlineAbs - nowAbs) : 2;
+    const maxOffset = Math.max(1, Math.min(2, cap));
     GameState.npcSpawnMonth[id] = nowAbs + 1 + Math.floor(Math.random() * maxOffset);
   }
 
@@ -465,6 +507,7 @@ const MapView = (function () {
     const spawned = [];
     for (const n0 of map.npcs) {
       if (!n0.randomSpawn) continue;
+      if (isRolledInvisible(n0.id)) continue; // chance 판정에서 이번 회차에 등장하지 않기로 정해짐
       if (GameState.npcStatus[n0.id]) continue;
       if (GameState.npcSpawnPos[n0.id]) continue; // 이미 등장함
       scheduleSpawn(n0.id);
@@ -581,7 +624,7 @@ const MapView = (function () {
   });
 
   return {
-    load,render,removeNpc,addNpc,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,
+    load,render,removeNpc,addNpc,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},
     get playerPos(){return {x:player.x,y:player.y,dir:player.dir};},
