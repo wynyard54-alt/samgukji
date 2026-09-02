@@ -297,8 +297,9 @@ function handleYubi() {
       Dialogue.show(STORY.act1_report, () => {
         GameState.flags.act1 = true;
         GameState.addFame(30); // 메인퀘스트 완료
-        GameState.addFame(50); // 관직 제수
-        toast('평원현으로 이동할 수 있습니다. (명성 +80)');
+        GameState.addFame(50); // 탁현 내 명성 확산
+        GameState.addResource({ troop: 500 }); // 명성을 듣고 몰려온 장정들의 귀순
+        toast('평원현으로 이동할 수 있습니다. (명성 +80, 병사 +500)');
         updateHUD();
       });
     } else {
