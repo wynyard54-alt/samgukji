@@ -426,9 +426,12 @@ function npcOnGateTile(id) {
 }
 
 // 병사수 10% 기준 공격에 군세등급/사기/지형 보정을 더해 additive로 합산한다 (병종은 챕터2에서 반영)
+// 병사가 남아있는 한 최소 1명의 피해는 발생한다 - 그렇지 않으면 병력이 적을 때 매턴 반올림으로
+// 피해가 0이 되어 전투가 영원히 끝나지 않는 경우가 생긴다.
 function armyAttackDamage(attackerTroops, attackerGrade, attackerMorale, defenderOnGate) {
+  if (attackerTroops <= 0) return 0;
   const mult = 1 + GRADE_ATTACK_MOD[attackerGrade] + (attackerMorale - 100) / 100 - (defenderOnGate ? 0.05 : 0);
-  return Math.max(0, Math.round(attackerTroops * 0.10 * mult));
+  return Math.max(1, Math.round(attackerTroops * 0.10 * mult));
 }
 
 function simulateArmyBattle(player, enemy) {
@@ -443,7 +446,10 @@ function simulateArmyBattle(player, enemy) {
     pT = Math.max(0, pT - dmgToPlayer);
     rounds++;
   }
-  const winner = eT <= 0 && pT <= 0 ? (player.troops >= enemy.troops ? 'player' : 'enemy') : eT <= 0 ? 'player' : 'enemy';
+  // 라운드 상한에 도달했는데도 양쪽 다 병력이 남아있다면(이론상 거의 없지만) 남은 병력 비율로 판정한다 -
+  // 무조건 적이 이기는 것으로 처리하면 대등하거나 우세한 전투도 항상 패배로 나오는 버그가 된다.
+  const winner = pT <= 0 && eT <= 0 ? (player.troops >= enemy.troops ? 'player' : 'enemy')
+    : pT <= 0 ? 'enemy' : eT <= 0 ? 'player' : (pT >= eT ? 'player' : 'enemy');
   return { winner, rounds, playerTroopsLeft:pT, enemyTroopsLeft:eT };
 }
 
