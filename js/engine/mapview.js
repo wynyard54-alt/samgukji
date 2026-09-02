@@ -356,44 +356,74 @@ const MapView = (function () {
   function removeNpc(id) { liveNpcs=liveNpcs.filter((n)=>n.id!==id); render(); }
 
   const AI_MOVE_BUDGET = 3; // Tier2 AI 기본 이동력 (병종별 차등은 챕터2에서 반영)
+  const AI_STEP_MS = 160; // 한 칸 이동하는 데 걸리는 시간 - 순간이동처럼 보이지 않도록 한 칸씩 애니메이션한다
+
+  // n0을 이번 턴에 플레이어 쪽으로 이동시킬 경로(칸 목록)를 미리 계산한다. n0 자체는 아직 움직이지 않는다.
+  function computeAiPath(n0) {
+    const path = [];
+    let cx = n0.x, cy = n0.y, steps = AI_MOVE_BUDGET;
+    if (Math.abs(cx-player.x)+Math.abs(cy-player.y) <= 1) return path; // 이미 사거리 - 이동 없이 대기 후 공격
+    while (steps > 0) {
+      const dist = Math.abs(cx-player.x)+Math.abs(cy-player.y);
+      if (dist <= 1) break;
+      const dx = Math.sign(player.x-cx), dy = Math.sign(player.y-cy);
+      const preferX = Math.abs(player.x-cx) >= Math.abs(player.y-cy);
+      const options = preferX ? [[dx,0],[0,dy]] : [[0,dy],[dx,0]];
+      let moved = false;
+      for (const [ddx,ddy] of options) {
+        if (!ddx && !ddy) continue;
+        const tx=cx+ddx, ty=cy+ddy;
+        if (!isWalkable(tx,ty)) continue;
+        if (tx===player.x && ty===player.y) continue; // 플레이어 타일로는 이동하지 않는다
+        if (npcAt(tx,ty)) continue;
+        const cost = tileMoveCost(tx,ty);
+        if (cost > steps) continue;
+        cx=tx; cy=ty; steps-=cost; moved=true; path.push({x:cx,y:cy}); break;
+      }
+      if (!moved) break; // 막혔거나 이동력이 모자라 대기
+    }
+    return path;
+  }
 
   // 플레이어 턴 종료(휴식/다음달)시 호출되는 Tier2 AI: 사거리 안이면 공격, 아니면 접근, 막히면 대기.
-  // 반환값: 이번 턴에 전투가 발동했는지 여부 (true면 호출부에서 턴종료 토스트를 생략해도 된다)
-  function runAiTurn() {
-    if (!map || !map.apMovement) return false;
-    for (const n0 of liveNpcs) {
-      const rd = ROSTER[n0.id];
-      if (!rd || rd.kind !== 'enemy') continue;
-      if (Math.abs(n0.x-player.x)+Math.abs(n0.y-player.y) <= 1) continue; // 이미 사거리 - 이동 없이 대기 후 공격
-      let steps = AI_MOVE_BUDGET;
-      while (steps > 0) {
-        const dist = Math.abs(n0.x-player.x)+Math.abs(n0.y-player.y);
-        if (dist <= 1) break;
-        const dx = Math.sign(player.x-n0.x), dy = Math.sign(player.y-n0.y);
-        const preferX = Math.abs(player.x-n0.x) >= Math.abs(player.y-n0.y);
-        const options = preferX ? [[dx,0],[0,dy]] : [[0,dy],[dx,0]];
-        let moved = false;
-        for (const [ddx,ddy] of options) {
-          if (!ddx && !ddy) continue;
-          const tx=n0.x+ddx, ty=n0.y+ddy;
-          if (!isWalkable(tx,ty)) continue;
-          if (tx===player.x && ty===player.y) continue; // 플레이어 타일로는 이동하지 않는다
-          if (npcAt(tx,ty)) continue;
-          const cost = tileMoveCost(tx,ty);
-          if (cost > steps) continue;
-          n0.x=tx; n0.y=ty; steps-=cost; moved=true; break;
-        }
-        if (!moved) break; // 막혔거나 이동력이 모자라 대기
-      }
+  // 이동은 한 칸씩 애니메이션으로 보여준 뒤(순간이동 방지) 완료되면 callback(전투발동여부)를 호출한다.
+  // 적이 여러 명이어도 턴 길이가 늘어나지 않도록 전원이 동시에(같은 박자로) 이동한다.
+  function runAiTurn(callback) {
+    const done = (battled) => { if (callback) callback(battled); };
+    if (!map || !map.apMovement) { done(false); return; }
+    const hostiles = liveNpcs.filter((n0) => { const rd = ROSTER[n0.id]; return rd && rd.kind === 'enemy'; });
+
+    // 계획 단계: 기존처럼 한 명씩 실제 위치를 옮겨가며 서로 겹치지 않는 경로를 계산한 뒤,
+    // 다시 시작 위치로 되돌려 전원이 동시에 애니메이션되도록 한다.
+    const plans = hostiles.map((n0) => ({ n0, startX: n0.x, startY: n0.y, path: [] }));
+    for (const plan of plans) {
+      plan.path = computeAiPath(plan.n0);
+      if (plan.path.length) { const last = plan.path[plan.path.length - 1]; plan.n0.x = last.x; plan.n0.y = last.y; }
     }
+    for (const plan of plans) { plan.n0.x = plan.startX; plan.n0.y = plan.startY; }
     render();
-    for (const n0 of liveNpcs) {
-      const rd = ROSTER[n0.id];
-      if (!rd || rd.kind !== 'enemy') continue;
-      const n = effectiveNpc(n0);
-      if (Math.abs(n.x-player.x)+Math.abs(n.y-player.y) === 1) { interact(n,false); return true; } // 한 번에 한 전투만 발동
-    }
-    return false;
+
+    const finishTurn = () => {
+      for (const { n0 } of plans) {
+        const n = effectiveNpc(n0);
+        if (Math.abs(n.x-player.x)+Math.abs(n.y-player.y) === 1) { interact(n,false); done(true); return; } // 한 번에 한 전투만 발동
+      }
+      done(false);
+    };
+
+    const maxLen = plans.reduce((m, p) => Math.max(m, p.path.length), 0);
+    if (maxLen === 0) { finishTurn(); return; }
+    let step = 0;
+    const tick = () => {
+      for (const { n0, path } of plans) {
+        if (step < path.length) { n0.x = path[step].x; n0.y = path[step].y; }
+      }
+      render();
+      step++;
+      if (step < maxLen) setTimeout(tick, AI_STEP_MS);
+      else setTimeout(finishTurn, AI_STEP_MS);
+    };
+    tick();
   }
 
   window.addEventListener('keydown',(ev)=>{

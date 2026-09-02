@@ -1069,11 +1069,15 @@ document.getElementById('btn-nextmonth').onclick = () => {
   if (income > 0) GameState.addResource({ gold: income });
   updateHUD();
   if (checkDeadlines()) return;
-  const aiBattle = inCampaign && MapView.runAiTurn(); // 적 군세의 턴: 사거리 안이면 공격, 아니면 접근
-  if (aiBattle) return; // 전투 다이얼로그가 우선이므로 턴종료 토스트는 생략
   const incomeMsg = income > 0 ? ` (책사들의 수완으로 금 ${income} 획득)` : '';
   const hpMsg = inCampaign ? '체력과 행동력이 재보급되었다.' : '휴식을 취해 체력과 행동력이 모두 회복되었다.';
-  toast(`${GameState.dateLabel()}이(가) 되었다. ${hpMsg}${incomeMsg}`);
+  const finishTurn = () => toast(`${GameState.dateLabel()}이(가) 되었다. ${hpMsg}${incomeMsg}`);
+  if (inCampaign) {
+    // 적 군세의 턴: 한 칸씩 걸어서 접근하는 모습을 보여준 뒤, 사거리 안이면 공격한다.
+    MapView.runAiTurn((aiBattle) => { if (!aiBattle) finishTurn(); }); // 전투가 발동했으면 턴종료 토스트는 생략
+  } else {
+    finishTurn();
+  }
 };
 
 document.getElementById('btn-restart').onclick = () => showScreen('screen-title');
