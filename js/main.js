@@ -1038,10 +1038,11 @@ document.querySelectorAll('#bottom-menu button').forEach((btn) => {
 
 document.getElementById('btn-nextmonth').onclick = () => {
   GameState.nextMonth();
-  // 전쟁맵(호로관 등)에서는 행동력만 재보급될 뿐 - 이번 전쟁 동안은 체력이 계속 이어져야 하므로 완전 회복시키지 않는다
+  // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).
+  // 같은 달 안에서 연달아 전투를 치를 때만 체력이 그대로 이어진다 - 휴식(다음달)을 거치면 항상 완전 회복.
   const inCampaign = stage === 'warmap';
-  if (!inCampaign) GameState.heroHp = null;
-  else GameState.ap = effectiveApMax();
+  GameState.heroHp = null;
+  if (inCampaign) GameState.ap = effectiveApMax();
   if (inCampaign && GameState.army) {
     GameState.army.rice = Math.max(0, GameState.army.rice - Math.ceil(GameState.army.troop / 100));
     if (GameState.army.rice <= 0) GameState.changeMorale(-1); // 군량 고갈시 매턴 사기 하락
@@ -1053,7 +1054,7 @@ document.getElementById('btn-nextmonth').onclick = () => {
   const aiBattle = inCampaign && MapView.runAiTurn(); // 적 군세의 턴: 사거리 안이면 공격, 아니면 접근
   if (aiBattle) return; // 전투 다이얼로그가 우선이므로 턴종료 토스트는 생략
   const incomeMsg = income > 0 ? ` (책사들의 수완으로 금 ${income} 획득)` : '';
-  const hpMsg = inCampaign ? '행동력이 재보급되었다.' : '휴식을 취해 체력과 행동력이 모두 회복되었다.';
+  const hpMsg = inCampaign ? '체력과 행동력이 재보급되었다.' : '휴식을 취해 체력과 행동력이 모두 회복되었다.';
   toast(`${GameState.dateLabel()}이(가) 되었다. ${hpMsg}${incomeMsg}`);
 };
 
