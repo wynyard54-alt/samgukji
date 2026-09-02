@@ -72,6 +72,11 @@ const STORY = {
   warmap_yubi_assist: [
     { speaker: '유비', text: '아우 혼자 두어선 안 되겠소, 나도 돕겠소!' },
   ],
+  warmap_yeopo_defeat: [
+    { speaker: '내레이션', text: '여포의 힘은 예상보다 훨씬 강했다. 아직 이 상대를 꺾기엔 준비가 부족하다.' },
+    { speaker: '관우', text: '…아직 멀었군. 일단 물러나 힘을 더 길러야겠다.' },
+    { speaker: '내레이션', text: '유비군은 호로관 앞에서 물러나, 평원현에서 다시 준비하기로 했다.' },
+  ],
   warmap_yeopo_flee: [
     { speaker: '여포', text: '흥, 오늘은 이만하지. 다음에 또 보자!' },
     { speaker: '내레이션', text: '여포는 방천화극을 거두고 관 안으로 사라졌다.' },

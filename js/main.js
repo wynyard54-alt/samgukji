@@ -1,5 +1,6 @@
 let stage = 'title';
 let toastTimer = null;
+let pyeongwonCheckpoint = null; // 평원현 도착 시점 GameState 스냅샷 (여포전 패배시 이 시점으로 복귀)
 
 const DEADLINES = { takhyeon: 186, pyeongwon: 188 };
 const MIN_PYEONGWON_STAY_MONTHS = 12; // 탁현 체류가 길어져 늦게 도착해도 평원현에서 최소 이만큼은 머물게 보장
@@ -649,11 +650,22 @@ function goPyeongwonFree() {
   stage = 'pyeongwon_free';
   showScreen('screen-explore');
   if (GameState.pyeongwonEnterAbsMonth == null) GameState.pyeongwonEnterAbsMonth = absMonth(GameState.year, GameState.month);
+  if (!pyeongwonCheckpoint) pyeongwonCheckpoint = JSON.parse(JSON.stringify(GameState));
   MapView.load('pyeongwon', { onInteract: interactNPC, spawnDeadlineAbsMonth: pyeongwonDeadlineAbsMonth() });
   updateHUD();
   if (!GameState.flags.act2) {
     Dialogue.show(STORY.act2_call, () => { GameState.flags.act2 = true; });
   }
+}
+
+// 여포전 패배 등으로 평원현 도착 시점으로 되돌아갈 때 사용한다.
+// 그 시점 이후 얻은 자원/등용/친밀도/연도 등은 모두 스냅샷 상태로 되돌아간다.
+function restoreToPyeongwonCheckpoint() {
+  if (!pyeongwonCheckpoint) { location.reload(); return; }
+  const snap = JSON.parse(JSON.stringify(pyeongwonCheckpoint));
+  Object.keys(snap).forEach((k) => { GameState[k] = snap[k]; });
+  GameState.flags.act2 = true; // 재도전시 반동탁연합 합류 연출을 다시 보여줄 필요는 없다
+  goPyeongwonFree();
 }
 
 function goCoalitionCamp() {
@@ -728,7 +740,7 @@ function startYeopoAssistScene() {
                 updateHUD();
                 if (result.outcome === 'lose') {
                   releaseCapturedOnDefeat();
-                  toast('여포에게 밀렸다... 다시 도전하자!');
+                  Dialogue.show(STORY.warmap_yeopo_defeat, restoreToPyeongwonCheckpoint);
                   return;
                 }
                 GameState.npcStatus['yeopo'] = 'fled';
