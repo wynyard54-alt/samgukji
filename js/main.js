@@ -187,6 +187,16 @@ function updateHUD() {
   document.getElementById('hud-troop').textContent = `병사 ${gs.resources.troop}`;
   document.getElementById('hud-fame').textContent = `명성 ${gs.fame}`;
 
+  const armyEl = document.getElementById('hud-army');
+  if (gs.army) {
+    const deputy = gs.army.deputy ? ROSTER[gs.army.deputy] : null;
+    const jiryeokGrade = gradeFor(deputy ? deputy.stats.int : 0, JIRYEOK_GRADES);
+    armyEl.textContent = `아군 군세 — 병력 ${gs.army.troop} · 무력 ${playerArmyGrade()} · 지력 ${jiryeokGrade}`;
+    armyEl.classList.remove('hidden');
+  } else {
+    armyEl.classList.add('hidden');
+  }
+
   renderLocationBanner();
   renderQuestPanel();
   renderMinimap();
@@ -485,7 +495,9 @@ function resolveArmyBattle(id) {
     { troops: rd.troop || 1000, grade: enemyArmyGrade(rd), morale: 100, onGate: npcOnGateTile(id) },
   );
   if (army) army.troop = result.playerTroopsLeft;
+  rd.troop = result.enemyTroopsLeft; // 적 군세 표기가 실시간으로 갱신되도록 손실을 그대로 반영
   updateHUD();
+  MapView.render();
   if (result.winner === 'player') {
     Dialogue.show([{ speaker: '내레이션', text: `치열한 교전 끝에 ${rd.name}의 군세를 격파했다! (아군 병력 ${result.playerTroopsLeft}명, 적 병력 궤멸)` }], () => {
       GameState.npcStatus[id] = 'resolved';

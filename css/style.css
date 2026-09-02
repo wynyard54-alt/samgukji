@@ -83,6 +83,8 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 #hud-actions button:hover{ background:var(--accent-strong); }
 #hud-actions button.hidden{ display:none; }
+#hud-army{ color:#e9dcae; font-weight:600; }
+#hud-army.hidden{ display:none; }
 
 /* 위치/현재 할 일 배너 (좌상단, 상단바 아래) */
 #location-banner{

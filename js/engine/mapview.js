@@ -255,7 +255,12 @@ const MapView = (function () {
     if (n._atResidence) {
       drawTag(x, worldY(n.y)-7, n._label || `${rd.name}의 집`, '#72542f');
     } else if (!hidden && n.label) {
-      drawTag(x, worldY(n.y)-7, n.label, '#40372c');
+      // 적 군세는 이름표 대신 [잔여병사/무력등급/지력등급]을 표기해 교전 전 전력을 가늠할 수 있게 한다.
+      // rd.troop/능력치는 전투 결과에 따라 실시간으로 바뀌므로 매 프레임 다시 계산한다.
+      const label = (rd.kind === 'enemy' && rd.troop != null)
+        ? `${n.label} · 병${rd.troop} · 무${enemyArmyGrade(rd)} · 지${gradeFor(rd.stats.int, JIRYEOK_GRADES)}`
+        : n.label;
+      drawTag(x, worldY(n.y)-7, label, '#40372c');
     } else if (hidden && Math.abs(n.x-player.x)+Math.abs(n.y-player.y)<=3) {
       ctx.fillStyle='rgba(45,40,34,.82)';ctx.beginPath();ctx.roundRect(x-13,worldY(n.y)-18,26,17,7);ctx.fill();
       ctx.fillStyle='#eadfca';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.fillText('…',x,worldY(n.y)-6);
