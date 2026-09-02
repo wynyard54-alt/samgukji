@@ -89,40 +89,40 @@ const MAPS = {};
   };
 })();
 
-// ---------------- 평원현 (기존 구조 유지) ----------------
+// ---------------- 평원현 (탁현과 동일 크기로 확장 - 배치는 이후 라운드에서 다듬는다) ----------------
 (function () {
-  const w = 14, h = 10;
+  const w = 40, h = 28;
   const grid = makeGrid(w, h, 0);
   rectFill(grid, 0, 0, w - 1, 0, 4);
   rectFill(grid, 0, h - 1, w - 1, h - 1, 4);
   rectFill(grid, 0, 0, 0, h - 1, 4);
   rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
-  rectFill(grid, 2, 2, 4, 3, 2); // 관아
-  rectFill(grid, 9, 6, 11, 7, 2); // 객잔
-  rectFill(grid, 10, 1, 12, 3, 2); // 세력 막사
-  for (let x = 1; x < w - 1; x++) grid[5][x] = 1;
+  rectFill(grid, 5, 3, 9, 6, 2);   // 관아
+  rectFill(grid, 20, 17, 24, 20, 2); // 객잔
+  rectFill(grid, 30, 4, 35, 8, 2);   // 세력 막사
+  for (let x = 1; x < w - 1; x++) grid[14][x] = 1;
 
   MAPS.pyeongwon = {
     name: '평원현',
     width: w, height: h,
     tiles: grid,
-    playerStart: { x:6, y:5 },
+    playerStart: { x:17, y:14 },
     decor: [
-      { type:'building', x:2, y:2, w:3, h:2, roof:'charcoal', label:'관아', sign:'官' },
-      { type:'building', x:9, y:6, w:3, h:2, roof:'red', sign:'客' }, // 미축 등 인접 NPC 이름표와 겹치지 않도록 건물 라벨은 생략
-      { type:'building', x:10, y:1, w:3, h:3, roof:'charcoal', label:'세력 막사', sign:'營' },
+      { type:'building', x:5, y:3, w:4, h:3, roof:'charcoal', label:'관아', sign:'官' },
+      { type:'building', x:20, y:17, w:4, h:3, roof:'red', sign:'客' }, // 미축 등 인접 NPC 이름표와 겹치지 않도록 건물 라벨은 생략
+      { type:'building', x:30, y:4, w:5, h:4, roof:'charcoal', label:'세력 막사', sign:'營' },
     ],
     npcs: [
-      { id:'yubi', x:11, y:4, label:'유비 (세력 막사)' },
-      { id:'jeonhae', x:3, y:5, label:'전해', randomSpawn:true },
-      { id:'gwanjeong', x:6, y:2, label:'관정', randomSpawn:true },
-      { id:'eomgang', x:9, y:3, label:'엄강', randomSpawn:true },
-      { id:'jowoon', x:12, y:6, label:'조운(?)' },
-      { id:'mijuk', x:10, y:7, label:'미축' },
-      { id:'mibang', x:11, y:7, label:'미방' },
-      { id:'songgeon', x:2, y:7, label:'손건' },
-      { id:'ganong', x:3, y:8, label:'간옹' },
-      { id:'jindeung', x:8, y:8, label:'진등' },
+      { id:'yubi', x:32, y:9, label:'유비 (세력 막사)' },
+      { id:'jeonhae', x:9, y:14, label:'전해', randomSpawn:true },
+      { id:'gwanjeong', x:17, y:6, label:'관정', randomSpawn:true },
+      { id:'eomgang', x:26, y:8, label:'엄강', randomSpawn:true },
+      { id:'jowoon', x:34, y:17, label:'조운(?)' },
+      { id:'mijuk', x:29, y:20, label:'미축' },
+      { id:'mibang', x:31, y:20, label:'미방' },
+      { id:'songgeon', x:6, y:20, label:'손건' },
+      { id:'ganong', x:9, y:22, label:'간옹' },
+      { id:'jindeung', x:23, y:22, label:'진등' },
     ],
   };
 })();
