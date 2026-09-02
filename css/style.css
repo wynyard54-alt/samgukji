@@ -457,7 +457,8 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   .hp-row .stat-val{ width:38px; font-size:9px; }
 
   #bottom-menu{
-    bottom:6px; gap:3px; transform:translateX(-50%) scale(.72);
+    /* 세로 화면에서는 player-panel/touchpad와 같은 줄에 두면 겹치므로 그 위에 별도 줄로 배치 */
+    bottom:58px; gap:3px; transform:translateX(-50%) scale(.72);
     transform-origin:bottom center;
   }
   #bottom-menu button{ padding:4px 6px; }

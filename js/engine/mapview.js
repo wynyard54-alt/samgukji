@@ -32,6 +32,20 @@ const MapView = (function () {
   function worldX(tx) { return tx * TILE - camera.x; }
   function worldY(ty) { return ty * TILE - camera.y; }
 
+  // 데스크톱(가로 화면)에서는 기존 맵 지정값(주로 5:3 가로 비율)을 그대로 쓰지만,
+  // 세로가 긴 모바일 화면에서는 그 비율 그대로 폭에 맞추면 캔버스 높이가 크게 줄어들어
+  // 화면 아래쪽 대부분이 빈 배경으로 남는다. 세로 화면에서는 카메라 자체를 더 세로로
+  // 길게 잡아 화면을 실제로 채우도록 한다 (렌더링/충돌 로직은 그대로, 보이는 범위만 조정).
+  function computeCameraSize(map) {
+    const baseW = (map.camera && map.camera.viewportW) || Math.min(DEFAULT_VIEW_W, map.width * TILE);
+    const baseH = (map.camera && map.camera.viewportH) || Math.min(DEFAULT_VIEW_H, map.height * TILE);
+    const isPortrait = window.innerWidth > 0 && window.innerWidth < window.innerHeight;
+    if (!isPortrait) return { w: baseW, h: baseH };
+    const w = Math.min(baseW, 480);
+    const h = Math.min(900, Math.max(baseH, Math.round(w * 1.45)));
+    return { w, h };
+  }
+
   function load(id, opts) {
     mapId = id;
     map = MAPS[id];
@@ -59,8 +73,9 @@ const MapView = (function () {
 
     crowd = (map.ambient || []).map((a, i) => ({ ...a, _id:`ambient_${i}`, _homeX:a.x, _homeY:a.y, _dir:'down' }));
 
-    camera.w = (map.camera && map.camera.viewportW) || Math.min(DEFAULT_VIEW_W, map.width * TILE);
-    camera.h = (map.camera && map.camera.viewportH) || Math.min(DEFAULT_VIEW_H, map.height * TILE);
+    const size = computeCameraSize(map);
+    camera.w = size.w;
+    camera.h = size.h;
     canvas.width = camera.w;
     canvas.height = camera.h;
     updateCamera(true);
