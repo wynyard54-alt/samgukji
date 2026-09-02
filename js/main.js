@@ -2,6 +2,7 @@ let stage = 'title';
 let toastTimer = null;
 
 const DEADLINES = { takhyeon: 186, pyeongwon: 188 };
+function absMonth(year, month) { return year * 12 + month; } // 연/월을 단조증가하는 절대 개월수로 환산
 const STAT_LABELS = { atk: '공격', def: '방어', spd: '속도', int: '지력', cha: '매력' };
 const COMBAT_STATS = ['atk', 'def', 'spd'];
 
@@ -226,6 +227,7 @@ function interactNPC(id, context) {
   const rd = ROSTER[id];
   if (!rd) return;
   const st = GameState.npcStatus[id];
+  if (st === 'recruited' && (stage === 'takhyeon_free' || stage === 'pyeongwon_free')) { interactRecruitedGeneral(id); return; }
   if (st === 'recruited' || st === 'resolved' || st === 'dead' || st === 'fled') return;
 
   if (id === 'yubi') { handleYubi(); return; }
@@ -270,11 +272,19 @@ function interactNPC(id, context) {
   }
 }
 
+// 유비는 세력 막사에 고정 배치되어 개인훈련(막사)의 창구 역할도 겸한다 - 필살공격은 이 경로로만 습득 가능.
+function offerBarracksTraining(greetingText) {
+  showChoice(`유비: "${greetingText}"`, [
+    { label: '훈련하기 (AP2)', cb: () => trainWithHero() },
+    { label: '그냥 안부만 묻는다', cb: () => {} },
+  ]);
+}
+
 function handleYubi() {
   if (stage === 'takhyeon_free') {
     const deungmuDone = ['recruited', 'resolved'].includes(GameState.npcStatus['deungmu']);
     if (!deungmuDone) {
-      Dialogue.show([{ speaker: '유비', text: '황건적 잔당이 아직 마을 근처를 떠돌고 있다 하오. 먼저 처리하고 오시겠소?' }]);
+      offerBarracksTraining('황건적 잔당이 아직 마을 근처를 떠돌고 있다 하오. 먼저 처리하고 오시겠소?');
     } else if (!GameState.flags.act1) {
       Dialogue.show(STORY.act1_report, () => {
         GameState.flags.act1 = true;
@@ -284,8 +294,10 @@ function handleYubi() {
         updateHUD();
       });
     } else {
-      Dialogue.show([{ speaker: '유비', text: '아우들, 평원으로 떠날 준비가 되었소.' }]);
+      offerBarracksTraining('아우들, 평원으로 떠날 준비가 되었소.');
     }
+  } else if (stage === 'pyeongwon_free') {
+    offerBarracksTraining('아우, 무슨 일인가?');
   }
 }
 
@@ -328,7 +340,7 @@ function visitScholar(id, context) {
       { speaker: rd.name, text: '그대의 진심을 이제야 알겠소. 나 역시 함께하겠소!' },
     ], () => {
       GameState.recruit(id, 0);
-      MapView.removeNpc(id);
+      stationRecruitOrRemove(id);
       toast(`${rd.name}이(가) 등용되었습니다! (명성 +10)`);
       updateHUD();
     });
@@ -353,7 +365,7 @@ function proposeScholar(id) {
   if (roll < chance) {
     Dialogue.show([{ speaker: rd.name, text: '그대의 진심을 이제야 알겠소. 나 역시 함께하겠소!' }], () => {
       GameState.recruit(id, 0);
-      MapView.removeNpc(id);
+      stationRecruitOrRemove(id);
       toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%, 명성 +10)`);
       updateHUD();
     });
@@ -385,7 +397,7 @@ function challengeWarrior(id) {
           if (roll < chance) {
             Dialogue.show([{ speaker: rd.name, text: '…드디어 눈을 떴습니다. 함께하죠.' }], () => {
               GameState.recruit(id);
-              MapView.removeNpc(id);
+              stationRecruitOrRemove(id);
               toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%, 명성 +10)`);
               updateHUD();
             });
@@ -407,7 +419,7 @@ function attemptPersuadeCaptured(id) {
   const roll = Math.random() * 100;
   if (roll < chance) {
     GameState.recruit(id);
-    MapView.removeNpc(id);
+    stationRecruitOrRemove(id);
     toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%, 명성 +10)`);
   } else {
     GameState.npcStatus[id] = 'resolved';
@@ -622,14 +634,14 @@ function checkDeadlines() {
 function goTakhyeonFree() {
   stage = 'takhyeon_free';
   showScreen('screen-explore');
-  MapView.load('takhyeon', { onInteract: interactNPC });
+  MapView.load('takhyeon', { onInteract: interactNPC, spawnDeadlineAbsMonth: absMonth(DEADLINES.takhyeon, 12) + 1 });
   updateHUD();
 }
 
 function goPyeongwonFree() {
   stage = 'pyeongwon_free';
   showScreen('screen-explore');
-  MapView.load('pyeongwon', { onInteract: interactNPC });
+  MapView.load('pyeongwon', { onInteract: interactNPC, spawnDeadlineAbsMonth: absMonth(DEADLINES.pyeongwon, 12) + 1 });
   updateHUD();
   if (!GameState.flags.act2) {
     Dialogue.show(STORY.act2_call, () => { GameState.flags.act2 = true; });
@@ -792,7 +804,8 @@ function learnRandomSkill(hero) {
   return SKILL_POOL[pick].name;
 }
 
-document.getElementById('btn-train').onclick = () => {
+// ---- 개인훈련 (세력 막사, 유비) - 필살공격은 오직 이 경로로만 습득할 수 있다 ----
+function trainWithHero() {
   if (!spend(2)) return;
   const hero = GameState.heroData();
   const gainedEv = 25 + Math.floor(Math.random() * 26); // 25~50
@@ -821,18 +834,66 @@ document.getElementById('btn-train').onclick = () => {
 
   toast(msg);
   updateHUD();
-};
+}
 
-document.getElementById('btn-conscript').onclick = () => {
-  if (GameState.resources.gold < 30) { toast('금이 부족합니다. (금 30 필요)'); return; }
+// ---- 등용된 무력형 장수와 함께하는 훈련 - 노력치/스탯은 오르지만 필살공격 습득에는 관여하지 않는다 ----
+function trainWithGeneral(id) {
+  const rd = ROSTER[id];
   if (!spend(2)) return;
   const hero = GameState.heroData();
-  const gained = 300 + hero.stats.cha * 2;
+  const gainedEv = 25 + Math.floor(Math.random() * 26);
+  GameState.trainingEv += gainedEv;
+  let msg = `${rd.name}과(와) 함께 훈련했다. (노력치 ${GameState.trainingEv}/100)`;
+
+  while (GameState.trainingEv >= 100) {
+    GameState.trainingEv -= 100;
+    const keys = Object.keys(STAT_LABELS);
+    const key = keys[Math.floor(Math.random() * keys.length)];
+    hero.stats[key] = Math.min(100, hero.stats[key] + 1);
+    msg = `${rd.name}과(와)의 훈련 끝에 ${hero.name}의 ${STAT_LABELS[key]}이(가) 1 올랐다! (${STAT_LABELS[key]} ${hero.stats[key]})`;
+  }
+
+  Dialogue.show([{ speaker: rd.name, text: '자, 한 수 배워봅시다!' }], () => {
+    toast(msg);
+    updateHUD();
+  });
+}
+
+// ---- 등용된 지력형 장수를 통한 모병 - 장수 본인의 매력에 따라 모병량이 달라진다 ----
+function conscriptViaGeneral(id) {
+  const rd = ROSTER[id];
+  if (GameState.resources.gold < 30) { toast('금이 부족합니다. (금 30 필요)'); return; }
+  if (!spend(2)) return;
+  const gained = 300 + rd.stats.cha * 2;
   GameState.resources.gold -= 30;
   GameState.resources.troop += gained;
-  toast(`병사 ${gained}명을 징병했다. (금 30 소모, 병사 ${GameState.resources.troop})`);
-  updateHUD();
-};
+  Dialogue.show([{ speaker: rd.name, text: '우리 세력의 금으로 병사를 모아보겠습니다.' }], () => {
+    toast(`${rd.name}이(가) 병사 ${gained}명을 모병했다. (금 30 소모, 병사 ${GameState.resources.troop})`);
+    updateHUD();
+  });
+}
+
+// ---- 등용된 장수와의 상시 상호작용 (등용 지역에 남아 훈련/모병을 돕는다) ----
+function interactRecruitedGeneral(id) {
+  const rd = ROSTER[id];
+  if (isScholarType(rd)) {
+    showChoice(`${rd.name}: "무슨 일로 오셨습니까?"`, [
+      { label: '모병을 부탁한다 (AP2, 금30)', cb: () => conscriptViaGeneral(id) },
+      { label: '그냥 안부만 묻는다', cb: () => Dialogue.show([{ speaker: rd.name, text: '언제든 불러주십시오.' }]) },
+    ]);
+  } else {
+    showChoice(`${rd.name}: "무슨 일로 오셨습니까?"`, [
+      { label: '함께 훈련한다 (AP2)', cb: () => trainWithGeneral(id) },
+      { label: '그냥 안부만 묻는다', cb: () => Dialogue.show([{ speaker: rd.name, text: '언제든 불러주십시오.' }]) },
+    ]);
+  }
+}
+
+// 등용 완료 시 호출 - 마을(탁현/평원)에서는 그 자리에 남아 훈련/모병역을 맡고, 그 외(전장 등)에서는 기존처럼 퇴장한다.
+function stationRecruitOrRemove(id) {
+  if (stage === 'takhyeon_free' || stage === 'pyeongwon_free') { MapView.render(); return; }
+  MapView.removeNpc(id);
+}
 
 function formatStatLine(stats) {
   return `공${stats.atk} 방${stats.def} 속${stats.spd} 지${stats.int} 매${stats.cha}`;
@@ -1054,6 +1115,61 @@ document.querySelectorAll('#bottom-menu button').forEach((btn) => {
   };
 });
 
+// ---- 마을 체류 중 다음달로 넘길 때 가끔 발생하는 돌발 이벤트 ----
+const RANDOM_EVENT_CHANCE = 0.3;
+const RANDOM_EVENT_BANDITS = ['gwakseung', 'yeosang', 'jeongwonji'];
+const FLAVOR_EVENT_LINES = [
+  '거리에서 아이들이 무예 놀이를 하며 뛰노는 모습이 보인다.',
+  '저잣거리에 이상한 소문이 돌고 있다 - 낙양에서 큰 난리가 났다는데...',
+  '오늘따라 하늘이 유난히 붉게 물들었다.',
+  '지나가던 노인이 그대들을 보고 흐뭇하게 웃는다.',
+];
+
+function triggerBanditEvent() {
+  const available = RANDOM_EVENT_BANDITS.filter((id) => !GameState.npcStatus[id]);
+  if (!available.length) { triggerFlavorEvent(); return; }
+  const id = available[Math.floor(Math.random() * available.length)];
+  startFreeBattle(id, undefined, true);
+}
+
+function triggerMerchantEvent() {
+  const rice = Math.random() < 0.5;
+  const amount = 20 + Math.floor(Math.random() * 41); // 20~60
+  Dialogue.show([{ speaker: '떠돌이 상인', text: '마침 지나던 길이오. 필요한 물자가 있으면 나눠드리리다.' }], () => {
+    GameState.addResource(rice ? { rice: amount } : { gold: amount });
+    toast(`떠돌이 상인에게서 ${rice ? `쌀 ${amount}` : `금 ${amount}`}을(를) 얻었다.`);
+    updateHUD();
+  });
+}
+
+function triggerHarvestEvent() {
+  const good = Math.random() < 0.5;
+  const amount = 15 + Math.floor(Math.random() * 26); // 15~40
+  if (good) {
+    GameState.addResource({ rice: amount });
+    Dialogue.show([{ speaker: '내레이션', text: `이번 달은 날씨가 좋아 인근 농가에서 곡식을 나눠주었다. (쌀 +${amount})` }], () => updateHUD());
+  } else {
+    GameState.resources.rice = Math.max(0, GameState.resources.rice - amount);
+    Dialogue.show([{ speaker: '내레이션', text: `가뭄으로 곡식 사정이 어려워졌다. (쌀 -${amount})` }], () => updateHUD());
+  }
+}
+
+function triggerFlavorEvent() {
+  const line = FLAVOR_EVENT_LINES[Math.floor(Math.random() * FLAVOR_EVENT_LINES.length)];
+  Dialogue.show([{ speaker: '내레이션', text: line }]);
+}
+
+// 마을 체류 중 휴식(다음달)마다 일정 확률로 발생 - 이벤트가 발생하면 true를 반환한다.
+function maybeRandomEvent() {
+  if (Math.random() >= RANDOM_EVENT_CHANCE) return false;
+  const kind = ['bandit', 'merchant', 'harvest', 'flavor'][Math.floor(Math.random() * 4)];
+  if (kind === 'bandit') triggerBanditEvent();
+  else if (kind === 'merchant') triggerMerchantEvent();
+  else if (kind === 'harvest') triggerHarvestEvent();
+  else triggerFlavorEvent();
+  return true;
+}
+
 document.getElementById('btn-nextmonth').onclick = () => {
   GameState.nextMonth();
   // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).
@@ -1071,10 +1187,15 @@ document.getElementById('btn-nextmonth').onclick = () => {
   if (checkDeadlines()) return;
   const incomeMsg = income > 0 ? ` (책사들의 수완으로 금 ${income} 획득)` : '';
   const hpMsg = inCampaign ? '체력과 행동력이 재보급되었다.' : '휴식을 취해 체력과 행동력이 모두 회복되었다.';
-  const finishTurn = () => toast(`${GameState.dateLabel()}이(가) 되었다. ${hpMsg}${incomeMsg}`);
+  const inTown = stage === 'takhyeon_free' || stage === 'pyeongwon_free';
+  const spawned = inTown ? MapView.checkScheduledSpawns() : [];
+  const spawnMsg = spawned.length ? ' 마을에 낯선 인물이 나타났다는 소문이 돈다. 돌아다니다 보면 마주칠지도 모른다.' : '';
+  const finishTurn = () => toast(`${GameState.dateLabel()}이(가) 되었다. ${hpMsg}${incomeMsg}${spawnMsg}`);
   if (inCampaign) {
     // 적 군세의 턴: 한 칸씩 걸어서 접근하는 모습을 보여준 뒤, 사거리 안이면 공격한다.
     MapView.runAiTurn((aiBattle) => { if (!aiBattle) finishTurn(); }); // 전투가 발동했으면 턴종료 토스트는 생략
+  } else if (inTown && maybeRandomEvent()) {
+    // 이벤트 자체의 대사/토스트가 턴 진행 피드백을 대신하므로 별도 안내는 생략한다.
   } else {
     finishTurn();
   }

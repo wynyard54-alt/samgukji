@@ -43,6 +43,7 @@ const MAPS = {};
   grid[16][15] = 3; grid[16][16] = 3;
   grid[17][15] = 3; grid[17][16] = 3;
   grid[8][5] = 4;
+  rectFill(grid, 24, 7, 26, 9, 2); // 세력 막사
 
   MAPS.takhyeon = {
     name: '탁현 · 장터',
@@ -59,6 +60,7 @@ const MAPS = {};
       { type:'building', x:9, y:2, w:3, h:3, roof:'brown', label:'상점', sign:'布' },
       { type:'building', x:3, y:13, w:6, h:4, roof:'red', label:'주막', sign:'酒' },
       { type:'building', x:19, y:13, w:6, h:4, roof:'brown', label:'상점가', sign:'市' },
+      { type:'building', x:24, y:7, w:3, h:3, roof:'charcoal', label:'세력 막사', sign:'營' },
       { type:'stall', x:7, y:8, w:2, tone:'red' },
       { type:'stall', x:10, y:8, w:2, tone:'tan' },
       { type:'stall', x:16, y:8, w:2, tone:'green' },
@@ -83,8 +85,8 @@ const MAPS = {};
     // 기존 스토리 NPC는 유지하되 공간 속 역할에 맞게 재배치.
     // discoverable + residence: 첫 발견 전에는 인파 속 인물, 발견 후에는 집이 이름을 얻는다.
     npcs: [
-      { id:'yubi', x:5, y:7, label:'유비' },
-      { id:'chujeong', x:9, y:11, label:'추정' },
+      { id:'yubi', x:25, y:10, label:'유비 (세력 막사)' },
+      { id:'chujeong', x:9, y:11, label:'추정', randomSpawn:true },
       {
         id:'noshik', x:21, y:9, label:'', discoverable:true,
         discoveryRange:2,
@@ -131,6 +133,7 @@ const MAPS = {};
   rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
   rectFill(grid, 2, 2, 4, 3, 2); // 관아
   rectFill(grid, 9, 6, 11, 7, 2); // 객잔
+  rectFill(grid, 10, 1, 12, 3, 2); // 세력 막사
   for (let x = 1; x < w - 1; x++) grid[5][x] = 1;
 
   MAPS.pyeongwon = {
@@ -138,10 +141,16 @@ const MAPS = {};
     width: w, height: h,
     tiles: grid,
     playerStart: { x:6, y:5 },
+    decor: [
+      { type:'building', x:2, y:2, w:3, h:2, roof:'charcoal', label:'관아', sign:'官' },
+      { type:'building', x:9, y:6, w:3, h:2, roof:'red', sign:'客' }, // 미축 등 인접 NPC 이름표와 겹치지 않도록 건물 라벨은 생략
+      { type:'building', x:10, y:1, w:3, h:3, roof:'charcoal', label:'세력 막사', sign:'營' },
+    ],
     npcs: [
-      { id:'jeonhae', x:3, y:5, label:'전해' },
-      { id:'gwanjeong', x:6, y:2, label:'관정' },
-      { id:'eomgang', x:9, y:3, label:'엄강' },
+      { id:'yubi', x:11, y:4, label:'유비 (세력 막사)' },
+      { id:'jeonhae', x:3, y:5, label:'전해', randomSpawn:true },
+      { id:'gwanjeong', x:6, y:2, label:'관정', randomSpawn:true },
+      { id:'eomgang', x:9, y:3, label:'엄강', randomSpawn:true },
       { id:'jowoon', x:12, y:6, label:'조운(?)' },
       { id:'mijuk', x:10, y:7, label:'미축' },
       { id:'mibang', x:11, y:7, label:'미방' },

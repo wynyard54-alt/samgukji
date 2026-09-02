@@ -8,6 +8,8 @@ const GameState = {
   fame: 0, // 명성 (100당 최대 행동력 +1, 최대 1000)
   morale: 100, // 군세 사기 (기본 100, 일기토 승패 ±10, 군량 고갈시 매턴 -1, 0 이하면 붕괴)
   capturedCommanders: [], // 일기토 압도적 승리로 포획한 적 사령관 id 목록 (전쟁 종료 후 등용 제안)
+  npcSpawnMonth: {}, // id -> 랜덤 등장 장수가 실제로 등장하는 절대 개월수 (absMonth)
+  npcSpawnPos: {}, // id -> 랜덤 등장 장수의 등장 좌표 {x,y} (한 번 정해지면 고정)
   heroHp: null, // 자유 등용전 사이 이월되는 현재 체력 (null = 최대치)
   army: null, // 반동탁연합 출정용 유비군 편성 {deputy, troop, rice}
   trainingEv: 0, // 훈련 노력치 (100마다 스텟 1 상승)
@@ -28,6 +30,8 @@ const GameState = {
     this.fame = 0;
     this.morale = 100;
     this.capturedCommanders = [];
+    this.npcSpawnMonth = {};
+    this.npcSpawnPos = {};
     this.heroHp = null;
     this.army = null;
     this.trainingEv = 0;

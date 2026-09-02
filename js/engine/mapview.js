@@ -21,6 +21,7 @@ const MapView = (function () {
   let onInteract = null;
   let onApBlocked = null;
   let onApSpent = null;
+  let spawnDeadlineAbs = null; // 랜덤 등장 장수가 마감 기한의 50% 안쪽에 나오도록 하는 절대 개월수 상한
   let liveNpcs = [];
   let crowd = [];
   let crowdTimer = null;
@@ -38,6 +39,7 @@ const MapView = (function () {
     onInteract = (opts && opts.onInteract) || null;
     onApBlocked = (opts && opts.onApBlocked) || null;
     onApSpent = (opts && opts.onApSpent) || null;
+    spawnDeadlineAbs = (opts && opts.spawnDeadlineAbsMonth) || null;
 
     liveNpcs = map.npcs.filter((n) => {
       const rd = ROSTER[n.id];
@@ -47,8 +49,13 @@ const MapView = (function () {
       }
       const status = GameState.npcStatus[n.id];
       if (status === 'recruited' || status === 'resolved' || status === 'dead' || status === 'fled') return false;
+      if (n.randomSpawn && !GameState.npcSpawnPos[n.id]) return false; // 아직 등장 시점이 되지 않음
       return true;
     });
+    for (const n of liveNpcs) {
+      if (n.randomSpawn && GameState.npcSpawnPos[n.id]) { n.x = GameState.npcSpawnPos[n.id].x; n.y = GameState.npcSpawnPos[n.id].y; }
+    }
+    for (const n0 of map.npcs) { if (n0.randomSpawn && !GameState.npcStatus[n0.id]) scheduleSpawn(n0.id); }
 
     crowd = (map.ambient || []).map((a, i) => ({ ...a, _id:`ambient_${i}`, _homeX:a.x, _homeY:a.y, _dir:'down' }));
 
@@ -93,8 +100,9 @@ const MapView = (function () {
 
   function effectiveNpc(n) {
     const rd = ROSTER[n.id];
-    const met = GameState.npcStatus[n.id] === 'met';
-    if (n.residence && met && rd && rd.kind === 'recruit' && isScholarType(rd)) {
+    // 등용된 뒤에도 저택에 그대로 남아 모병/훈련 창구 역할을 한다.
+    const metOrRecruited = ['met', 'recruited'].includes(GameState.npcStatus[n.id]);
+    if (n.residence && metOrRecruited && rd && rd.kind === 'recruit' && isScholarType(rd)) {
       return { ...n, x:n.residence.x, y:n.residence.y, _atResidence:true, _label:n.residence.label || `${rd.name}의 집` };
     }
     return { ...n, _atResidence:false };
@@ -252,7 +260,10 @@ const MapView = (function () {
       drawPersonSprite(x,y,{palette,archetype:scholar?'scholar':'warrior',scale:1.04,dir:'down',heroId:n.id});
     }
 
-    if (n._atResidence) {
+    // 등용된 장수는 마을에 남아 모병/훈련을 돕는다 - 이름표에 담당 역할을 표기한다.
+    if (GameState.npcStatus[n.id] === 'recruited') {
+      drawTag(x, worldY(n.y)-7, `${rd.name} · ${isScholarType(rd) ? '모병' : '훈련'}`, '#2f4d33');
+    } else if (n._atResidence) {
       drawTag(x, worldY(n.y)-7, n._label || `${rd.name}의 집`, '#72542f');
     } else if (!hidden && n.label) {
       // 적 군세는 이름표 대신 [잔여병사/무력등급/지력등급]을 표기해 교전 전 전력을 가늠할 수 있게 한다.
@@ -355,6 +366,53 @@ const MapView = (function () {
 
   function removeNpc(id) { liveNpcs=liveNpcs.filter((n)=>n.id!==id); render(); }
 
+  function absMonth(year, month) { return year * 12 + month; }
+
+  // 등장 시점을 (현재로부터 마감까지 남은 기간의) 50% 이내로 제한해, 마을 체류기한 막판에야
+  // 겨우 등장하는 일이 없도록 한다.
+  function scheduleSpawn(id) {
+    if (GameState.npcSpawnMonth[id] != null) return;
+    const nowAbs = absMonth(GameState.year, GameState.month);
+    const deadlineAbs = spawnDeadlineAbs || (nowAbs + 24);
+    const windowMonths = Math.max(2, deadlineAbs - nowAbs);
+    const maxOffset = Math.max(1, Math.floor(windowMonths * 0.5));
+    GameState.npcSpawnMonth[id] = nowAbs + 1 + Math.floor(Math.random() * maxOffset);
+  }
+
+  function randomWalkableTile() {
+    for (let tries = 0; tries < 200; tries++) {
+      const x = 1 + Math.floor(Math.random() * (map.width - 2));
+      const y = 1 + Math.floor(Math.random() * (map.height - 2));
+      if (!isWalkable(x, y)) continue;
+      if (x === player.x && y === player.y) continue;
+      if (npcAt(x, y)) continue;
+      return { x, y };
+    }
+    return { x: player.x, y: player.y }; // 극히 드문 실패시 폴백
+  }
+
+  // 휴식(다음달) 등으로 시간이 흐를 때 호출 - 이번에 새로 등장한 장수의 id 목록을 반환한다.
+  function checkScheduledSpawns() {
+    if (!map) return [];
+    const nowAbs = absMonth(GameState.year, GameState.month);
+    const spawned = [];
+    for (const n0 of map.npcs) {
+      if (!n0.randomSpawn) continue;
+      if (GameState.npcStatus[n0.id]) continue;
+      if (GameState.npcSpawnPos[n0.id]) continue; // 이미 등장함
+      scheduleSpawn(n0.id);
+      if (nowAbs >= GameState.npcSpawnMonth[n0.id]) {
+        const pos = randomWalkableTile();
+        GameState.npcSpawnPos[n0.id] = pos;
+        n0.x = pos.x; n0.y = pos.y;
+        liveNpcs.push(n0);
+        spawned.push(n0.id);
+      }
+    }
+    if (spawned.length) render();
+    return spawned;
+  }
+
   const AI_MOVE_BUDGET = 3; // Tier2 AI 기본 이동력 (병종별 차등은 챕터2에서 반영)
   const AI_STEP_MS = 160; // 한 칸 이동하는 데 걸리는 시간 - 순간이동처럼 보이지 않도록 한 칸씩 애니메이션한다
 
@@ -456,7 +514,7 @@ const MapView = (function () {
   });
 
   return {
-    load,render,removeNpc,tryMove,interactFacing,runAiTurn,
+    load,render,removeNpc,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},
     get playerPos(){return {x:player.x,y:player.y,dir:player.dir};},
