@@ -32,6 +32,7 @@ const FieldAssets = (function () {
     crate:'crate.png',
     lanterns:'lanterns.png',
     tile_dirt:'tile_dirt.png',
+    tile_dirt_rich:'tile_dirt_rich.png',
     tile_road:'tile_road.png',
     tile_grass:'tile_grass.png',
     tile_water:'tile_water.png',

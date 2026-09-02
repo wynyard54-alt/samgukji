@@ -176,7 +176,7 @@ const MapView = (function () {
       for (let x=sx; x<=ex; x++) {
         const t = map.tiles[y][x];
         const px=worldX(x), py=worldY(y);
-        const key = uniformDirt ? 'tile_dirt' : (t===1 ? 'tile_road' : t===3 ? 'tile_water' : t===5 ? 'tile_rough' : 'tile_grass');
+        const key = uniformDirt ? 'tile_dirt_rich' : (t===1 ? 'tile_road' : t===3 ? 'tile_water' : t===5 ? 'tile_rough' : 'tile_grass');
         if (!FieldAssets.tile(ctx,key,px,py,TILE)) {
           ctx.fillStyle = uniformDirt ? '#c6b084' : (t===1 ? '#c6b084' : t===3 ? '#678b92' : t===5 ? '#7d7259' : '#829762');
           ctx.fillRect(px,py,TILE,TILE);
