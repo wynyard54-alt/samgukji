@@ -190,11 +190,14 @@ const MAPS = {};
   rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
   rectFill(grid, 9, 0, 10, 2, 2);  // 호로관 관문
   for (let x = 1; x < w - 1; x++) grid[8][x] = 1;
+  rectFill(grid, 13, 1, 15, 3, 5); // 산악지형 (이동력 2배)
+  rectFill(grid, 6, 9, 8, 9, 5);   // 강물지형 (이동력 2배)
 
   MAPS.warmap = {
     name: '호로관 전선',
     width: w, height: h,
     tiles: grid,
+    apMovement: true, // 이동시 행동력을 소모하는 전쟁맵 (일반타일 1, 험지 2배)
     playerStart: { x:2, y:8 },
     npcs: [
       { id:'jojo', x:3, y:5, label:'조조 군세' },

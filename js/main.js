@@ -512,7 +512,11 @@ function goWarmap() {
   stage = 'warmap';
   GameState.ap = effectiveApMax(); // 전쟁맵 진입시 행동력 상한(8)에 맞춰 재보급
   showScreen('screen-explore');
-  MapView.load('warmap', { onInteract: interactNPC });
+  MapView.load('warmap', {
+    onInteract: interactNPC,
+    onApSpent: updateHUD,
+    onApBlocked: () => toast('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
+  });
   updateHUD();
   Dialogue.show(STORY.warmap_intro);
 }
@@ -878,6 +882,8 @@ document.getElementById('btn-nextmonth').onclick = () => {
   if (income > 0) GameState.addResource({ gold: income });
   updateHUD();
   if (checkDeadlines()) return;
+  const aiBattle = inCampaign && MapView.runAiTurn(); // 적 군세의 턴: 사거리 안이면 공격, 아니면 접근
+  if (aiBattle) return; // 전투 다이얼로그가 우선이므로 턴종료 토스트는 생략
   const incomeMsg = income > 0 ? ` (책사들의 수완으로 금 ${income} 획득)` : '';
   const hpMsg = inCampaign ? '행동력이 재보급되었다.' : '휴식을 취해 체력과 행동력이 모두 회복되었다.';
   toast(`${GameState.dateLabel()}이(가) 되었다. ${hpMsg}${incomeMsg}`);

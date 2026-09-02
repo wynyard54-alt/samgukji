@@ -6,6 +6,7 @@ const MapView = (function () {
   const DEFAULT_VIEW_H = 480;
 
   const TILE_BLOCKED = { 2:true, 3:true, 4:true };
+  const TILE_ROUGH = { 5:true }; // 산악/강물 등 험지 - 통행 가능하지만 이동력 2배 소모
   const PALETTES = {
     ash:   { robe:'#78766f', dark:'#504f4a', trim:'#aaa69b', skin:'#d1ab82' },
     earth: { robe:'#7b6652', dark:'#51453b', trim:'#9b8a73', skin:'#cfaa83' },
@@ -18,6 +19,8 @@ const MapView = (function () {
   let player = { x:0, y:0, dir:'down' };
   let camera = { x:0, y:0, w:DEFAULT_VIEW_W, h:DEFAULT_VIEW_H };
   let onInteract = null;
+  let onApBlocked = null;
+  let onApSpent = null;
   let liveNpcs = [];
   let crowd = [];
   let crowdTimer = null;
@@ -33,6 +36,8 @@ const MapView = (function () {
     map = MAPS[id];
     player = { x:map.playerStart.x, y:map.playerStart.y, dir:'down' };
     onInteract = (opts && opts.onInteract) || null;
+    onApBlocked = (opts && opts.onApBlocked) || null;
+    onApSpent = (opts && opts.onApSpent) || null;
 
     liveNpcs = map.npcs.filter((n) => {
       const rd = ROSTER[n.id];
@@ -105,6 +110,11 @@ const MapView = (function () {
     return !TILE_BLOCKED[tile];
   }
 
+  function tileMoveCost(x, y) {
+    const tile = map.tiles[Math.round(y)] && map.tiles[Math.round(y)][Math.round(x)];
+    return TILE_ROUGH[tile] ? 2 : 1;
+  }
+
   function render() {
     if (!map) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -140,9 +150,9 @@ const MapView = (function () {
       for (let x=sx; x<=ex; x++) {
         const t = map.tiles[y][x];
         const px=worldX(x), py=worldY(y);
-        const key = t===1 ? 'tile_road' : t===3 ? 'tile_water' : 'tile_grass';
+        const key = t===1 ? 'tile_road' : t===3 ? 'tile_water' : t===5 ? 'tile_rough' : 'tile_grass';
         if (!FieldAssets.tile(ctx,key,px,py,TILE)) {
-          ctx.fillStyle = t===1 ? '#c6b084' : t===3 ? '#678b92' : '#829762';
+          ctx.fillStyle = t===1 ? '#c6b084' : t===3 ? '#678b92' : t===5 ? '#7d7259' : '#829762';
           ctx.fillRect(px,py,TILE,TILE);
         }
       }
@@ -300,7 +310,12 @@ const MapView = (function () {
     player.dir = dx<0?'left':dx>0?'right':dy<0?'up':'down';
     if (!isWalkable(nx,ny)) { render(); return; }
     const npc=npcAt(nx,ny);
-    if (npc) { interact(npc,false); return; }
+    if (npc) { interact(npc,false); return; } // 인접칸으로 다가가 공격하는 행동엔 행동력을 소모하지 않는다
+    if (map.apMovement) {
+      const cost = tileMoveCost(nx,ny);
+      if (!GameState.spendAP(cost)) { if (onApBlocked) onApBlocked(); render(); return; }
+      if (onApSpent) onApSpent();
+    }
     player.x=nx; player.y=ny;
     updateCamera();
     render();
@@ -335,6 +350,47 @@ const MapView = (function () {
 
   function removeNpc(id) { liveNpcs=liveNpcs.filter((n)=>n.id!==id); render(); }
 
+  const AI_MOVE_BUDGET = 3; // Tier2 AI 기본 이동력 (병종별 차등은 챕터2에서 반영)
+
+  // 플레이어 턴 종료(휴식/다음달)시 호출되는 Tier2 AI: 사거리 안이면 공격, 아니면 접근, 막히면 대기.
+  // 반환값: 이번 턴에 전투가 발동했는지 여부 (true면 호출부에서 턴종료 토스트를 생략해도 된다)
+  function runAiTurn() {
+    if (!map || !map.apMovement) return false;
+    for (const n0 of liveNpcs) {
+      const rd = ROSTER[n0.id];
+      if (!rd || rd.kind !== 'enemy') continue;
+      if (Math.abs(n0.x-player.x)+Math.abs(n0.y-player.y) <= 1) continue; // 이미 사거리 - 이동 없이 대기 후 공격
+      let steps = AI_MOVE_BUDGET;
+      while (steps > 0) {
+        const dist = Math.abs(n0.x-player.x)+Math.abs(n0.y-player.y);
+        if (dist <= 1) break;
+        const dx = Math.sign(player.x-n0.x), dy = Math.sign(player.y-n0.y);
+        const preferX = Math.abs(player.x-n0.x) >= Math.abs(player.y-n0.y);
+        const options = preferX ? [[dx,0],[0,dy]] : [[0,dy],[dx,0]];
+        let moved = false;
+        for (const [ddx,ddy] of options) {
+          if (!ddx && !ddy) continue;
+          const tx=n0.x+ddx, ty=n0.y+ddy;
+          if (!isWalkable(tx,ty)) continue;
+          if (tx===player.x && ty===player.y) continue; // 플레이어 타일로는 이동하지 않는다
+          if (npcAt(tx,ty)) continue;
+          const cost = tileMoveCost(tx,ty);
+          if (cost > steps) continue;
+          n0.x=tx; n0.y=ty; steps-=cost; moved=true; break;
+        }
+        if (!moved) break; // 막혔거나 이동력이 모자라 대기
+      }
+    }
+    render();
+    for (const n0 of liveNpcs) {
+      const rd = ROSTER[n0.id];
+      if (!rd || rd.kind !== 'enemy') continue;
+      const n = effectiveNpc(n0);
+      if (Math.abs(n.x-player.x)+Math.abs(n.y-player.y) === 1) { interact(n,false); return true; } // 한 번에 한 전투만 발동
+    }
+    return false;
+  }
+
   window.addEventListener('keydown',(ev)=>{
     if (Dialogue.isActive()) return;
     if (!document.getElementById('choice-box').classList.contains('hidden')) return;
@@ -365,7 +421,7 @@ const MapView = (function () {
   });
 
   return {
-    load,render,removeNpc,tryMove,interactFacing,
+    load,render,removeNpc,tryMove,interactFacing,runAiTurn,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},
     get playerPos(){return {x:player.x,y:player.y,dir:player.dir};},
