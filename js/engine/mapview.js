@@ -1,6 +1,7 @@
 const MapView = (function () {
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
+  const viewportEl = document.getElementById('explore-viewport');
   const TILE = 40;
   const DEFAULT_VIEW_W = 800;
   const DEFAULT_VIEW_H = 480;
@@ -38,23 +39,55 @@ const MapView = (function () {
   // 90도 회전시켜 처음부터 가로 게임 화면처럼 보여준다 (css/style.css의 회전 규칙 참고).
   // 그 상태에서는 실제로 화면에 보이는 가로/세로 폭이 물리적 세로/가로 길이와 서로
   // 맞바뀌므로, 캔버스 크기도 window.innerWidth/innerHeight를 바꿔 넣어 계산해야 한다.
+  // vw/vh 같은 CSS 뷰포트 단위는 회전 트랜스폼 아래에서 실기기 브라우저마다 다르게
+  // 계산되는 경우가 있어(카카오톡 인앱 브라우저 등), 여기서는 JS로 직접 픽셀 값을
+  // 계산해 #explore-viewport에 그대로 적용한다 - 여백을 최소화해 화면을 최대한 채운다.
   function computeCameraSize(map) {
     const baseW = (map.camera && map.camera.viewportW) || Math.min(DEFAULT_VIEW_W, map.width * TILE);
     const baseH = (map.camera && map.camera.viewportH) || Math.min(DEFAULT_VIEW_H, map.height * TILE);
     const isRotated = window.innerWidth > 0 && window.innerHeight > 0 &&
       window.innerWidth < window.innerHeight && window.innerWidth <= 1024;
-    if (!isRotated) return { w: baseW, h: baseH };
-    // 회전된 상태의 가용 가로폭은 물리적 세로 길이(innerHeight), 가용 세로폭은
-    // 물리적 가로 길이(innerWidth)에서 안내문구 등 캔버스 바깥 요소의 공간을 뺀 값이다.
-    const availW = window.innerHeight * 0.96;
-    const chromeH = 70; // #explore-viewport 위 여백 + 아래 안내문구가 차지하는 대략적인 세로 공간
-    const availH = Math.max(240, window.innerWidth - chromeH);
     const ratio = baseW / baseH;
+    let availW, availH;
+    if (isRotated) {
+      // 회전된 상태의 가용 가로폭은 물리적 세로 길이, 가용 세로폭은 물리적 가로
+      // 길이에서 안내문구 한 줄 정도의 최소 공간만 뺀 값이다.
+      availW = window.innerHeight * 0.995;
+      availH = Math.max(200, window.innerWidth - 30);
+    } else {
+      availW = window.innerWidth * 0.98;
+      availH = Math.max(200, window.innerHeight - 40);
+    }
     let w = Math.min(baseW, availW);
     let h = w / ratio;
     if (h > availH) { h = availH; w = h * ratio; }
     return { w: Math.round(w), h: Math.round(h) };
   }
+
+  // computeCameraSize의 결과를 캔버스 내부 해상도와 #explore-viewport의 실제 표시
+  // 크기 양쪽에 그대로 반영한다 - CSS min()/vw/vh 계산에 기대지 않고 항상 일치시킨다.
+  function applyCameraSize() {
+    if (!map) return;
+    const size = computeCameraSize(map);
+    camera.w = size.w;
+    camera.h = size.h;
+    canvas.width = camera.w;
+    canvas.height = camera.h;
+    if (viewportEl) viewportEl.style.width = camera.w + 'px';
+    updateCamera(true);
+  }
+
+  let resizeTimer = null;
+  window.addEventListener('resize', () => {
+    if (!map) return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { applyCameraSize(); render(); }, 120);
+  });
+  window.addEventListener('orientationchange', () => {
+    if (!map) return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { applyCameraSize(); render(); }, 120);
+  });
 
   function load(id, opts) {
     mapId = id;
@@ -90,12 +123,7 @@ const MapView = (function () {
 
     crowd = (map.ambient || []).map((a, i) => ({ ...a, _id:`ambient_${i}`, _homeX:a.x, _homeY:a.y, _dir:'down' }));
 
-    const size = computeCameraSize(map);
-    camera.w = size.w;
-    camera.h = size.h;
-    canvas.width = camera.w;
-    canvas.height = camera.h;
-    updateCamera(true);
+    applyCameraSize();
     startCrowd();
     render();
   }
