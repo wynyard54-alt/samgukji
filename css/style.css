@@ -64,7 +64,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 /* 컷신 일러스트 - 특정 대사 구간 동안 지도 위를 덮어 그 장면의 삽화를 보여준다 */
 #scene-illustration{ position:absolute; inset:0; z-index:2; background:#0d0b09; }
 #scene-illustration.hidden{ display:none; }
-#scene-illustration img{ width:100%; height:100%; object-fit:cover; display:block; }
+#scene-illustration img{ width:100%; height:100%; object-fit:contain; display:block; }
 /* 일러스트가 떠 있는 동안에는 지도 위 부가 패널들을 가려 화면을 깔끔하게 유지한다 */
 #explore-viewport.scene-active #location-banner,
 #explore-viewport.scene-active #minimap-panel,
