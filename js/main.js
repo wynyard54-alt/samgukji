@@ -740,7 +740,12 @@ function startYeopoAssistScene() {
                 updateHUD();
                 if (result.outcome === 'lose') {
                   releaseCapturedOnDefeat();
-                  Dialogue.show(STORY.warmap_yeopo_defeat, restoreToPyeongwonCheckpoint);
+                  Dialogue.show(STORY.warmap_yeopo_defeat, () => {
+                    showChoice(`${GameState.heroData().name}이(가) 여포 저지에 실패했다. 어떻게 할까?`, [
+                      { label: '처음부터 다시 시작', cb: () => showScreen('screen-title') },
+                      { label: '평원현에서 다시 시작', cb: () => restoreToPyeongwonCheckpoint() },
+                    ]);
+                  });
                   return;
                 }
                 GameState.npcStatus['yeopo'] = 'fled';
