@@ -5,7 +5,7 @@ const GameState = {
   ap: 6,
   apMax: 6,
   resources: { rice: 200, gold: 120, troop: 80 },
-  fame: 0, // 명성 (표시용 스텁 — 아직 획득 로직 없음)
+  fame: 0, // 명성 (100당 최대 행동력 +1, 최대 1000)
   heroHp: null, // 자유 등용전 사이 이월되는 현재 체력 (null = 최대치)
   army: null, // 반동탁연합 출정용 유비군 편성 {deputy, troop, rice}
   trainingEv: 0, // 훈련 노력치 (100마다 스텟 1 상승)
@@ -57,9 +57,21 @@ const GameState = {
     for (const k in r) this.resources[k] = (this.resources[k] || 0) + r[k];
   },
 
+  // 명성 100당 최대 행동력 +1 (최대 명성 1000 -> 최대 행동력 6+10=16).
+  // 임계값을 새로 넘기면 이번 달 남은 행동력도 즉시 함께 오른다.
+  addFame(n) {
+    this.fame = Math.min(1000, this.fame + n);
+    const newMax = 6 + Math.floor(this.fame / 100);
+    if (newMax > this.apMax) {
+      this.ap += (newMax - this.apMax);
+      this.apMax = newMax;
+    }
+  },
+
   recruit(id, troopGain) {
     if (!this.recruited.includes(id)) this.recruited.push(id);
     this.npcStatus[id] = 'recruited';
     this.resources.troop += (troopGain == null ? 15 : troopGain);
+    this.addFame(10);
   },
 };

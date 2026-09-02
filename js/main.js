@@ -36,6 +36,12 @@ function showChoice(text, options) {
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
+const WARMAP_AP_CAP = 8; // 기병 이동 등이 한 턴에 지나치게 멀리 가지 않도록 전쟁맵에서만 행동력 상한을 건다
+
+function effectiveApMax() {
+  return stage === 'warmap' ? Math.min(GameState.apMax, WARMAP_AP_CAP) : GameState.apMax;
+}
+
 function heroMaxHp() { return Battle.maxHP(GameState.heroData().stats); }
 function heroCurrentHp() { return GameState.heroHp != null ? GameState.heroHp : heroMaxHp(); }
 
@@ -175,7 +181,7 @@ function renderPlayerPanel() {
 function updateHUD() {
   const gs = GameState;
   document.getElementById('hud-date').textContent = gs.dateLabel();
-  document.getElementById('hud-ap').textContent = `행동력 ${gs.ap}/${gs.apMax}`;
+  document.getElementById('hud-ap').textContent = `행동력 ${Math.min(gs.ap, effectiveApMax())}/${effectiveApMax()}`;
   document.getElementById('hud-gold').textContent = `금 ${gs.resources.gold}(+${scholarGoldIncome()})`;
   document.getElementById('hud-rice').textContent = `쌀 ${gs.resources.rice}(+0)`;
   document.getElementById('hud-troop').textContent = `병사 ${gs.resources.troop}`;
@@ -261,7 +267,9 @@ function handleYubi() {
     } else if (!GameState.flags.act1) {
       Dialogue.show(STORY.act1_report, () => {
         GameState.flags.act1 = true;
-        toast('평원현으로 이동할 수 있습니다.');
+        GameState.addFame(30); // 메인퀘스트 완료
+        GameState.addFame(50); // 관직 제수
+        toast('평원현으로 이동할 수 있습니다. (명성 +80)');
         updateHUD();
       });
     } else {
@@ -310,7 +318,7 @@ function visitScholar(id, context) {
     ], () => {
       GameState.recruit(id, 0);
       MapView.removeNpc(id);
-      toast(`${rd.name}이(가) 등용되었습니다!`);
+      toast(`${rd.name}이(가) 등용되었습니다! (명성 +10)`);
       updateHUD();
     });
   } else {
@@ -335,7 +343,7 @@ function proposeScholar(id) {
     Dialogue.show([{ speaker: rd.name, text: '그대의 진심을 이제야 알겠소. 나 역시 함께하겠소!' }], () => {
       GameState.recruit(id, 0);
       MapView.removeNpc(id);
-      toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%)`);
+      toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%, 명성 +10)`);
       updateHUD();
     });
   } else {
@@ -367,7 +375,7 @@ function challengeWarrior(id) {
             Dialogue.show([{ speaker: rd.name, text: '…드디어 눈을 떴습니다. 함께하죠.' }], () => {
               GameState.recruit(id);
               MapView.removeNpc(id);
-              toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%)`);
+              toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%, 명성 +10)`);
               updateHUD();
             });
           } else {
@@ -389,7 +397,7 @@ function attemptPersuadeCaptured(id) {
   if (roll < chance) {
     GameState.recruit(id);
     MapView.removeNpc(id);
-    toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%)`);
+    toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%, 명성 +10)`);
   } else {
     GameState.npcStatus[id] = 'resolved';
     MapView.removeNpc(id);
@@ -439,6 +447,7 @@ function checkDeadlines() {
       MapView.removeNpc('deungmu');
     }
     gs.flags.act1 = true;
+    gs.addFame(30); // 메인퀘스트 완료 (관직 제수 서사는 생략되었으므로 그 명성은 제외)
     Dialogue.show(STORY.act1_forced, () => { goPyeongwonFree(); });
     return true;
   }
@@ -487,6 +496,8 @@ function goSasugwan() {
       onEnd: (result) => {
         if (result.outcome === 'win') {
           GameState.npcStatus['hwaung'] = 'dead';
+          GameState.addFame(30); // 메인퀘스트: 온주참화웅
+          updateHUD();
           Dialogue.show(STORY.sasugwan_post, goWarmap);
         } else {
           toast('화웅에게 밀렸다... 다시 도전하자!');
@@ -499,6 +510,7 @@ function goSasugwan() {
 
 function goWarmap() {
   stage = 'warmap';
+  GameState.ap = effectiveApMax(); // 전쟁맵 진입시 행동력 상한(8)에 맞춰 재보급
   showScreen('screen-explore');
   MapView.load('warmap', { onInteract: interactNPC });
   updateHUD();
@@ -508,7 +520,11 @@ function goWarmap() {
 function checkWarmapClear() {
   const ids = ['hojin', 'songheon', 'wisok', 'yeopo'];
   const allDone = ids.every((id) => ['resolved', 'recruited', 'fled'].includes(GameState.npcStatus[id]));
-  if (allDone) Dialogue.show(STORY.warmap_clear, goHamgokgwan);
+  if (allDone) {
+    GameState.addFame(30); // 메인퀘스트: 호로관 평정
+    updateHUD();
+    Dialogue.show(STORY.warmap_clear, goHamgokgwan);
+  }
 }
 
 function startYeopoAssistScene() {
@@ -554,6 +570,8 @@ function goHamgokgwan() {
           player: GameState.heroData(), enemy: ROSTER.gwaksa, maxRounds: 3,
           onEnd: () => {
             GameState.npcStatus['gwaksa'] = 'fled';
+            GameState.addFame(30); // 메인퀘스트: 함곡관 평정
+            updateHUD();
             Dialogue.show(STORY.hamgokgwan_post, goEnding);
           },
         });
@@ -571,6 +589,14 @@ function goEnding() {
     `등용한 장수 (${GameState.recruited.length}명): ${list}<br>` +
     `자원 — 쌀 ${GameState.resources.rice} · 금 ${GameState.resources.gold} · 병사 ${GameState.resources.troop}`;
 }
+
+// 일기토 승리(패배가 아닌 모든 종료)시 명성 +10 — 등용/메인퀘스트 명성과 별개로 항상 적용
+BattleEvents.on('battleEnd', (payload) => {
+  if (payload.outcome !== 'lose') {
+    GameState.addFame(10);
+    updateHUD();
+  }
+});
 
 // ---------------- 부팅 ----------------
 document.getElementById('btn-start').onclick = () => showScreen('screen-select');
@@ -598,7 +624,9 @@ document.getElementById('btn-train').onclick = () => {
   const hero = GameState.heroData();
   const gainedEv = 25 + Math.floor(Math.random() * 26); // 25~50
   GameState.trainingEv += gainedEv;
-  let msg = `${hero.name}이(가) 훈련에 매진했다.${gainedEv >= 40 ? ' 이번 훈련은 훌륭했다!' : ''} (노력치 ${GameState.trainingEv}/100)`;
+  const greatSession = gainedEv >= 40;
+  if (greatSession) GameState.addFame(5);
+  let msg = `${hero.name}이(가) 훈련에 매진했다.${greatSession ? ' 이번 훈련은 훌륭했다! (명성 +5)' : ''} (노력치 ${GameState.trainingEv}/100)`;
 
   while (GameState.trainingEv >= 100) {
     GameState.trainingEv -= 100;
@@ -842,13 +870,17 @@ document.querySelectorAll('#bottom-menu button').forEach((btn) => {
 
 document.getElementById('btn-nextmonth').onclick = () => {
   GameState.nextMonth();
-  GameState.heroHp = null;
+  // 전쟁맵(호로관 등)에서는 행동력만 재보급될 뿐 - 이번 전쟁 동안은 체력이 계속 이어져야 하므로 완전 회복시키지 않는다
+  const inCampaign = stage === 'warmap';
+  if (!inCampaign) GameState.heroHp = null;
+  else GameState.ap = effectiveApMax();
   const income = scholarGoldIncome();
   if (income > 0) GameState.addResource({ gold: income });
   updateHUD();
   if (checkDeadlines()) return;
   const incomeMsg = income > 0 ? ` (책사들의 수완으로 금 ${income} 획득)` : '';
-  toast(`${GameState.dateLabel()}이(가) 되었다. 휴식을 취해 체력과 행동력이 모두 회복되었다.${incomeMsg}`);
+  const hpMsg = inCampaign ? '행동력이 재보급되었다.' : '휴식을 취해 체력과 행동력이 모두 회복되었다.';
+  toast(`${GameState.dateLabel()}이(가) 되었다. ${hpMsg}${incomeMsg}`);
 };
 
 document.getElementById('btn-restart').onclick = () => showScreen('screen-title');
