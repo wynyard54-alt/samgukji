@@ -40,15 +40,13 @@ const Battle = (function () {
 
   function render() {
     pName.textContent = p.data.name;
-    pPortrait.style.background = colorFor(p.data.id);
-    pPortrait.textContent = p.data.name[0];
+    renderPortrait(pPortrait, p.data);
     pHpFill.style.width = Math.max(0, (p.hp / p.maxHp) * 100) + '%';
     pHpText.textContent = `${Math.max(0, p.hp)} / ${p.maxHp}`;
     pGaugeFill.style.width = Math.min(100, p.gauge) + '%';
 
     eName.textContent = e.data.name;
-    ePortrait.style.background = colorFor(e.data.id);
-    ePortrait.textContent = e.data.name[0];
+    renderPortrait(ePortrait, e.data);
     eHpFill.style.width = Math.max(0, (e.hp / e.maxHp) * 100) + '%';
     eHpText.textContent = `${Math.max(0, e.hp)} / ${e.maxHp}`;
     eGaugeFill.style.width = Math.min(100, e.gauge) + '%';
@@ -60,6 +58,17 @@ const Battle = (function () {
     if (!locked) {
       const attackBtn = actionsEl.querySelector('[data-action="attack"]');
       if (attackBtn) attackBtn.focus();
+    }
+  }
+
+  function renderPortrait(el, data) {
+    const available = ['gwanwoo','jangbi','yubi','hwaung','yeopo'];
+    if (available.includes(data.id)) {
+      el.style.background = `#201b16 url("assets/ui/portrait_${data.id}.png") center 18% / cover no-repeat`;
+      el.textContent = '';
+    } else {
+      el.style.background = colorFor(data.id);
+      el.textContent = data.name[0];
     }
   }
 

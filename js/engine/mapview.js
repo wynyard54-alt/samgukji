@@ -237,7 +237,7 @@ const MapView = (function () {
     const x=worldX(p.x)+TILE/2, y=worldY(p.y)+TILE*.88;
     const role = ['merchant','farmer','woman','elder','guard','child','porter'].includes(p.archetype) ? p.archetype : 'farmer';
     const key=`npc_${role}`;
-    if (!FieldAssets.sprite(ctx,key,x,y,p._dir||'down',animFrame,32,48,.92,2)) {
+    if (!FieldAssets.sprite(ctx,key,x,y,p._dir||'down',animFrame,32,48,.92,3)) {
       drawPersonSprite(x,y,{ palette:PALETTES[p.palette]||PALETTES.ash, archetype:p.archetype, scale:.9, dir:p._dir });
     }
   }
@@ -251,7 +251,14 @@ const MapView = (function () {
     const role=scholar ? 'scholar' : 'guard';
 
     // Undiscovered named characters intentionally blend into the crowd.
-    if (!FieldAssets.sprite(ctx,`npc_${role}`,x,y,'down',animFrame,32,48,hidden?.95:1.04,2)) {
+    // Discovered Liu Bei and Lu Bu use their own character sheets.
+    const uniqueKey=!hidden && (n.id==='yubi' || n.id==='yeopo') ? `hero_${n.id}` : null;
+    const drawn=uniqueKey
+      ? FieldAssets.sprite(ctx,uniqueKey,x,y,'down',animFrame,48,64,.88,3)
+      : (!hidden && rd.kind==='enemy')
+        ? FieldAssets.sprite(ctx,'enemy_yellowturban',x,y,'down',animFrame,32,48,1.04,3)
+        : FieldAssets.sprite(ctx,`npc_${role}`,x,y,'down',animFrame,32,48,hidden?.95:1.04,3);
+    if (!drawn) {
       const palette=hidden
         ? {robe:'#72746e',dark:'#474a47',trim:'#9d9e94',skin:'#d1aa80'}
         : scholar

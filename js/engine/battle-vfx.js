@@ -6,8 +6,9 @@ const BattleVFX = (function () {
   if (!screen || typeof BattleEvents === 'undefined') return { init(){} };
 
   const CHARACTER_ART = {
-    gwanwoo: { glyph: '關', weapon: '偃月刀', title: '미염공 관우', className: 'hero-green' },
-    hwaung:  { glyph: '華', weapon: '大刀', title: '서량의 맹장 화웅', className: 'enemy-red' },
+    gwanwoo: { glyph: '關', weapon: '靑龍偃月刀', title: '미염공 관우', className: 'hero-green', src: 'assets/battle/duel_gwanwoo.png' },
+    hwaung:  { glyph: '華', weapon: '長槍', title: '서량의 맹장 화웅', className: 'enemy-red', src: 'assets/battle/duel_hwaung.png' },
+    yeopo:   { glyph: '呂', weapon: '方天畫戟', title: '비장 여포', className: 'enemy-red', src: 'assets/battle/duel_yeopo.png' },
   };
 
   let arena, playerActor, enemyActor, fxLayer, cutin, banner;
@@ -53,8 +54,10 @@ const BattleVFX = (function () {
   function setActor(el, data) {
     const art = artFor(data.id, data);
     el.dataset.id = data.id;
-    el.classList.remove('hero-green','enemy-red','generic','attack','hit','dodge','guard','special','ultimate');
+    el.classList.remove('hero-green','enemy-red','generic','raster-art','attack','hit','dodge','guard','special','ultimate');
     el.classList.add(art.className);
+    el.classList.toggle('raster-art', !!art.src);
+    el.querySelector('.duel-body').style.backgroundImage = art.src ? `url("${art.src}")` : '';
     el.querySelector('.duel-glyph').textContent = art.glyph;
     el.querySelector('.duel-actor-label').textContent = data.name;
     el.querySelector('.duel-weapon').dataset.weapon = art.weapon;

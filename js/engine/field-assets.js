@@ -6,6 +6,9 @@ const FieldAssets = (function () {
   const manifest = {
     hero_gwanwoo:'hero_gwanwoo.png',
     hero_jangbi:'hero_jangbi.png',
+    hero_yubi:'hero_yubi.png',
+    hero_yeopo:'hero_yeopo.png',
+    enemy_yellowturban:'enemy_yellowturban.png',
     npc_farmer:'npc_farmer.png',
     npc_woman:'npc_woman.png',
     npc_merchant:'npc_merchant.png',

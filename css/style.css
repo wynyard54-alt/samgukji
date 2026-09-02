@@ -339,6 +339,10 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .duel-glyph{position:absolute;left:22px;top:56px;z-index:5;font-family:"Song Myung",serif;font-size:20px;color:#f3e5bd;text-shadow:0 2px 2px #222}
 .duel-actor.enemy .duel-glyph,.duel-actor.enemy .duel-actor-label{transform:scaleX(-1)}
 .duel-actor.enemy .duel-torso{background:#7a352b}.duel-actor.enemy .duel-horse{background:#4b3b31}
+.duel-actor.raster-art .duel-horse{display:none}
+.duel-actor.raster-art .duel-body{left:-28px;bottom:0;width:225px;height:225px;background-position:center bottom;background-repeat:no-repeat;background-size:contain}
+.duel-actor.raster-art .duel-body>*{display:none}
+.duel-actor.raster-art.player .duel-body{transform:scaleX(-1)}
 .duel-actor-label{position:absolute;left:50%;bottom:-18px;transform:translateX(-50%);min-width:74px;text-align:center;padding:3px 8px;border:1px solid rgba(242,222,176,.55);border-radius:4px;background:rgba(31,27,22,.72);color:#f5e8c8;font-size:12px;font-weight:700;white-space:nowrap}
 .duel-actor.enemy .duel-actor-label{left:auto;right:50%;}
 
