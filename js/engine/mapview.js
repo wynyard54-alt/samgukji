@@ -142,7 +142,6 @@ const MapView = (function () {
     if (!map) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawGround();
-    drawCityWalls();
     drawBackDecor();
     drawAreaLabels();
 
@@ -189,24 +188,6 @@ const MapView = (function () {
     for (let y=6; y<=14; y++) for (let x=4; x<=24; x++) {
       if (map.tiles[y] && map.tiles[y][x] === 0) FieldAssets.tile(ctx,'tile_dirt',worldX(x),worldY(y),TILE);
     }
-  }
-
-  // 탁현은 그래픽을 초기화하면서 개별 성벽 타일 대신, 테두리를 둘러싼 단색 성벽 띠로
-  // 간단히 표시한다 (성문은 기존 decor 파이프라인의 building_gate 그래픽을 그대로 쓴다).
-  function drawCityWalls() {
-    if (mapId !== 'takhyeon') return;
-    const mw = map.width*TILE, mh = map.height*TILE;
-    ctx.fillStyle = '#8a734f';
-    ctx.fillRect(worldX(0), worldY(0), mw, TILE);
-    ctx.fillRect(worldX(0), worldY(map.height-1), mw, TILE);
-    ctx.fillRect(worldX(0), worldY(0), TILE, mh);
-    ctx.fillRect(worldX(map.width-1), worldY(0), TILE, mh);
-    ctx.fillStyle = '#a68f66';
-    ctx.fillRect(worldX(0), worldY(1)-3, mw, 3);
-    ctx.fillRect(worldX(1)-3, worldY(0), 3, mh);
-    ctx.fillStyle = '#5c4a30';
-    ctx.fillRect(worldX(0), worldY(map.height-1), mw, 3);
-    ctx.fillRect(worldX(map.width-1), worldY(0), 3, mh);
   }
 
   function decorBuildingKey(d) {
