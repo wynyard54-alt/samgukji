@@ -34,27 +34,26 @@ const MapView = (function () {
   function worldX(tx) { return tx * TILE - camera.x; }
   function worldY(ty) { return ty * TILE - camera.y; }
 
-  // 데스크톱(가로 화면)에서는 기존 맵 지정값(주로 5:3 가로 비율)을 그대로 쓰지만,
-  // 세로가 긴 모바일 화면에서는 그 비율 그대로 폭에 맞추면 캔버스 높이가 크게 줄어들어
-  // 화면 아래쪽 대부분이 빈 배경으로 남는다. 세로 화면에서는 카메라 자체를 더 세로로
-  // 길게 잡아 화면을 실제로 채우도록 한다 (렌더링/충돌 로직은 그대로, 보이는 범위만 조정).
+  // 화면이 세로로 길고 좁을 때(모바일을 세로로 들고 있을 때)는 CSS에서 body 전체를
+  // 90도 회전시켜 처음부터 가로 게임 화면처럼 보여준다 (css/style.css의 회전 규칙 참고).
+  // 그 상태에서는 실제로 화면에 보이는 가로/세로 폭이 물리적 세로/가로 길이와 서로
+  // 맞바뀌므로, 캔버스 크기도 window.innerWidth/innerHeight를 바꿔 넣어 계산해야 한다.
   function computeCameraSize(map) {
     const baseW = (map.camera && map.camera.viewportW) || Math.min(DEFAULT_VIEW_W, map.width * TILE);
     const baseH = (map.camera && map.camera.viewportH) || Math.min(DEFAULT_VIEW_H, map.height * TILE);
-    const isPortrait = window.innerWidth > 0 && window.innerHeight > 0 && window.innerWidth < window.innerHeight;
-    if (!isPortrait) return { w: baseW, h: baseH };
-    const w = Math.min(baseW, 480);
-    // 캔버스는 CSS에서 width:100%;height:auto로 종횡비를 유지한 채 표시되므로,
-    // 세로 비율을 무작정 늘리면 안내문구 등 캔버스 바깥 요소까지 합쳐 실제 화면
-    // 높이(window.innerHeight)를 넘어가 아래쪽이 통째로 잘려 보이지 않게 된다.
-    // 화면에 실제로 들어가는 높이 한도 안에서만 세로로 늘린다.
-    const displayW = Math.min(w, window.innerWidth * 0.96);
+    const isRotated = window.innerWidth > 0 && window.innerHeight > 0 &&
+      window.innerWidth < window.innerHeight && window.innerWidth <= 1024;
+    if (!isRotated) return { w: baseW, h: baseH };
+    // 회전된 상태의 가용 가로폭은 물리적 세로 길이(innerHeight), 가용 세로폭은
+    // 물리적 가로 길이(innerWidth)에서 안내문구 등 캔버스 바깥 요소의 공간을 뺀 값이다.
+    const availW = window.innerHeight * 0.96;
     const chromeH = 70; // #explore-viewport 위 여백 + 아래 안내문구가 차지하는 대략적인 세로 공간
-    const maxDisplayH = Math.max(240, window.innerHeight - chromeH);
-    const maxRatio = maxDisplayH / displayW;
-    const desiredRatio = Math.min(900 / w, Math.max(baseH / w, 1.45));
-    const h = Math.round(w * Math.min(desiredRatio, maxRatio));
-    return { w, h };
+    const availH = Math.max(240, window.innerWidth - chromeH);
+    const ratio = baseW / baseH;
+    let w = Math.min(baseW, availW);
+    let h = w / ratio;
+    if (h > availH) { h = availH; w = h * ratio; }
+    return { w: Math.round(w), h: Math.round(h) };
   }
 
   function load(id, opts) {

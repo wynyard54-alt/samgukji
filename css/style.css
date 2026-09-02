@@ -16,22 +16,21 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .screen{ display:none; width:100vw; height:100vh; }
 .screen.active{ display:flex; }
 
-/* 회전 안내 - 세로로 든 모바일/작은 화면에서 게임 전체를 덮어 가로 모드를 유도한다 */
-#rotate-prompt{
-  display:none;
-  position:fixed; inset:0; z-index:9999;
-  flex-direction:column; align-items:center; justify-content:center; gap:12px;
-  background:#15110c; color:#f5ecd6; text-align:center; padding:24px;
-}
-.rotate-icon{ font-size:56px; animation:rotate-hint 1.6s ease-in-out infinite; }
-.rotate-text{ font-family:"Song Myung",serif; font-size:19px; font-weight:700; }
-.rotate-sub{ font-size:13px; color:#cdbd97; }
-@keyframes rotate-hint{
-  0%,100%{ transform:rotate(0deg); }
-  50%{ transform:rotate(90deg); }
-}
+/* 세로로 든 모바일/작은 화면에서는 안내문구 없이 body 자체를 90도 회전시켜
+   처음부터 가로 게임 화면으로 보여준다 - 사용자가 화면을 보고 자연스럽게
+   기기를 돌리면(실제 방향이 landscape가 되면) 이 규칙이 해제되어 정방향으로 보인다. */
 @media (orientation:portrait) and (max-width:1024px){
-  #rotate-prompt{ display:flex; }
+  html, body{ width:100%; height:100%; }
+  body{
+    position:absolute; top:0; left:100%;
+    width:100vh; height:100vw;
+    transform-origin:top left;
+    transform:rotate(90deg);
+  }
+  .screen{ width:100%; height:100%; }
+  /* 회전 후에는 실제로 화면에 보이는 가로폭이 기기의 물리적 세로 길이(vh)이므로,
+     지도 화면 폭 상한도 vw가 아니라 vh 기준으로 잡아야 잘리지 않는다. */
+  #explore-viewport{ width:min(800px,96vh); }
 }
 
 /* 타이틀 */
