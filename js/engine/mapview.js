@@ -202,16 +202,10 @@ const MapView = (function () {
     drawNatural('v6_stable',27.5,23.5,200,.72);
     drawNatural('v6_awning_lantern',12.8,12.0,155,.72);
     drawNatural('v7_yellowturban_lair',35.3,26.0,440,.78);
-
-    drawNatural('v6_idle_tavern',7.7,22.4,110,.72);
-    drawNatural('v6_idle_merchant',25.7,16.9,118,.72);
-    drawNatural('v6_idle_porter',22.5,17.8,98,.72);
-    // v6_idle_scholar는 노식(발견 가능 NPC)의 위치와 거의 겹쳐서, "찾았는데 계속 앉아있는
-    // 별개의 학자"처럼 보이는 혼동을 낳는다 - 노식 본인이 이 역할을 이미 맡고 있으므로 뺀다.
-    drawNatural('v6_idle_guard',33.5,14.3,102,.72);
-    drawNatural('v6_idle_watercarrier',12.0,17.0,96,.72);
-    // v6_idle_child도 실제 배회하는 어린이 NPC와 거의 같은 자리라 이중으로 보여서 뺀다.
-    drawNatural('v6_idle_stablehand',27.4,23.3,130,.72);
+    // v6_idle_* (학자/아이/상인/짐꾼/경비/물장수/마부 등) 고정 배경인물 장식은 전부 뺀다 -
+    // 실제 배회하는 NPC/군중 캐릭터와 크기·화풍이 안 맞고, 상호작용도 안 되는데
+    // 마치 또 다른 사람이 서 있는 것처럼 보여 혼동을 준다. 사람은 항상 실제 NPC/군중
+    // 시스템(drawNpc/drawAmbient)이 그리게 하고, 여기는 건물/소품/지형만 남긴다.
   }
 
   function drawGround() {

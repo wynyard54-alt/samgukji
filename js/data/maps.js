@@ -68,12 +68,8 @@ const MAPS = {};
       { type:'building', x:24, y:19, w:6, h:5, label:'상점가' },
       { type:'building', x:11, y:18, w:5, h:4, label:'민가' },
       { type:'building', x:32, y:10, w:6, h:4, label:'세력 막사' },
-      { type:'stall', x:10, y:11, w:2, tone:'red' },
-      { type:'stall', x:14, y:11, w:2, tone:'tan' },
-      { type:'stall', x:23, y:10, w:2, tone:'green' },
-      { type:'stall', x:27, y:12, w:2, tone:'tan' },
-      { type:'stall', x:9, y:16, w:2, tone:'green' },
-      { type:'stall', x:24, y:16, w:2, tone:'red' },
+      // 예전 그림판 스타일 좌판(stall_*)은 지우고, 탁현은 drawV6BackDressing()의
+      // v6_stall_vegetable/v6_stall_grain 좌판만 쓴다.
       { type:'tree', x:27.5, y:9.5, scale:1.45, landmark:true },
       { type:'tree', x:8.2, y:10.0, scale:1.0 },
       { type:'tree', x:34.0, y:22.0, scale:1.0 },
