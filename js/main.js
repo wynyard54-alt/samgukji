@@ -2,7 +2,14 @@ let stage = 'title';
 let toastTimer = null;
 
 const DEADLINES = { takhyeon: 186, pyeongwon: 188 };
+const MIN_PYEONGWON_STAY_MONTHS = 12; // 탁현 체류가 길어져 늦게 도착해도 평원현에서 최소 이만큼은 머물게 보장
 function absMonth(year, month) { return year * 12 + month; } // 연/월을 단조증가하는 절대 개월수로 환산
+// 평원현 마감 절대 개월수: 원래 기한(188년말)과, 실제 도착일+최소 체류기간 중 더 늦은 쪽을 사용한다.
+function pyeongwonDeadlineAbsMonth() {
+  const base = absMonth(DEADLINES.pyeongwon, 12) + 1;
+  if (GameState.pyeongwonEnterAbsMonth == null) return base;
+  return Math.max(base, GameState.pyeongwonEnterAbsMonth + MIN_PYEONGWON_STAY_MONTHS);
+}
 const STAT_LABELS = { atk: '공격', def: '방어', spd: '속도', int: '지력', cha: '매력' };
 const COMBAT_STATS = ['atk', 'def', 'spd'];
 
@@ -624,7 +631,7 @@ function checkDeadlines() {
     Dialogue.show(STORY.act1_forced, () => { goPyeongwonFree(); });
     return true;
   }
-  if (stage === 'pyeongwon_free' && gs.year > DEADLINES.pyeongwon) {
+  if (stage === 'pyeongwon_free' && absMonth(gs.year, gs.month) > pyeongwonDeadlineAbsMonth()) {
     Dialogue.show(STORY.act2_forced, () => { openArmyBox(goCoalitionCamp); });
     return true;
   }
@@ -641,7 +648,8 @@ function goTakhyeonFree() {
 function goPyeongwonFree() {
   stage = 'pyeongwon_free';
   showScreen('screen-explore');
-  MapView.load('pyeongwon', { onInteract: interactNPC, spawnDeadlineAbsMonth: absMonth(DEADLINES.pyeongwon, 12) + 1 });
+  if (GameState.pyeongwonEnterAbsMonth == null) GameState.pyeongwonEnterAbsMonth = absMonth(GameState.year, GameState.month);
+  MapView.load('pyeongwon', { onInteract: interactNPC, spawnDeadlineAbsMonth: pyeongwonDeadlineAbsMonth() });
   updateHUD();
   if (!GameState.flags.act2) {
     Dialogue.show(STORY.act2_call, () => { GameState.flags.act2 = true; });

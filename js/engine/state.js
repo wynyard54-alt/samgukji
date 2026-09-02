@@ -10,6 +10,7 @@ const GameState = {
   capturedCommanders: [], // 일기토 압도적 승리로 포획한 적 사령관 id 목록 (전쟁 종료 후 등용 제안)
   npcSpawnMonth: {}, // id -> 랜덤 등장 장수가 실제로 등장하는 절대 개월수 (absMonth)
   npcSpawnPos: {}, // id -> 랜덤 등장 장수의 등장 좌표 {x,y} (한 번 정해지면 고정)
+  pyeongwonEnterAbsMonth: null, // 평원현에 실제로 진입한 절대 개월수 (늦게 도착해도 최소 체류기간을 보장하기 위함)
   heroHp: null, // 자유 등용전 사이 이월되는 현재 체력 (null = 최대치)
   army: null, // 반동탁연합 출정용 유비군 편성 {deputy, troop, rice}
   trainingEv: 0, // 훈련 노력치 (100마다 스텟 1 상승)
@@ -32,6 +33,7 @@ const GameState = {
     this.capturedCommanders = [];
     this.npcSpawnMonth = {};
     this.npcSpawnPos = {};
+    this.pyeongwonEnterAbsMonth = null;
     this.heroHp = null;
     this.army = null;
     this.trainingEv = 0;
