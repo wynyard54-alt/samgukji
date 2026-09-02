@@ -16,6 +16,24 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .screen{ display:none; width:100vw; height:100vh; }
 .screen.active{ display:flex; }
 
+/* 회전 안내 - 세로로 든 모바일/작은 화면에서 게임 전체를 덮어 가로 모드를 유도한다 */
+#rotate-prompt{
+  display:none;
+  position:fixed; inset:0; z-index:9999;
+  flex-direction:column; align-items:center; justify-content:center; gap:12px;
+  background:#15110c; color:#f5ecd6; text-align:center; padding:24px;
+}
+.rotate-icon{ font-size:56px; animation:rotate-hint 1.6s ease-in-out infinite; }
+.rotate-text{ font-family:"Song Myung",serif; font-size:19px; font-weight:700; }
+.rotate-sub{ font-size:13px; color:#cdbd97; }
+@keyframes rotate-hint{
+  0%,100%{ transform:rotate(0deg); }
+  50%{ transform:rotate(90deg); }
+}
+@media (orientation:portrait) and (max-width:1024px){
+  #rotate-prompt{ display:flex; }
+}
+
 /* 타이틀 */
 #screen-title{ align-items:center; justify-content:center; background:
   radial-gradient(ellipse at 50% 20%, rgba(255,255,255,0.08), transparent 60%), var(--paper); }
