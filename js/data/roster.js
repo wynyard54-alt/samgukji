@@ -60,7 +60,7 @@ const ROSTER = {
     stats:{atk:29, def:31, spd:34, int:83, cha:66}, intro:'서주의 진등이오. 지나는 길에 재미있는 사람들 이야기를 들었지.' },
   yujapyeong: { id:'yujapyeong', name:'유자평', kind:'flavor', affiliation:'평원',
     intro:'그대가 유현덕의 아우로군. 소문은 익히 들었네.' },
-  jangsun: { id:'jangsun', name:'장순', kind:'enemy', forced:null, affiliation:'반란군', troop:900,
+  jangsun: { id:'jangsun', name:'장순', kind:'enemy', forced:null, affiliation:'반란군', troop:3000,
     stats:{atk:68, def:58, spd:55, int:40, cha:35}, intro:'…이걸로 끝인가. 어양에서 다시 보자꾸나.' },
 
   // 반동탁연합 진영 (등용 불가, 서사 전용 인물)

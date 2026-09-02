@@ -106,6 +106,13 @@ function getObjectives() {
     if (deungmuDone && !gs.flags.act1) list.push('유비에게 보고하기');
     if (gs.flags.act1) list.push('평원현으로 이동하기');
   } else if (stage === 'pyeongwon_free') {
+    if (gs.flags.jangsunStarted && !gs.army && gs.npcStatus['jangsun'] !== 'resolved') {
+      list.push('막사에 가서 유비와 이야기하기');
+    } else if (gs.army && gs.npcStatus['jangsun'] === 'resolved') {
+      list.push('막사로 돌아가 군세 해산하기');
+    } else if (gs.army) {
+      list.push('장순의 반란군 토벌하기');
+    }
     list.push(`반동탁연합 참전 준비하기 (${DEADLINES.pyeongwon}년까지)`);
   } else if (stage === 'camp') {
     list.push('제후들과 인사하고 손견을 도와 화웅과 맞서기');
@@ -248,7 +255,7 @@ function interactNPC(id, context) {
 
   if (id === 'yujapyeong') { handleYujapyeong(); return; }
 
-  if (id === 'jangsun') { startJangsunBattle(); return; }
+  if (id === 'jangsun') { openWarCommandMenu('jangsun'); return; }
 
   if (rd.kind === 'flavor') {
     Dialogue.show([{ speaker: rd.name, text: rd.intro }]);
@@ -314,7 +321,17 @@ function handleYubi() {
       offerBarracksTraining('아우들, 평원으로 떠날 준비가 되었소.');
     }
   } else if (stage === 'pyeongwon_free') {
-    offerBarracksTraining('아우, 무슨 일인가?');
+    if (GameState.flags.jangsunStarted && !GameState.army && GameState.npcStatus['jangsun'] !== 'resolved') {
+      Dialogue.show(STORY.jangsun_yubi_join, () => { openArmyBox(startJangsunCampaign); });
+    } else if (GameState.army && GameState.npcStatus['jangsun'] === 'resolved') {
+      showChoice('유비: "수고했네, 아우! 이제 군세를 물리세."', [
+        { label: '군세 해산', cb: () => disbandJangsunArmy() },
+      ]);
+    } else if (GameState.army) {
+      Dialogue.show([{ speaker: '유비', text: '아직 장순의 반란군이 남아있네. 부디 몸조심하게.' }]);
+    } else {
+      offerBarracksTraining('아우, 무슨 일인가?');
+    }
   }
 }
 
@@ -502,6 +519,13 @@ function openWarCommandMenu(id) {
 
 function attemptDuelChallenge(id) {
   const rd = ROSTER[id];
+  if (id === 'jangsun') { // 장순은 절대 일기토에 응하지 않는다 - 반드시 군세전투로 넘어간다
+    Dialogue.show([{ speaker: rd.name, text: '흥, 필부의 결투 따위로 대세를 바꿀 성싶으냐! 전군으로 붙어보자!' }], () => {
+      toast('장순이 일기토를 거절했다.');
+      openWarCommandMenu(id);
+    });
+    return;
+  }
   const challengerGrade = playerArmyGrade();
   const defenderGrade = enemyArmyGrade(rd);
   const chance = duelAcceptChance(challengerGrade, defenderGrade);
@@ -527,6 +551,7 @@ function resolveArmyBattle(id) {
   rd.troop = result.enemyTroopsLeft; // 적 군세 표기가 실시간으로 갱신되도록 손실을 그대로 반영
   updateHUD();
   MapView.render();
+  if (id === 'jangsun') { resolveJangsunBattle(result); return; }
   if (result.winner === 'player') {
     Dialogue.show([{ speaker: '내레이션', text: `치열한 교전 끝에 ${rd.name}의 군세를 격파했다! (아군 병력 ${result.playerTroopsLeft}명, 적 병력 궤멸)` }], () => {
       GameState.npcStatus[id] = 'resolved';
@@ -660,7 +685,12 @@ function goPyeongwonFree() {
   showScreen('screen-explore');
   if (GameState.pyeongwonEnterAbsMonth == null) GameState.pyeongwonEnterAbsMonth = absMonth(GameState.year, GameState.month);
   if (!pyeongwonCheckpoint) pyeongwonCheckpoint = JSON.parse(JSON.stringify(GameState));
-  MapView.load('pyeongwon', { onInteract: interactNPC, spawnDeadlineAbsMonth: pyeongwonDeadlineAbsMonth() });
+  MapView.load('pyeongwon', {
+    onInteract: interactNPC,
+    spawnDeadlineAbsMonth: pyeongwonDeadlineAbsMonth(),
+    onApSpent: updateHUD,
+    onApBlocked: () => toast('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
+  });
   updateHUD();
   if (!GameState.flags.act2) {
     Dialogue.show(STORY.act2_call, () => { GameState.flags.act2 = true; });
@@ -674,6 +704,7 @@ function restoreToPyeongwonCheckpoint() {
   const snap = JSON.parse(JSON.stringify(pyeongwonCheckpoint));
   Object.keys(snap).forEach((k) => { GameState[k] = snap[k]; });
   GameState.flags.act2 = true; // 재도전시 반동탁연합 합류 연출을 다시 보여줄 필요는 없다
+  MAPS.pyeongwon.apMovement = false; // 장순의 난 출정 중 패배했다면 군세 이동모드도 함께 초기화
   goPyeongwonFree();
 }
 
@@ -734,55 +765,61 @@ function checkWarmapClear() {
 }
 
 // ---------------- 평원현 : 장순의 난 (군세전투 튜토리얼) ----------------
+// 유자평의 천거 -> 유비 막사에서 군세 편성(관우군) -> 유비군이 먼저 출발해 패퇴 ->
+// 관우군이 행동력을 소모해 뒤따라가 [일기토(무조건 거절)]/[전투]로 격파 ->
+// 막사로 복귀해 군세 해산 -> 유자평이 안희현위 제수. 군세로 전환된 동안에는
+// (장수 혼자 돌아다닐 때와 달리) 한 칸 이동할 때마다 행동력을 소모한다.
 function handleYujapyeong() {
   if (!GameState.flags.jangsunStarted) {
     Dialogue.show(STORY.jangsun_call, () => {
       GameState.flags.jangsunStarted = true;
-      openArmyBox(startJangsunIntro);
+      updateHUD();
     });
-  } else if (GameState.npcStatus['jangsun'] !== 'resolved') {
-    Dialogue.show([{ speaker: '유자평', text: '장순의 반란군이 아직 근방에 있다 하네. 부디 조심하시게.' }]);
-  } else {
+  } else if (GameState.npcStatus['jangsun'] === 'resolved') {
     Dialogue.show([{ speaker: '유자평', text: '그대 덕분에 이 땅에 다시 평화가 찾아왔네. 참으로 고맙네.' }]);
+  } else if (!GameState.army) {
+    Dialogue.show([{ speaker: '유자평', text: '어서 막사로 가서 유비 공과 상의하시게.' }]);
+  } else {
+    Dialogue.show([{ speaker: '유자평', text: '장순의 반란군이 아직 근방에 있다 하네. 부디 조심하시게.' }]);
   }
 }
 
-function startJangsunIntro() {
-  Dialogue.show(STORY.jangsun_battle_intro, () => {
+function startJangsunCampaign() {
+  Dialogue.show(STORY.jangsun_yubi_depart, () => {
+    MAPS.pyeongwon.apMovement = true; // 군세로 전환되면 이동에 행동력을 소모한다
+    GameState.ap = effectiveApMax();
     GameState.flags.jangsunAppeared = true;
     MapView.addNpc('jangsun');
-    toast('장순의 반란군이 평원현 인근에 나타났다.');
+    updateHUD();
+    toast('유비군이 먼저 앞서나갔다. 행동력을 아껴 뒤따르자.');
   });
 }
 
-function startJangsunBattle() {
-  const rd = ROSTER.jangsun;
-  const result = simulateArmyBattle(
-    { troops: GameState.army ? GameState.army.troop : 0, grade: playerArmyGrade(), morale: GameState.morale, onGate: false },
-    { troops: rd.troop, grade: enemyArmyGrade(rd), morale: 100, onGate: false },
-  );
-  if (GameState.army) GameState.army.troop = result.playerTroopsLeft;
-  rd.troop = result.enemyTroopsLeft;
+function disbandJangsunArmy() {
+  GameState.addResource({ troop: GameState.army.troop, rice: GameState.army.rice });
+  GameState.army = null;
+  MAPS.pyeongwon.apMovement = false;
   updateHUD();
-  MapView.render();
+  Dialogue.show(STORY.jangsun_victory, () => {
+    GameState.addFame(60); // 메인퀘스트: 장순의 난 평정
+    toast('안희현위에 제수되었다. (명성 +60)');
+    updateHUD();
+  });
+}
+
+function resolveJangsunBattle(result) {
   if (result.winner === 'player') {
     Dialogue.show([{ speaker: '내레이션', text: `치열한 접전 끝에 장순의 반란군을 격파했다! (아군 병력 ${result.playerTroopsLeft}명)` }], () => {
       GameState.npcStatus['jangsun'] = 'resolved';
       MapView.removeNpc('jangsun');
-      Dialogue.show(STORY.jangsun_victory, () => {
-        GameState.addFame(60); // 메인퀘스트: 장순의 난 평정
-        toast('안희현위에 제수되었다. (명성 +60)');
-        updateHUD();
-      });
+      toast('막사로 돌아가 유비에게 보고하고 군세를 해산하자.');
     });
   } else {
     Dialogue.show([{ speaker: '내레이션', text: `아군이 장순의 반란군에 크게 밀려 무너졌다. (아군 병력 ${result.playerTroopsLeft}명 남음)` }], () => {
-      Dialogue.show(STORY.jangsun_defeat, () => {
-        showChoice('아직 힘이 부족한 것 같다. 어떻게 할까?', [
-          { label: '처음부터 다시 시작', cb: () => showScreen('screen-title') },
-          { label: '평원현에서 다시 시작', cb: () => restoreToPyeongwonCheckpoint() },
-        ]);
-      });
+      showChoice('아직 힘이 부족한 것 같다. 어떻게 할까?', [
+        { label: '처음부터 다시 시작', cb: () => showScreen('screen-title') },
+        { label: '평원현에서 다시 시작', cb: () => restoreToPyeongwonCheckpoint() },
+      ]);
     });
   }
 }
@@ -877,6 +914,7 @@ document.getElementById('btn-start').onclick = () => showScreen('screen-select')
 document.querySelectorAll('.hero-card').forEach((card) => {
   card.onclick = () => {
     GameState.reset(card.dataset.hero);
+    MAPS.pyeongwon.apMovement = false; // 이전 회차의 장순의 난 군세 이동모드가 남아있지 않도록 초기화
     goTakhyeonFree();
     Dialogue.show(STORY.intro);
   };
@@ -1263,8 +1301,10 @@ document.getElementById('btn-nextmonth').onclick = () => {
   // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).
   // 같은 달 안에서 연달아 전투를 치를 때만 체력이 그대로 이어진다 - 휴식(다음달)을 거치면 항상 완전 회복.
   const inCampaign = stage === 'warmap';
+  // 장순의 난: 군세로 전환된 뒤에는 평원현이라도 warmap처럼 매달 행동력을 재보급받는다.
+  const inJangsunMarch = stage === 'pyeongwon_free' && MAPS.pyeongwon.apMovement && !!GameState.army;
   GameState.heroHp = null;
-  if (inCampaign) GameState.ap = effectiveApMax();
+  if (inCampaign || inJangsunMarch) GameState.ap = effectiveApMax();
   if (inCampaign && GameState.army) {
     GameState.army.rice = Math.max(0, GameState.army.rice - Math.ceil(GameState.army.troop / 100));
     if (GameState.army.rice <= 0) GameState.changeMorale(-1); // 군량 고갈시 매턴 사기 하락
@@ -1273,9 +1313,19 @@ document.getElementById('btn-nextmonth').onclick = () => {
   if (income > 0) GameState.addResource({ gold: income });
   updateHUD();
   if (checkDeadlines()) return;
+
+  // 관우군이 첫 휴식을 취하는 순간, 먼저 앞서갔던 유비군이 장순과 격돌해 패퇴한다 (1회성 서사).
+  if (inJangsunMarch && !GameState.flags.yubiArmyDefeated) {
+    GameState.flags.yubiArmyDefeated = true;
+    Dialogue.show(STORY.jangsun_yubi_defeat, () => {
+      toast(`${GameState.dateLabel()}이(가) 되었다. 행동력이 재보급되었다.`);
+    });
+    return;
+  }
+
   const incomeMsg = income > 0 ? ` (책사들의 수완으로 금 ${income} 획득)` : '';
-  const hpMsg = inCampaign ? '체력과 행동력이 재보급되었다.' : '휴식을 취해 체력과 행동력이 모두 회복되었다.';
-  const inTown = stage === 'takhyeon_free' || stage === 'pyeongwon_free';
+  const hpMsg = inCampaign || inJangsunMarch ? '체력과 행동력이 재보급되었다.' : '휴식을 취해 체력과 행동력이 모두 회복되었다.';
+  const inTown = (stage === 'takhyeon_free' || stage === 'pyeongwon_free') && !inJangsunMarch;
   const spawned = inTown ? MapView.checkScheduledSpawns() : [];
   const spawnMsg = spawned.length ? ' 마을에 낯선 인물이 나타났다는 소문이 돈다. 돌아다니다 보면 마주칠지도 모른다.' : '';
   const finishTurn = () => toast(`${GameState.dateLabel()}이(가) 되었다. ${hpMsg}${incomeMsg}${spawnMsg}`);
