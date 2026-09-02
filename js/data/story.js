@@ -1,11 +1,11 @@
 const STORY = {
   intro: [
-    { speaker: '관우', text: '이 어지러운 세상, 뜻을 함께할 이가 있다면 얼마나 좋겠소.' },
-    { speaker: '장비', text: '나 장익덕, 재물은 있어도 함께 큰일을 할 사람이 없어 답답했소!' },
-    { speaker: '유비', text: '나 유현덕이오. 가진 것은 없으나 한실을 다시 일으키고픈 뜻만은 크외다.' },
-    { speaker: '관우', text: '그 뜻, 나 관운장이 함께하겠소.' },
-    { speaker: '장비', text: '복숭아나무 아래서 의형제를 맺읍시다! 한날한시에 나지 못했으나, 죽을 땐 한날한시에 죽기를!' },
-    { speaker: '내레이션', text: '184년, 탁현의 어느 봄날. 세 사람은 하늘에 제를 올리고 의형제를 맺었다.' },
+    { speaker: '관우', text: '이 어지러운 세상, 뜻을 함께할 이가 있다면 얼마나 좋겠소.', scene: 'assets/illust/dowon_market.jpg' },
+    { speaker: '장비', text: '나 장익덕, 재물은 있어도 함께 큰일을 할 사람이 없어 답답했소!', scene: 'assets/illust/dowon_market.jpg' },
+    { speaker: '유비', text: '나 유현덕이오. 가진 것은 없으나 한실을 다시 일으키고픈 뜻만은 크외다.', scene: 'assets/illust/dowon_market.jpg' },
+    { speaker: '관우', text: '그 뜻, 나 관운장이 함께하겠소.', scene: 'assets/illust/dowon_market.jpg' },
+    { speaker: '장비', text: '복숭아나무 아래서 의형제를 맺읍시다! 한날한시에 나지 못했으나, 죽을 땐 한날한시에 죽기를!', scene: 'assets/illust/dowon_market.jpg' },
+    { speaker: '내레이션', text: '184년, 탁현의 어느 봄날. 세 사람은 하늘에 제를 올리고 의형제를 맺었다.', scene: 'assets/illust/dowon_oath.jpg' },
   ],
 
   act1_report: [
@@ -58,10 +58,10 @@ const STORY = {
   ],
 
   act2_call: [
-    { speaker: '전령', text: '낙양에서 급보요! 하진 대장군이 살해되고, 동탁이란 자가 황제를 갈아치웠다 하오!' },
-    { speaker: '관우', text: '나라의 근본을 뒤흔드는 자로군.' },
-    { speaker: '전령', text: '원소를 비롯한 제후들이 토벌군을 일으켰고, 공손찬 어른도 격문을 보내셨소.' },
-    { speaker: '장비', text: '드디어 우리도 나설 때다!' },
+    { speaker: '전령', text: '낙양에서 급보요! 하진 대장군이 살해되고, 동탁이란 자가 황제를 갈아치웠다 하오!', scene: 'assets/illust/pyeongwon_urgent.jpg' },
+    { speaker: '관우', text: '나라의 근본을 뒤흔드는 자로군.', scene: 'assets/illust/pyeongwon_urgent.jpg' },
+    { speaker: '전령', text: '원소를 비롯한 제후들이 토벌군을 일으켰고, 공손찬 어른도 격문을 보내셨소.', scene: 'assets/illust/pyeongwon_urgent.jpg' },
+    { speaker: '장비', text: '드디어 우리도 나설 때다!', scene: 'assets/illust/pyeongwon_urgent.jpg' },
     { speaker: '내레이션', text: '유비 삼형제는 공손찬의 깃발 아래 반동탁 연합에 합류했다. — 189~190년' },
   ],
 
