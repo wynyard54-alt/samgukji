@@ -35,6 +35,39 @@ const FieldAssets = (function () {
     tile_road:'tile_road.png',
     tile_grass:'tile_grass.png',
     tile_water:'tile_water.png',
+    v6_camp_yubi:'v6_camp_yubi.png',
+    v6_house_front:'v6_house_front.png',
+    v6_house_side:'v6_house_side.png',
+    v6_wall_gate:'v6_wall_gate.png',
+    v6_fence_alley:'v6_fence_alley.png',
+    v6_tavern_seats:'v6_tavern_seats.png',
+    v6_stall_vegetable:'v6_stall_vegetable.png',
+    v6_stall_grain:'v6_stall_grain.png',
+    v6_weapon_rack:'v6_weapon_rack.png',
+    v6_supply_cluster:'v6_supply_cluster.png',
+    v6_stable:'v6_stable.png',
+    v6_awning_lantern:'v6_awning_lantern.png',
+    v6_ground_dirt:'v6_ground_dirt.png',
+    v6_ground_market:'v6_ground_market.png',
+    v6_edge_grass:'v6_edge_grass.png',
+    v6_edge_stone:'v6_edge_stone.png',
+    v6_drain:'v6_drain.png',
+    v6_path_curve:'v6_path_curve.png',
+    v6_shadow_tree:'v6_shadow_tree.png',
+    v6_shadow_roof:'v6_shadow_roof.png',
+    v6_weeds:'v6_weeds.png',
+    v6_foreground_roof:'v6_foreground_roof.png',
+    v6_foreground_leaves:'v6_foreground_leaves.png',
+    v6_foreground_awning:'v6_foreground_awning.png',
+    v6_idle_tavern:'v6_idle_tavern.png',
+    v6_idle_merchant:'v6_idle_merchant.png',
+    v6_idle_porter:'v6_idle_porter.png',
+    v6_idle_scholar:'v6_idle_scholar.png',
+    v6_idle_guard:'v6_idle_guard.png',
+    v6_idle_watercarrier:'v6_idle_watercarrier.png',
+    v6_idle_child:'v6_idle_child.png',
+    v6_idle_stablehand:'v6_idle_stablehand.png',
+    v7_yellowturban_lair:'v7_yellowturban_lair.png',
   };
 
   function get(key) {
@@ -76,3 +109,4 @@ const FieldAssets = (function () {
 
   return { get, ready, draw, tile, sprite };
 })();
+

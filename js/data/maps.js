@@ -11,10 +11,10 @@ function makeGrid(w, h, base) {
 
 const MAPS = {};
 
-// ---------------- 탁현 : 시장 Vertical Slice v1 ----------------
-// 큰 단일 맵 + 카메라 추적을 시험하는 첫 생활권.
+// ---------------- 탁현 : 확장 성읍 v2 ----------------
+// 28x20(560칸)에서 40x28(1120칸)로 확장. 정확히 2배 면적이다.
 (function () {
-  const w = 28, h = 20;
+  const w = 40, h = 28;
   const grid = makeGrid(w, h, 0);
 
   // 성벽/외곽
@@ -23,102 +23,116 @@ const MAPS = {};
   rectFill(grid, 0, 0, 0, h - 1, 4);
   rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
 
-  // 큰길: 성문 -> 시장 -> 남쪽
+  // 큰길: 북문 -> 중앙 장터 -> 남쪽 외곽, 동서 생활권 연결.
   for (let y = 1; y < h - 1; y++) {
-    grid[y][13] = 1; grid[y][14] = 1;
+    grid[y][19] = 1; grid[y][20] = 1;
   }
   for (let x = 1; x < w - 1; x++) {
-    grid[10][x] = 1; grid[11][x] = 1;
+    grid[13][x] = 1; grid[14][x] = 1;
   }
+  for (let x = 3; x <= 35; x++) grid[20][x] = 1;
+  for (let y = 14; y <= 24; y++) grid[y][30] = 1;
 
-  // 건물 충돌 영역
-  rectFill(grid, 2, 2, 7, 5, 2);    // 관아
-  rectFill(grid, 18, 2, 23, 5, 2);  // 서쪽(?) 저택군 / 노식 거처
-  rectFill(grid, 3, 13, 8, 16, 2);  // 주막
-  rectFill(grid, 19, 13, 24, 16, 2); // 민가/상점
-  rectFill(grid, 9, 2, 11, 4, 2);   // 작은 상점
+  // 건물 충돌 영역: 주택을 여러 거리로 분산하여 발견형 자택을 배정할 여지를 둔다.
+  rectFill(grid, 3, 3, 9, 7, 2);     // 관아
+  rectFill(grid, 12, 3, 16, 6, 2);   // 서북 민가 A (노식 후보)
+  rectFill(grid, 24, 3, 28, 6, 2);   // 북동 민가 B (공융 후보)
+  rectFill(grid, 32, 4, 37, 8, 2);   // 동쪽 민가 C
+  rectFill(grid, 4, 19, 10, 23, 2);  // 주막
+  rectFill(grid, 24, 19, 29, 23, 2); // 상점가
+  rectFill(grid, 11, 18, 15, 21, 2); // 서남 민가 D
+  rectFill(grid, 32, 10, 37, 13, 2); // 유비 세력 막사
 
-  // 큰 느티나무, 우물, 연못
-  rectFill(grid, 21, 7, 22, 8, 4);
-  grid[16][15] = 3; grid[16][16] = 3;
-  grid[17][15] = 3; grid[17][16] = 3;
-  grid[8][5] = 4;
-  rectFill(grid, 24, 7, 26, 9, 2); // 세력 막사
+  // 큰 느티나무, 우물, 연못, 남동 숲과 황건적 소굴 후방.
+  rectFill(grid, 27, 9, 28, 10, 4);
+  rectFill(grid, 17, 22, 19, 24, 3);
+  grid[10][8] = 4;
+  rectFill(grid, 36, 22, 38, 26, 2);
+  for (const [x,y] of [[32,22],[33,24],[34,26],[38,20],[35,21],[37,25]]) grid[y][x]=4;
 
   MAPS.takhyeon = {
     name: '탁현 · 장터',
     width: w, height: h,
     tiles: grid,
-    playerStart: { x: 13, y: 15 },
+    playerStart: { x: 19, y: 17 },
     camera: { viewportW: 800, viewportH: 480 },
 
     // 배경을 한 장으로 굳히지 않고 재사용 가능한 오브젝트 조합으로 구성한다.
     decor: [
-      { type:'gate', x:11, y:0, w:6, h:2, label:'탁현 북문' },
-      { type:'building', x:2, y:2, w:6, h:4, roof:'charcoal', label:'관아', sign:'官' },
-      { type:'building', x:18, y:2, w:6, h:4, roof:'brown', label:'민가', sign:'' },
-      { type:'building', x:9, y:2, w:3, h:3, roof:'brown', label:'상점', sign:'布' },
-      { type:'building', x:3, y:13, w:6, h:4, roof:'red', label:'주막', sign:'酒' },
-      { type:'building', x:19, y:13, w:6, h:4, roof:'brown', label:'상점가', sign:'市' },
-      { type:'building', x:24, y:7, w:3, h:3, roof:'charcoal', label:'세력 막사', sign:'營' },
-      { type:'stall', x:7, y:8, w:2, tone:'red' },
-      { type:'stall', x:10, y:8, w:2, tone:'tan' },
-      { type:'stall', x:16, y:8, w:2, tone:'green' },
-      { type:'stall', x:18, y:9, w:2, tone:'tan' },
-      { type:'stall', x:8, y:12, w:2, tone:'green' },
-      { type:'stall', x:16, y:12, w:2, tone:'red' },
-      { type:'tree', x:21.5, y:8.2, scale:1.45, landmark:true },
-      { type:'tree', x:5.2, y:8.0, scale:1.0 },
-      { type:'well', x:11.3, y:12.6 },
-      { type:'cart', x:23.0, y:10.8 },
-      { type:'crate', x:5.8, y:11.8 },
-      { type:'crate', x:6.5, y:11.7 },
-      { type:'lanterns', x:4, y:12.5, count:5 },
+      { type:'gate', x:17, y:0, w:6, h:2, label:'탁현 북문' },
+      { type:'building', x:3, y:3, w:7, h:5, label:'관아' },
+      { type:'building', x:12, y:3, w:5, h:4, label:'민가', residenceId:'noshik' },
+      { type:'building', x:24, y:3, w:5, h:4, label:'민가', residenceId:'gongyung' },
+      { type:'building', x:32, y:4, w:6, h:5, label:'민가' },
+      { type:'building', x:4, y:19, w:7, h:5, label:'주막' },
+      { type:'building', x:24, y:19, w:6, h:5, label:'상점가' },
+      { type:'building', x:11, y:18, w:5, h:4, label:'민가' },
+      { type:'building', x:32, y:10, w:6, h:4, label:'세력 막사' },
+      { type:'stall', x:10, y:11, w:2, tone:'red' },
+      { type:'stall', x:14, y:11, w:2, tone:'tan' },
+      { type:'stall', x:23, y:10, w:2, tone:'green' },
+      { type:'stall', x:27, y:12, w:2, tone:'tan' },
+      { type:'stall', x:9, y:16, w:2, tone:'green' },
+      { type:'stall', x:24, y:16, w:2, tone:'red' },
+      { type:'tree', x:27.5, y:9.5, scale:1.45, landmark:true },
+      { type:'tree', x:8.2, y:10.0, scale:1.0 },
+      { type:'tree', x:34.0, y:22.0, scale:1.0 },
+      { type:'tree', x:38.0, y:20.0, scale:1.0 },
+      { type:'well', x:16.0, y:15.8 },
+      { type:'cart', x:28.0, y:14.8 },
+      { type:'crate', x:7.8, y:17.7 },
+      { type:'crate', x:8.5, y:17.6 },
+      { type:'lanterns', x:5, y:18.5, count:5 },
     ],
 
     areaLabels: [
-      { x:5, y:6.3, text:'관아 거리' },
-      { x:13.5, y:7.0, text:'탁현 장터' },
-      { x:5.6, y:17.2, text:'주막 거리' },
+      { x:6, y:8.5, text:'관아 거리' },
+      { x:19.5, y:10.0, text:'탁현 장터' },
+      { x:7.0, y:24.2, text:'주막 거리' },
+      { x:34.5, y:19.5, text:'남동 숲길' },
+      { x:35.5, y:25.8, text:'황건적 소굴' },
     ],
 
     // 기존 스토리 NPC는 유지하되 공간 속 역할에 맞게 재배치.
     // discoverable + residence: 첫 발견 전에는 인파 속 인물, 발견 후에는 집이 이름을 얻는다.
     npcs: [
-      { id:'yubi', x:25, y:10, label:'유비 (세력 막사)' },
-      { id:'chujeong', x:9, y:11, label:'추정', randomSpawn:true },
+      { id:'yubi', x:34, y:14, label:'유비 (세력 막사)' },
+      { id:'chujeong', x:13, y:14, label:'추정', randomSpawn:true },
       {
-        id:'noshik', x:21, y:9, label:'', discoverable:true,
+        id:'noshik', x:27, y:12, label:'', discoverable:true,
         discoveryRange:2,
         discoveryText:'시장 모퉁이의 큰 느티나무 아래, 소란에는 아랑곳하지 않고 책을 읽는 범상치 않은 선비가 보인다.',
-        residence:{ x:20, y:6, label:'노식의 집' }
+        residence:{ x:14, y:7, label:'노식의 집' }
       },
-      { id:'yuwongi', x:15, y:11, label:'유원기' },
-      { id:'sossangJangsepyeong', x:17, y:10, label:'소쌍·장세평' },
+      { id:'yuwongi', x:21, y:14, label:'유원기' },
+      { id:'sossangJangsepyeong', x:24, y:13, label:'소쌍·장세평' },
       {
-        id:'gongyung', x:11, y:9, label:'', discoverable:true, discoveryRange:2,
+        id:'gongyung', x:14, y:12, label:'', discoverable:true, discoveryRange:2,
         discoveryText:'비단 좌판 옆에서 사람들의 언쟁을 조용히 듣던 선비가, 문득 핵심을 찌르는 한마디를 던진다.',
-        residence:{ x:19, y:6, label:'공융이 머무는 집' }
+        residence:{ x:26, y:7, label:'공융이 머무는 집' }
       },
-      { id:'deungmu', x:25, y:18, label:'등무(황건적)' },
+      { id:'deungmu', x:34, y:23, label:'등무(황건적 두목)' },
     ],
 
     // 일반 백성은 무채색/저채도 의복. 전부 장수가 아니며 공간을 살아 있게 만드는 군중이다.
     ambient: [
-      { archetype:'merchant', x:8, y:9, palette:'ash', wander:2 },
-      { archetype:'farmer', x:10, y:11, palette:'earth', wander:3 },
-      { archetype:'woman', x:12, y:9, palette:'ash', wander:2 },
-      { archetype:'elder', x:15, y:9, palette:'earth', wander:1 },
-      { archetype:'porter', x:16, y:11, palette:'ash', wander:3 },
-      { archetype:'farmer', x:18, y:11, palette:'earth', wander:2 },
-      { archetype:'merchant', x:6, y:12, palette:'ash', wander:2 },
-      { archetype:'child', x:12, y:12, palette:'dust', wander:3 },
-      { archetype:'guard', x:12, y:3, palette:'iron', wander:1 },
-      { archetype:'guard', x:15, y:3, palette:'iron', wander:1 },
-      { archetype:'woman', x:21, y:11, palette:'dust', wander:2 },
-      { archetype:'porter', x:23, y:12, palette:'earth', wander:2 },
-      { archetype:'farmer', x:4, y:10, palette:'ash', wander:2 },
-      { archetype:'merchant', x:20, y:10, palette:'earth', wander:2 },
+      { archetype:'merchant', x:11, y:12, palette:'ash', wander:2 },
+      { archetype:'farmer', x:14, y:15, palette:'earth', wander:3 },
+      { archetype:'woman', x:17, y:12, palette:'ash', wander:2 },
+      { archetype:'elder', x:21, y:12, palette:'earth', wander:1 },
+      { archetype:'porter', x:22, y:16, palette:'ash', wander:3 },
+      { archetype:'farmer', x:25, y:15, palette:'earth', wander:2 },
+      { archetype:'merchant', x:8, y:16, palette:'ash', wander:2 },
+      { archetype:'child', x:17, y:17, palette:'dust', wander:3 },
+      { archetype:'guard', x:18, y:3, palette:'iron', wander:1 },
+      { archetype:'guard', x:21, y:3, palette:'iron', wander:1 },
+      { archetype:'woman', x:28, y:15, palette:'dust', wander:2 },
+      { archetype:'porter', x:29, y:17, palette:'earth', wander:2 },
+      { archetype:'farmer', x:6, y:14, palette:'ash', wander:2 },
+      { archetype:'merchant', x:26, y:13, palette:'earth', wander:2 },
+      { archetype:'woman', x:12, y:20, palette:'dust', wander:2 },
+      { archetype:'child', x:22, y:20, palette:'dust', wander:2 },
+      { archetype:'guard', x:31, y:14, palette:'iron', wander:1 },
     ],
   };
 })();
@@ -218,3 +232,4 @@ const MAPS = {};
     ],
   };
 })();
+

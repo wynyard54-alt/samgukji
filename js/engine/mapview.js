@@ -142,7 +142,9 @@ const MapView = (function () {
     if (!map) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawGround();
+    drawV6GroundDressing();
     drawBackDecor();
+    drawV6BackDressing();
     drawAreaLabels();
 
     const actors = [];
@@ -161,7 +163,63 @@ const MapView = (function () {
     }
 
     drawFrontDecor();
+    drawV6Foreground();
     drawLocationRibbon();
+  }
+
+  function drawNatural(key, tileX, tileY, width, anchor=.72) {
+    const img=FieldAssets.get(key);
+    if (!FieldAssets.ready(img)) return false;
+    const height=width*(img.naturalHeight/img.naturalWidth);
+    return FieldAssets.draw(ctx,key,worldX(tileX)-width/2,worldY(tileY)-height*anchor,width,height);
+  }
+
+  function drawV6GroundDressing() {
+    if (mapId!=='takhyeon') return;
+    ctx.save(); ctx.globalAlpha=.82;
+    drawNatural('v6_ground_market',20.0,15.0,760,.53);
+    drawNatural('v6_ground_dirt',10.0,13.0,280,.55);
+    drawNatural('v6_ground_dirt',29.0,15.5,250,.55);
+    drawNatural('v6_edge_grass',27.5,18.2,270,.55);
+    drawNatural('v6_edge_stone',20.0,8.5,280,.55);
+    drawNatural('v6_path_curve',7.0,18.0,210,.55);
+    drawNatural('v6_drain',25.0,14.0,190,.55);
+    drawNatural('v6_shadow_tree',27.6,11.2,290,.55);
+    drawNatural('v6_shadow_roof',7.0,20.5,280,.55);
+    drawNatural('v6_weeds',33.0,21.0,145,.62);
+    ctx.restore();
+  }
+
+  function drawV6BackDressing() {
+    if (mapId!=='takhyeon') return;
+    // These fill the visual gaps without changing the collision grid or quest positions.
+    drawNatural('v6_wall_gate',20.0,8.2,250,.72);
+    drawNatural('v6_fence_alley',11.0,9.0,195,.72);
+    drawNatural('v6_tavern_seats',7.5,22.8,190,.72);
+    drawNatural('v6_stall_vegetable',25.5,17.2,200,.72);
+    drawNatural('v6_stall_grain',15.5,11.8,190,.72);
+    drawNatural('v6_weapon_rack',34.0,15.0,165,.72);
+    drawNatural('v6_supply_cluster',32.5,16.2,155,.72);
+    drawNatural('v6_stable',27.5,23.5,200,.72);
+    drawNatural('v6_awning_lantern',12.8,12.0,155,.72);
+    drawNatural('v7_yellowturban_lair',35.3,26.0,440,.78);
+
+    drawNatural('v6_idle_tavern',7.7,22.4,110,.72);
+    drawNatural('v6_idle_merchant',25.7,16.9,118,.72);
+    drawNatural('v6_idle_porter',22.5,17.8,98,.72);
+    drawNatural('v6_idle_scholar',27.3,12.0,86,.72);
+    drawNatural('v6_idle_guard',33.5,14.3,102,.72);
+    drawNatural('v6_idle_watercarrier',12.0,17.0,96,.72);
+    drawNatural('v6_idle_child',17.0,18.0,86,.72);
+    drawNatural('v6_idle_stablehand',27.4,23.3,130,.72);
+  }
+
+  function drawV6Foreground() {
+    if (mapId!=='takhyeon') return;
+    // Fixed screen-edge framing gives the market depth without affecting gameplay.
+    FieldAssets.draw(ctx,'v6_foreground_roof',-70,canvas.height-175,270,220);
+    FieldAssets.draw(ctx,'v6_foreground_leaves',canvas.width-220,-45,270,210);
+    FieldAssets.draw(ctx,'v6_foreground_awning',canvas.width-205,canvas.height-155,235,190);
   }
 
   function drawGround() {
@@ -189,10 +247,27 @@ const MapView = (function () {
 
   function decorBuildingKey(d) {
     if (d.type === 'gate') return 'building_gate';
-    if (d.label === '관아') return 'building_yamen';
-    if (d.label === '주막') return 'building_tavern';
-    if ((d.label || '').includes('상점')) return 'building_shop';
-    return 'building_house';
+    // 탁현은 새로 그려진 v6 건물 세트를 쓰고, 다른 맵은 기존 건물 스프라이트를 그대로 유지한다
+    // (한 맵 안에서 신/구 화풍이 섞이지 않도록).
+    if (mapId !== 'takhyeon') {
+      if (d.label === '관아') return 'building_yamen';
+      if (d.label === '주막') return 'building_tavern';
+      if ((d.label || '').includes('상점')) return 'building_shop';
+      return 'building_house';
+    }
+    if (d.label === '세력 막사') return 'v6_camp_yubi';
+    if ((d.label || '').includes('상점')) return 'v6_house_side';
+    if (d.label === '주막') return 'v6_house_side';
+    return 'v6_house_front';
+  }
+
+  // 주인 없는 민가(residenceId)는 해당 책사를 발견하기 전엔 무명 '민가'로 표기한다.
+  // 발견(met/recruited) 후에는 그 장수 본인이 집 앞으로 옮겨와 자기 이름표를 달기 때문에
+  // (drawNpc의 _atResidence 라벨), 건물 쪽 라벨은 중복되지 않도록 감춘다.
+  function decorLabel(d) {
+    if (!d.residenceId) return d.label;
+    const met = ['met', 'recruited'].includes(GameState.npcStatus[d.residenceId]);
+    return met ? null : d.label;
   }
 
   function drawBackDecor() {
@@ -222,15 +297,15 @@ const MapView = (function () {
   function drawRasterBuilding(d) {
     const key=decorBuildingKey(d);
     const img=FieldAssets.get(key);
-    const targetW=d.w*TILE;
+    const camp=d.label==='세력 막사';
+    const targetW=camp ? 5*TILE : d.w*TILE;
     let targetH=d.h*TILE;
     if (FieldAssets.ready(img)) targetH=targetW*(img.naturalHeight/img.naturalWidth);
-    const dx=worldX(d.x);
+    const dx=worldX(camp ? d.x-1 : d.x);
     const footY=worldY(d.y+d.h);
-    if (!FieldAssets.draw(ctx,key,dx,footY-targetH,targetW,targetH)) {
-      ctx.fillStyle='#c9b27f';ctx.fillRect(dx,worldY(d.y),targetW,d.h*TILE);
-    }
-    if (d.label) drawTag(dx+targetW/2, footY-targetH+24, d.label, 'rgba(50,40,29,.86)');
+    if (!FieldAssets.draw(ctx,key,dx,footY-targetH,targetW,targetH)) return;
+    const label=decorLabel(d);
+    if (label) drawTag(dx+targetW/2, footY-targetH+24, label, 'rgba(50,40,29,.86)');
   }
 
   function drawRasterProp(key,d,baseW,baseH,scale) {
@@ -252,7 +327,7 @@ const MapView = (function () {
     const x=worldX(p.x)+TILE/2, y=worldY(p.y)+TILE*.88;
     const role = ['merchant','farmer','woman','elder','guard','child','porter'].includes(p.archetype) ? p.archetype : 'farmer';
     const key=`npc_${role}`;
-    if (!FieldAssets.sprite(ctx,key,x,y,p._dir||'down',animFrame,32,48,.92,3)) {
+    if (!FieldAssets.sprite(ctx,key,x,y,p._dir||'down',animFrame,32,48,1.15,3)) {
       drawPersonSprite(x,y,{ palette:PALETTES[p.palette]||PALETTES.ash, archetype:p.archetype, scale:.9, dir:p._dir });
     }
   }
@@ -269,10 +344,10 @@ const MapView = (function () {
     // Discovered Liu Bei and Lu Bu use their own character sheets.
     const uniqueKey=!hidden && (n.id==='yubi' || n.id==='yeopo') ? `hero_${n.id}` : null;
     const drawn=uniqueKey
-      ? FieldAssets.sprite(ctx,uniqueKey,x,y,'down',animFrame,48,64,.88,3)
+      ? FieldAssets.sprite(ctx,uniqueKey,x,y,'down',animFrame,48,64,.94,3)
       : (!hidden && rd.kind==='enemy')
-        ? FieldAssets.sprite(ctx,'enemy_yellowturban',x,y,'down',animFrame,32,48,1.04,3)
-        : FieldAssets.sprite(ctx,`npc_${role}`,x,y,'down',animFrame,32,48,hidden?.95:1.04,3);
+        ? FieldAssets.sprite(ctx,'enemy_yellowturban',x,y,'down',animFrame,32,48,1.18,3)
+        : FieldAssets.sprite(ctx,`npc_${role}`,x,y,'down',animFrame,32,48,hidden?1.12:1.20,3);
     if (!drawn) {
       const palette=hidden
         ? {robe:'#72746e',dark:'#474a47',trim:'#9d9e94',skin:'#d1aa80'}
@@ -305,7 +380,7 @@ const MapView = (function () {
     const x=worldX(player.x)+TILE/2, y=worldY(player.y)+TILE*.94;
     const key=id==='gwanwoo' ? 'hero_gwanwoo' : 'hero_jangbi';
     const frame=animFrame%3;
-    if (!FieldAssets.sprite(ctx,key,x,y,player.dir,frame,48,64,1.05,3)) {
+    if (!FieldAssets.sprite(ctx,key,x,y,player.dir,frame,48,64,.98,3)) {
       const palette=id==='gwanwoo'
         ? {robe:'#356547',dark:'#253e31',trim:'#a88749',skin:'#b56d54'}
         : {robe:'#7b4035',dark:'#4d2b27',trim:'#b58c4f',skin:'#bd795e'};
