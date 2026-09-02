@@ -123,6 +123,9 @@ const MAPS = {};
       { id:'songgeon', x:6, y:20, label:'손건' },
       { id:'ganong', x:9, y:22, label:'간옹' },
       { id:'jindeung', x:23, y:22, label:'진등' },
+      { id:'yujapyeong', x:7, y:8, label:'유자평' },
+      // 유자평과의 대화로 장순의 난이 시작되기 전까지는 등장하지 않는다.
+      { id:'jangsun', x:35, y:20, label:'장순(반란군)', storyGate:'jangsunAppeared' },
     ],
   };
 })();

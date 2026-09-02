@@ -246,6 +246,10 @@ function interactNPC(id, context) {
     return;
   }
 
+  if (id === 'yujapyeong') { handleYujapyeong(); return; }
+
+  if (id === 'jangsun') { startJangsunBattle(); return; }
+
   if (rd.kind === 'flavor') {
     Dialogue.show([{ speaker: rd.name, text: rd.intro }]);
     return;
@@ -726,6 +730,60 @@ function checkWarmapClear() {
     GameState.addFame(30); // 메인퀘스트: 호로관 평정
     updateHUD();
     offerCapturedRecruits(() => Dialogue.show(STORY.warmap_clear, goHamgokgwan));
+  }
+}
+
+// ---------------- 평원현 : 장순의 난 (군세전투 튜토리얼) ----------------
+function handleYujapyeong() {
+  if (!GameState.flags.jangsunStarted) {
+    Dialogue.show(STORY.jangsun_call, () => {
+      GameState.flags.jangsunStarted = true;
+      openArmyBox(startJangsunIntro);
+    });
+  } else if (GameState.npcStatus['jangsun'] !== 'resolved') {
+    Dialogue.show([{ speaker: '유자평', text: '장순의 반란군이 아직 근방에 있다 하네. 부디 조심하시게.' }]);
+  } else {
+    Dialogue.show([{ speaker: '유자평', text: '그대 덕분에 이 땅에 다시 평화가 찾아왔네. 참으로 고맙네.' }]);
+  }
+}
+
+function startJangsunIntro() {
+  Dialogue.show(STORY.jangsun_battle_intro, () => {
+    GameState.flags.jangsunAppeared = true;
+    MapView.addNpc('jangsun');
+    toast('장순의 반란군이 평원현 인근에 나타났다.');
+  });
+}
+
+function startJangsunBattle() {
+  const rd = ROSTER.jangsun;
+  const result = simulateArmyBattle(
+    { troops: GameState.army ? GameState.army.troop : 0, grade: playerArmyGrade(), morale: GameState.morale, onGate: false },
+    { troops: rd.troop, grade: enemyArmyGrade(rd), morale: 100, onGate: false },
+  );
+  if (GameState.army) GameState.army.troop = result.playerTroopsLeft;
+  rd.troop = result.enemyTroopsLeft;
+  updateHUD();
+  MapView.render();
+  if (result.winner === 'player') {
+    Dialogue.show([{ speaker: '내레이션', text: `치열한 접전 끝에 장순의 반란군을 격파했다! (아군 병력 ${result.playerTroopsLeft}명)` }], () => {
+      GameState.npcStatus['jangsun'] = 'resolved';
+      MapView.removeNpc('jangsun');
+      Dialogue.show(STORY.jangsun_victory, () => {
+        GameState.addFame(60); // 메인퀘스트: 장순의 난 평정
+        toast('안희현위에 제수되었다. (명성 +60)');
+        updateHUD();
+      });
+    });
+  } else {
+    Dialogue.show([{ speaker: '내레이션', text: `아군이 장순의 반란군에 크게 밀려 무너졌다. (아군 병력 ${result.playerTroopsLeft}명 남음)` }], () => {
+      Dialogue.show(STORY.jangsun_defeat, () => {
+        showChoice('아직 힘이 부족한 것 같다. 어떻게 할까?', [
+          { label: '처음부터 다시 시작', cb: () => showScreen('screen-title') },
+          { label: '평원현에서 다시 시작', cb: () => restoreToPyeongwonCheckpoint() },
+        ]);
+      });
+    });
   }
 }
 
