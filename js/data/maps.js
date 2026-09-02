@@ -62,6 +62,8 @@ const MAPS = {};
         residence:{ x:26, y:7, label:'공융이 머무는 집' }
       },
       { id:'deungmu', x:34, y:23, label:'등무(황건적 두목)' },
+      // 등무 처치 보고 후에만 등장하는 두 번째 사건 - 시장 한복판에 나타난 황건적 잔당.
+      { id:'jeongwonji', x:23, y:16, label:'정원지(황건적 잔당)', storyGate:'jeongwonjiEvent' },
     ],
 
     // 일반 백성은 무채색/저채도 의복. 전부 장수가 아니며 공간을 살아 있게 만드는 군중이다.

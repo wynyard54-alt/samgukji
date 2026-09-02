@@ -73,6 +73,7 @@ const MapView = (function () {
       const status = GameState.npcStatus[n.id];
       if (status === 'recruited' || status === 'resolved' || status === 'dead' || status === 'fled') return false;
       if (n.randomSpawn && !GameState.npcSpawnPos[n.id]) return false; // 아직 등장 시점이 되지 않음
+      if (n.storyGate && !GameState.flags[n.storyGate]) return false; // 특정 스토리 이벤트 전에는 등장하지 않음
       return true;
     });
     for (const n of liveNpcs) {
@@ -425,6 +426,13 @@ const MapView = (function () {
 
   function removeNpc(id) { liveNpcs=liveNpcs.filter((n)=>n.id!==id); render(); }
 
+  // 스토리 진행에 따라 지도에 새 인물을 등장시킨다 (등무 처치 후 정원지 등장 등).
+  function addNpc(id) {
+    if (!map || liveNpcs.some((n) => n.id === id)) return;
+    const n0 = map.npcs.find((n) => n.id === id);
+    if (n0) { liveNpcs.push(n0); render(); }
+  }
+
   function absMonth(year, month) { return year * 12 + month; }
 
   // 등장 시점을 (현재로부터 마감까지 남은 기간의) 50% 이내로 제한해, 마을 체류기한 막판에야
@@ -573,7 +581,7 @@ const MapView = (function () {
   });
 
   return {
-    load,render,removeNpc,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,
+    load,render,removeNpc,addNpc,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},
     get playerPos(){return {x:player.x,y:player.y,dir:player.dir};},

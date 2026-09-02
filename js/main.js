@@ -301,6 +301,10 @@ function handleYubi() {
         GameState.addResource({ troop: 500 }); // 명성을 듣고 몰려온 장정들의 귀순
         toast('평원현으로 이동할 수 있습니다. (명성 +80, 병사 +500)');
         updateHUD();
+        Dialogue.show(STORY.jeongwonji_incident, () => {
+          GameState.flags.jeongwonjiEvent = true;
+          MapView.addNpc('jeongwonji');
+        });
       });
     } else {
       offerBarracksTraining('아우들, 평원으로 떠날 준비가 되었소.');
@@ -1143,7 +1147,7 @@ document.querySelectorAll('#bottom-menu button').forEach((btn) => {
 
 // ---- 마을 체류 중 다음달로 넘길 때 가끔 발생하는 돌발 이벤트 ----
 const RANDOM_EVENT_CHANCE = 0.3;
-const RANDOM_EVENT_BANDITS = ['gwakseung', 'yeosang', 'jeongwonji'];
+const RANDOM_EVENT_BANDITS = ['gwakseung', 'yeosang']; // 정원지는 탁현 2번째 두목 퀘스트로 승격되어 여기서 제외
 const FLAVOR_EVENT_LINES = [
   '거리에서 아이들이 무예 놀이를 하며 뛰노는 모습이 보인다.',
   '저잣거리에 이상한 소문이 돌고 있다 - 낙양에서 큰 난리가 났다는데...',
