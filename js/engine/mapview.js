@@ -151,6 +151,7 @@ const MapView = (function () {
     if (!map) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawGround();
+    drawV9Waterway();
     drawBackDecor();
     drawAreaLabels();
 
@@ -196,6 +197,37 @@ const MapView = (function () {
     // 시장 중심부는 흙길을 넓게 깔아 도시 생활권이 한눈에 읽히게 한다. (탁현 외 맵에서만 사용)
     for (let y=6; y<=14; y++) for (let x=4; x<=24; x++) {
       if (map.tiles[y] && map.tiles[y][x] === 0) FieldAssets.tile(ctx,'tile_dirt',worldX(x),worldY(y),TILE);
+    }
+  }
+
+  // 대로 한 줄 + 대각선 수로 + 그 교차점의 다리. 개별 타일 조각을 이어붙이는 방식이라
+  // 이음새가 완벽하진 않지만(사용자 확인 완료: "삐뚤빼뚤해도 됨"), 스탬프를 겹쳐 찍어
+  // 자연스럽게 이어지도록 한다.
+  function stampLine(key, p0, p1, stampW, overlap) {
+    const img = FieldAssets.get(key);
+    if (!FieldAssets.ready(img)) return;
+    const stampH = stampW * (img.naturalHeight / img.naturalWidth);
+    const distTiles = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+    const stepTiles = (stampW * overlap) / TILE;
+    const n = Math.max(1, Math.round(distTiles / stepTiles));
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const tx = p0.x + (p1.x - p0.x) * t;
+      const ty = p0.y + (p1.y - p0.y) * t;
+      FieldAssets.draw(ctx, key, worldX(tx) - stampW / 2, worldY(ty) - stampH / 2, stampW, stampH);
+    }
+  }
+
+  function drawV9Waterway() {
+    if (mapId !== 'takhyeon') return;
+    const roadY = 14;
+    stampLine('v9_road_h', { x: 4, y: roadY }, { x: 36, y: roadY }, 170, 0.56);
+    stampLine('v9_canal_diag', { x: 6, y: 3 }, { x: 34, y: 25 }, 170, 0.56);
+
+    const bridgeImg = FieldAssets.get('v9_bridge_diag');
+    if (FieldAssets.ready(bridgeImg)) {
+      const bw = 155, bh = bw * (bridgeImg.naturalHeight / bridgeImg.naturalWidth);
+      FieldAssets.draw(ctx, 'v9_bridge_diag', worldX(20) - bw / 2, worldY(roadY) - bh / 2, bw, bh);
     }
   }
 

@@ -69,6 +69,9 @@ const FieldAssets = (function () {
     v6_idle_child:'v6_idle_child.png',
     v6_idle_stablehand:'v6_idle_stablehand.png',
     v7_yellowturban_lair:'v7_yellowturban_lair.png',
+    v9_canal_diag:'v9_canal_diag.png',
+    v9_bridge_diag:'v9_bridge_diag.png',
+    v9_road_h:'v9_road_h.png',
   };
 
   function get(key) {
