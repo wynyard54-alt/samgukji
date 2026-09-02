@@ -142,9 +142,8 @@ const MapView = (function () {
     if (!map) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawGround();
-    drawV6GroundDressing();
+    drawCityWalls();
     drawBackDecor();
-    drawV6BackDressing();
     drawAreaLabels();
 
     const actors = [];
@@ -166,69 +165,48 @@ const MapView = (function () {
     drawLocationRibbon();
   }
 
-  function drawNatural(key, tileX, tileY, width, anchor=.72) {
-    const img=FieldAssets.get(key);
-    if (!FieldAssets.ready(img)) return false;
-    const height=width*(img.naturalHeight/img.naturalWidth);
-    return FieldAssets.draw(ctx,key,worldX(tileX)-width/2,worldY(tileY)-height*anchor,width,height);
-  }
-
-  function drawV6GroundDressing() {
-    if (mapId!=='takhyeon') return;
-    ctx.save(); ctx.globalAlpha=.82;
-    drawNatural('v6_ground_market',20.0,15.0,760,.53);
-    drawNatural('v6_ground_dirt',10.0,13.0,280,.55);
-    drawNatural('v6_ground_dirt',29.0,15.5,250,.55);
-    drawNatural('v6_edge_grass',27.5,18.2,270,.55);
-    drawNatural('v6_edge_stone',20.0,8.5,280,.55);
-    drawNatural('v6_path_curve',7.0,18.0,210,.55);
-    drawNatural('v6_drain',25.0,14.0,190,.55);
-    drawNatural('v6_shadow_tree',27.6,11.2,290,.55);
-    drawNatural('v6_shadow_roof',7.0,20.5,280,.55);
-    drawNatural('v6_weeds',33.0,21.0,145,.62);
-    ctx.restore();
-  }
-
-  function drawV6BackDressing() {
-    if (mapId!=='takhyeon') return;
-    // These fill the visual gaps without changing the collision grid or quest positions.
-    drawNatural('v6_wall_gate',20.0,8.2,250,.72);
-    drawNatural('v6_fence_alley',11.0,9.0,195,.72);
-    drawNatural('v6_tavern_seats',7.5,22.8,190,.72);
-    drawNatural('v6_stall_vegetable',25.5,17.2,200,.72);
-    drawNatural('v6_stall_grain',15.5,11.8,190,.72);
-    drawNatural('v6_weapon_rack',34.0,15.0,165,.72);
-    drawNatural('v6_supply_cluster',32.5,16.2,155,.72);
-    drawNatural('v6_stable',27.5,23.5,200,.72);
-    drawNatural('v6_awning_lantern',12.8,12.0,155,.72);
-    drawNatural('v7_yellowturban_lair',35.3,26.0,440,.78);
-    // v6_idle_* (학자/아이/상인/짐꾼/경비/물장수/마부 등) 고정 배경인물 장식은 전부 뺀다 -
-    // 실제 배회하는 NPC/군중 캐릭터와 크기·화풍이 안 맞고, 상호작용도 안 되는데
-    // 마치 또 다른 사람이 서 있는 것처럼 보여 혼동을 준다. 사람은 항상 실제 NPC/군중
-    // 시스템(drawNpc/drawAmbient)이 그리게 하고, 여기는 건물/소품/지형만 남긴다.
-  }
-
   function drawGround() {
     const sx = Math.max(0, Math.floor(camera.x/TILE)-1);
     const sy = Math.max(0, Math.floor(camera.y/TILE)-1);
     const ex = Math.min(map.width-1, Math.ceil((camera.x+camera.w)/TILE)+1);
     const ey = Math.min(map.height-1, Math.ceil((camera.y+camera.h)/TILE)+1);
+    // 탁현은 그래픽을 초기화한 상태라, 타일 종류에 상관없이 흙바닥 하나로 빈틈없이 덮는다.
+    const uniformDirt = mapId === 'takhyeon';
     for (let y=sy; y<=ey; y++) {
       for (let x=sx; x<=ex; x++) {
         const t = map.tiles[y][x];
         const px=worldX(x), py=worldY(y);
-        const key = t===1 ? 'tile_road' : t===3 ? 'tile_water' : t===5 ? 'tile_rough' : 'tile_grass';
+        const key = uniformDirt ? 'tile_dirt' : (t===1 ? 'tile_road' : t===3 ? 'tile_water' : t===5 ? 'tile_rough' : 'tile_grass');
         if (!FieldAssets.tile(ctx,key,px,py,TILE)) {
-          ctx.fillStyle = t===1 ? '#c6b084' : t===3 ? '#678b92' : t===5 ? '#7d7259' : '#829762';
+          ctx.fillStyle = uniformDirt ? '#c6b084' : (t===1 ? '#c6b084' : t===3 ? '#678b92' : t===5 ? '#7d7259' : '#829762');
           ctx.fillRect(px,py,TILE,TILE);
         }
       }
     }
 
-    // 시장 중심부는 흙길을 넓게 깔아 도시 생활권이 한눈에 읽히게 한다.
+    if (uniformDirt) return;
+    // 시장 중심부는 흙길을 넓게 깔아 도시 생활권이 한눈에 읽히게 한다. (탁현 외 맵에서만 사용)
     for (let y=6; y<=14; y++) for (let x=4; x<=24; x++) {
       if (map.tiles[y] && map.tiles[y][x] === 0) FieldAssets.tile(ctx,'tile_dirt',worldX(x),worldY(y),TILE);
     }
+  }
+
+  // 탁현은 그래픽을 초기화하면서 개별 성벽 타일 대신, 테두리를 둘러싼 단색 성벽 띠로
+  // 간단히 표시한다 (성문은 기존 decor 파이프라인의 building_gate 그래픽을 그대로 쓴다).
+  function drawCityWalls() {
+    if (mapId !== 'takhyeon') return;
+    const mw = map.width*TILE, mh = map.height*TILE;
+    ctx.fillStyle = '#8a734f';
+    ctx.fillRect(worldX(0), worldY(0), mw, TILE);
+    ctx.fillRect(worldX(0), worldY(map.height-1), mw, TILE);
+    ctx.fillRect(worldX(0), worldY(0), TILE, mh);
+    ctx.fillRect(worldX(map.width-1), worldY(0), TILE, mh);
+    ctx.fillStyle = '#a68f66';
+    ctx.fillRect(worldX(0), worldY(1)-3, mw, 3);
+    ctx.fillRect(worldX(1)-3, worldY(0), 3, mh);
+    ctx.fillStyle = '#5c4a30';
+    ctx.fillRect(worldX(0), worldY(map.height-1), mw, 3);
+    ctx.fillRect(worldX(map.width-1), worldY(0), 3, mh);
   }
 
   function decorBuildingKey(d) {

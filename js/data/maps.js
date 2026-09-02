@@ -11,44 +11,19 @@ function makeGrid(w, h, base) {
 
 const MAPS = {};
 
-// ---------------- 탁현 : 확장 성읍 v2 ----------------
+// ---------------- 탁현 : 확장 성읍 v2 (그래픽 초기화 - 흙바닥+성벽만 남긴 상태) ----------------
 // 28x20(560칸)에서 40x28(1120칸)로 확장. 정확히 2배 면적이다.
+// 건물/좌판/나무 등 개별 그래픽은 전부 제거하고, 성벽으로 둘러싼 흙바닥만 남겨
+// 다음 라운드에 그래픽을 하나씩 다시 얹기 위한 깨끗한 바탕으로 삼는다.
 (function () {
   const w = 40, h = 28;
-  const grid = makeGrid(w, h, 0);
+  const grid = makeGrid(w, h, 0); // 내부는 전부 흙바닥(0)으로 트여있다.
 
-  // 성벽/외곽
+  // 성벽/외곽만 남긴다 (내부 건물/장애물 충돌은 전부 제거).
   rectFill(grid, 0, 0, w - 1, 0, 4);
   rectFill(grid, 0, h - 1, w - 1, h - 1, 4);
   rectFill(grid, 0, 0, 0, h - 1, 4);
   rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
-
-  // 큰길: 북문 -> 중앙 장터 -> 남쪽 외곽, 동서 생활권 연결.
-  for (let y = 1; y < h - 1; y++) {
-    grid[y][19] = 1; grid[y][20] = 1;
-  }
-  for (let x = 1; x < w - 1; x++) {
-    grid[13][x] = 1; grid[14][x] = 1;
-  }
-  for (let x = 3; x <= 35; x++) grid[20][x] = 1;
-  for (let y = 14; y <= 24; y++) grid[y][30] = 1;
-
-  // 건물 충돌 영역: 주택을 여러 거리로 분산하여 발견형 자택을 배정할 여지를 둔다.
-  rectFill(grid, 3, 3, 9, 7, 2);     // 관아
-  rectFill(grid, 12, 3, 16, 6, 2);   // 서북 민가 A (노식 후보)
-  rectFill(grid, 24, 3, 28, 6, 2);   // 북동 민가 B (공융 후보)
-  rectFill(grid, 32, 4, 37, 8, 2);   // 동쪽 민가 C
-  rectFill(grid, 4, 19, 10, 23, 2);  // 주막
-  rectFill(grid, 24, 19, 29, 23, 2); // 상점가
-  rectFill(grid, 11, 18, 15, 21, 2); // 서남 민가 D
-  rectFill(grid, 32, 10, 37, 13, 2); // 유비 세력 막사
-
-  // 큰 느티나무, 우물, 연못, 남동 숲과 황건적 소굴 후방.
-  rectFill(grid, 27, 9, 28, 10, 4);
-  rectFill(grid, 17, 22, 19, 24, 3);
-  grid[10][8] = 4;
-  rectFill(grid, 36, 22, 38, 26, 2);
-  for (const [x,y] of [[32,22],[33,24],[34,26],[38,20],[35,21],[37,25]]) grid[y][x]=4;
 
   MAPS.takhyeon = {
     name: '탁현 · 장터',
@@ -57,37 +32,13 @@ const MAPS = {};
     playerStart: { x: 19, y: 17 },
     camera: { viewportW: 800, viewportH: 480 },
 
-    // 배경을 한 장으로 굳히지 않고 재사용 가능한 오브젝트 조합으로 구성한다.
+    // 북/남 성문만 남기고 나머지 건물/좌판/나무/소품 그래픽은 전부 제거했다.
     decor: [
       { type:'gate', x:17, y:0, w:6, h:2, label:'탁현 북문' },
-      { type:'building', x:3, y:3, w:7, h:5, label:'관아' },
-      { type:'building', x:12, y:3, w:5, h:4, label:'민가', residenceId:'noshik' },
-      { type:'building', x:24, y:3, w:5, h:4, label:'민가', residenceId:'gongyung' },
-      { type:'building', x:32, y:4, w:6, h:5, label:'민가' },
-      { type:'building', x:4, y:19, w:7, h:5, label:'주막' },
-      { type:'building', x:24, y:19, w:6, h:5, label:'상점가' },
-      { type:'building', x:11, y:18, w:5, h:4, label:'민가' },
-      { type:'building', x:32, y:10, w:6, h:4, label:'세력 막사' },
-      // 예전 그림판 스타일 좌판(stall_*)은 지우고, 탁현은 drawV6BackDressing()의
-      // v6_stall_vegetable/v6_stall_grain 좌판만 쓴다.
-      { type:'tree', x:27.5, y:9.5, scale:1.45, landmark:true },
-      { type:'tree', x:8.2, y:10.0, scale:1.0 },
-      { type:'tree', x:34.0, y:22.0, scale:1.0 },
-      { type:'tree', x:38.0, y:20.0, scale:1.0 },
-      { type:'well', x:16.0, y:15.8 },
-      { type:'cart', x:28.0, y:14.8 },
-      { type:'crate', x:7.8, y:17.7 },
-      { type:'crate', x:8.5, y:17.6 },
-      { type:'lanterns', x:5, y:18.5, count:5 },
+      { type:'gate', x:17, y:h-3, w:6, h:2, label:'탁현 남문' },
     ],
 
-    areaLabels: [
-      { x:6, y:8.5, text:'관아 거리' },
-      { x:19.5, y:10.0, text:'탁현 장터' },
-      { x:7.0, y:24.2, text:'주막 거리' },
-      { x:34.5, y:19.5, text:'남동 숲길' },
-      { x:35.5, y:25.8, text:'황건적 소굴' },
-    ],
+    areaLabels: [],
 
     // 기존 스토리 NPC는 유지하되 공간 속 역할에 맞게 재배치.
     // discoverable + residence: 첫 발견 전에는 인파 속 인물, 발견 후에는 집이 이름을 얻는다.
