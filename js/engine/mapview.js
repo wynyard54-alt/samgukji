@@ -39,10 +39,19 @@ const MapView = (function () {
   function computeCameraSize(map) {
     const baseW = (map.camera && map.camera.viewportW) || Math.min(DEFAULT_VIEW_W, map.width * TILE);
     const baseH = (map.camera && map.camera.viewportH) || Math.min(DEFAULT_VIEW_H, map.height * TILE);
-    const isPortrait = window.innerWidth > 0 && window.innerWidth < window.innerHeight;
+    const isPortrait = window.innerWidth > 0 && window.innerHeight > 0 && window.innerWidth < window.innerHeight;
     if (!isPortrait) return { w: baseW, h: baseH };
     const w = Math.min(baseW, 480);
-    const h = Math.min(900, Math.max(baseH, Math.round(w * 1.45)));
+    // 캔버스는 CSS에서 width:100%;height:auto로 종횡비를 유지한 채 표시되므로,
+    // 세로 비율을 무작정 늘리면 안내문구 등 캔버스 바깥 요소까지 합쳐 실제 화면
+    // 높이(window.innerHeight)를 넘어가 아래쪽이 통째로 잘려 보이지 않게 된다.
+    // 화면에 실제로 들어가는 높이 한도 안에서만 세로로 늘린다.
+    const displayW = Math.min(w, window.innerWidth * 0.96);
+    const chromeH = 70; // #explore-viewport 위 여백 + 아래 안내문구가 차지하는 대략적인 세로 공간
+    const maxDisplayH = Math.max(240, window.innerHeight - chromeH);
+    const maxRatio = maxDisplayH / displayW;
+    const desiredRatio = Math.min(900 / w, Math.max(baseH / w, 1.45));
+    const h = Math.round(w * Math.min(desiredRatio, maxRatio));
     return { w, h };
   }
 
