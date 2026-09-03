@@ -787,7 +787,9 @@ function goCoalitionCamp() {
 }
 
 function startSongyeonBattleScene() {
-  Dialogue.show(STORY.camp_songgyeon_battle, goSasugwan);
+  Dialogue.show(STORY.camp_songgyeon_battle, () => {
+    Dialogue.show(STORY.camp_gwanwoo_volunteer, goSasugwan);
+  });
 }
 
 function goSasugwan() {
