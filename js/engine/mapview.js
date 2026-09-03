@@ -106,6 +106,7 @@ const MapView = (function () {
     mapId = id;
     map = MAPS[id];
     player = { x:map.playerStart.x, y:map.playerStart.y, dir:'down' };
+    footTileCount = 0;
     onInteract = (opts && opts.onInteract) || null;
     onApBlocked = (opts && opts.onApBlocked) || null;
     onApSpent = (opts && opts.onApSpent) || null;
@@ -433,6 +434,9 @@ const MapView = (function () {
     ctx.fillStyle='#f2e4c5';ctx.font='bold 12px "Noto Sans KR",sans-serif';ctx.textAlign='left';ctx.fillText(map.name||'',23,30);
   }
 
+  const FOOT_TILES_PER_AP = 10; // 군세와 달리 장수 혼자 이동할 때는 10칸마다 행동력 1을 쓴다
+  let footTileCount = 0;
+
   function tryMove(dx, dy) {
     if (!map) return;
     const nx=player.x+dx, ny=player.y+dy;
@@ -444,6 +448,13 @@ const MapView = (function () {
       const cost = tileMoveCost(nx,ny);
       if (!GameState.spendAP(cost)) { if (onApBlocked) onApBlocked(); render(); return; }
       if (onApSpent) onApSpent();
+    } else if (footTileCount + 1 >= FOOT_TILES_PER_AP) {
+      // 완전히 무제한으로 돌아다니지는 못하도록, 장수 혼자 걷는 이동도 10칸째마다 행동력을 쓴다.
+      if (!GameState.spendAP(1)) { if (onApBlocked) onApBlocked(); render(); return; }
+      footTileCount = 0;
+      if (onApSpent) onApSpent();
+    } else {
+      footTileCount++;
     }
     player.x=nx; player.y=ny;
     updateCamera();

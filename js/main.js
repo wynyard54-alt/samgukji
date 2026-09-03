@@ -680,6 +680,8 @@ function goTakhyeonFree() {
     onInteract: interactNPC,
     spawnDeadlineAbsMonth: absMonth(DEADLINES.takhyeon, 12) + 1,
     onAmbientInteract: runAmbientEvent,
+    onApSpent: updateHUD,
+    onApBlocked: () => toast('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
   });
   updateHUD();
 }
@@ -716,7 +718,11 @@ function restoreToPyeongwonCheckpoint() {
 function goCoalitionCamp() {
   stage = 'camp';
   showScreen('screen-explore');
-  MapView.load('camp', { onInteract: interactNPC });
+  MapView.load('camp', {
+    onInteract: interactNPC,
+    onApSpent: updateHUD,
+    onApBlocked: () => toast('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
+  });
   updateHUD();
   Dialogue.show(STORY.camp_arrive);
 }
