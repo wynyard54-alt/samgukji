@@ -331,7 +331,7 @@ const MapView = (function () {
     const x=worldX(p.x)+TILE/2, y=worldY(p.y)+TILE*.88;
     const role = ['merchant','farmer','woman','elder','guard','child','porter'].includes(p.archetype) ? p.archetype : 'farmer';
     const key=`npc_${role}`;
-    if (!FieldAssets.sprite(ctx,key,x,y,p._dir||'down',animFrame,32,48,1.4,3)) {
+    if (!FieldAssets.sprite(ctx,key,x,y,p._dir||'down',animFrame,96,96,.67,3,.70)) {
       drawPersonSprite(x,y,{ palette:PALETTES[p.palette]||PALETTES.ash, archetype:p.archetype, scale:.9, dir:p._dir });
     }
     // 가끔 지나가는 백성 중 한 명에게 짧은 대화거리가 생기면, 말 걸 수 있다는 표시로 말풍선을 띄운다.
@@ -356,7 +356,7 @@ const MapView = (function () {
       ? FieldAssets.sprite(ctx,uniqueKey,x,y,'down',animFrame,48,64,1.05,3)
       : (!hidden && rd.kind==='enemy')
         ? FieldAssets.sprite(ctx,'enemy_yellowturban',x,y,'down',animFrame,32,48,1.4,3)
-        : FieldAssets.sprite(ctx,`npc_${role}`,x,y,'down',animFrame,32,48,1.4,3);
+        : FieldAssets.sprite(ctx,`npc_${role}`,x,y,'down',animFrame,96,96,.67,3,.70);
     if (!drawn) {
       const palette=hidden
         ? {robe:'#72746e',dark:'#474a47',trim:'#9d9e94',skin:'#d1aa80'}
@@ -389,7 +389,10 @@ const MapView = (function () {
     const x=worldX(player.x)+TILE/2, y=worldY(player.y)+TILE*.94;
     const key=id==='gwanwoo' ? 'hero_gwanwoo' : 'hero_jangbi';
     const frame=animFrame%3;
-    if (!FieldAssets.sprite(ctx,key,x,y,player.dir,frame,48,64,1.05,3)) {
+    const drawn = id === 'gwanwoo'
+      ? FieldAssets.sprite(ctx,key,x,y,player.dir,frame,136,144,.43,3,.445)
+      : FieldAssets.sprite(ctx,key,x,y,player.dir,frame,48,64,1.05,3);
+    if (!drawn) {
       const palette=id==='gwanwoo'
         ? {robe:'#356547',dark:'#253e31',trim:'#a88749',skin:'#b56d54'}
         : {robe:'#7b4035',dark:'#4d2b27',trim:'#b58c4f',skin:'#bd795e'};
