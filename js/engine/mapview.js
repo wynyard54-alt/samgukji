@@ -121,9 +121,11 @@ const MapView = (function () {
         if (!GameState.npcVisible[n.id]) return false;
       }
       const status = GameState.npcStatus[n.id];
-      const fixedInTakhyeon = id === 'takhyeon' && (n.id === 'yubi' || n.id === 'yuwongi');
+      const fixedInTown =
+        (id === 'takhyeon' && (n.id === 'yubi' || n.id === 'yuwongi')) ||
+        (id === 'pyeongwon' && n.id === 'yubi');
       if (status === 'dead' || status === 'fled') return false;
-      if ((status === 'recruited' || status === 'resolved') && !fixedInTakhyeon) return false;
+      if ((status === 'recruited' || status === 'resolved') && !fixedInTown && !n.residence) return false;
       if (n.randomSpawn && !GameState.npcSpawnPos[n.id]) return false; // 아직 등장 시점이 되지 않음
       if (n.storyGate && !GameState.flags[n.storyGate]) return false; // 특정 스토리 이벤트 전에는 등장하지 않음
       return true;
@@ -232,12 +234,25 @@ const MapView = (function () {
       else drawHero();
     }
 
-    if (!map.backgroundKey) drawFrontDecor();
+    if (map.backgroundKey) drawMapForegroundCrops();
+    else drawFrontDecor();
     drawLocationRibbon();
   }
 
   function drawMapBackground() {
     FieldAssets.draw(ctx,map.backgroundKey,worldX(0),worldY(0),map.width*TILE,map.height*TILE);
+  }
+
+  // 남문 지붕처럼 인물보다 앞에 와야 하는 배경 부분만 같은 좌표에 다시 그린다.
+  function drawMapForegroundCrops() {
+    const img=FieldAssets.get(map.backgroundKey);
+    if (!FieldAssets.ready(img)) return;
+    const worldW=map.width*TILE, worldH=map.height*TILE;
+    for (const c of (map.foregroundCrops || [])) {
+      FieldAssets.draw(ctx,map.backgroundKey,
+        worldX(c.x*map.width),worldY(c.y*map.height),c.w*worldW,c.h*worldH,
+        c.x*img.naturalWidth,c.y*img.naturalHeight,c.w*img.naturalWidth,c.h*img.naturalHeight,true);
+    }
   }
 
   function drawMapLandmarkLabels() {
@@ -290,13 +305,13 @@ const MapView = (function () {
     return 'v6_house_front';
   }
 
-  // 주인 없는 민가(residenceId)는 해당 책사를 발견하기 전엔 무명 '민가'로 표기한다.
-  // 발견(met/recruited) 후에는 그 장수 본인이 집 앞으로 옮겨와 자기 이름표를 달기 때문에
-  // (drawNpc의 _atResidence 라벨), 건물 쪽 라벨은 중복되지 않도록 감춘다.
+  // residenceIds를 쓰면 진등·진규처럼 한 집을 함께 쓰는 경우도 처리할 수 있다.
   function decorLabel(d) {
-    if (!d.residenceId) return d.label;
-    const met = ['met', 'recruited'].includes(GameState.npcStatus[d.residenceId]);
-    return met ? null : d.label;
+    if (d.storyGate && !GameState.flags[d.storyGate]) return null;
+    const ids=d.residenceIds || (d.residenceId ? [d.residenceId] : null);
+    if (!ids) return d.label;
+    const met=ids.some(id => ['met','recruited'].includes(GameState.npcStatus[id]));
+    return met ? (d.revealedLabel || null) : d.label;
   }
 
   function drawBackDecor() {
@@ -374,14 +389,24 @@ const MapView = (function () {
     const scholar=isScholarType(rd);
     const role=scholar ? 'scholar' : 'guard';
 
-    // Undiscovered named characters intentionally blend into the crowd.
-    // Discovered Liu Bei and Lu Bu use their own character sheets.
-    const uniqueKey=!hidden && (n.id==='yubi' || n.id==='yeopo') ? `hero_${n.id}` : null;
-    const drawn=uniqueKey
-      ? FieldAssets.sprite(ctx,uniqueKey,x,y,'down',animFrame,48,64,1.05,3)
-      : (!hidden && rd.kind==='enemy')
-        ? FieldAssets.sprite(ctx,'enemy_yellowturban',x,y,'down',animFrame,32,48,1.4,3)
-        : FieldAssets.sprite(ctx,`npc_${role}`,x,y,'down',animFrame,96,96,.67,3,.70);
+    // 미발견 인물은 군중처럼 보이고, 발견 뒤에는 전용/세력별 HD 시트로 바뀐다.
+    const yellowTurbanIds=['jeongwonji','deungmu','gwanhae'];
+    const dongtakIds=['hwaung','hojin','songheon','wisok','igak','gwaksa'];
+    const coalitionIds=['wonso','jojo','gongsonchan','songyeon'];
+    const merchantIds=['sossang','jangsepyeong','mijuk'];
+    const elderIds=['yuwongi','yujapyeong'];
+    let spec=null;
+    if (n.id==='jangsun') spec={key:'enemy_jangsun',fw:362,fh:362,sx:.18,sy:.18};
+    else if (!hidden && n.id==='yubi') spec={key:'hero_yubi',fw:362,fh:362,sx:.185,sy:.185};
+    else if (!hidden && n.id==='yeopo') spec={key:'hero_yeopo',fw:971/3,fh:1619/4,sx:.20,sy:.165};
+    else if (!hidden && n.id==='noshik') spec={key:'hero_noshik',fw:1024/3,fh:384,sx:.19,sy:.17};
+    else if (!hidden && yellowTurbanIds.includes(n.id)) spec={key:'enemy_yellowturban',fw:1024/3,fh:384,sx:.19,sy:.17};
+    else if (!hidden && dongtakIds.includes(n.id)) spec={key:'officer_dongtak',fw:1024/3,fh:384,sx:.19,sy:.17};
+    else if (!hidden && coalitionIds.includes(n.id)) spec={key:'officer_coalition',fw:362,fh:362,sx:.185,sy:.185};
+    else if (!hidden && merchantIds.includes(n.id)) spec={key:'npc_merchant',fw:96,fh:96,sx:.67,sy:.70};
+    else if (!hidden && elderIds.includes(n.id)) spec={key:'npc_elder',fw:96,fh:96,sx:.67,sy:.70};
+    else spec={key:`npc_${role}`,fw:96,fh:96,sx:.67,sy:.70};
+    const drawn=FieldAssets.sprite(ctx,spec.key,x,y,'down',animFrame,spec.fw,spec.fh,spec.sx,3,spec.sy);
     if (!drawn) {
       const palette=hidden
         ? {robe:'#72746e',dark:'#474a47',trim:'#9d9e94',skin:'#d1aa80'}
@@ -416,7 +441,7 @@ const MapView = (function () {
     const frame=animFrame%3;
     const drawn = id === 'gwanwoo'
       ? FieldAssets.sprite(ctx,key,x,y,player.dir,frame,136,144,.43,3,.445)
-      : FieldAssets.sprite(ctx,key,x,y,player.dir,frame,48,64,1.05,3);
+      : FieldAssets.sprite(ctx,key,x,y,player.dir,frame,362,362,.18,3,.18);
     if (!drawn) {
       const palette=id==='gwanwoo'
         ? {robe:'#356547',dark:'#253e31',trim:'#a88749',skin:'#b56d54'}
@@ -572,7 +597,9 @@ const MapView = (function () {
       const x = 1 + Math.floor(Math.random() * (map.width - 2));
       const y = 1 + Math.floor(Math.random() * (map.height - 2));
       if (!isWalkable(x, y)) continue;
-      if (mapId === 'takhyeon' && map.tiles[y][x] !== 1) continue;
+      if ((mapId === 'takhyeon' || mapId === 'pyeongwon') && map.tiles[y][x] !== 1) continue;
+      // 평원현의 무작위 인물은 성내에서만 발견되며, 성벽 밖 전장은 배회하지 않는다.
+      if (mapId === 'pyeongwon' && y >= 14) continue;
       if (x === player.x && y === player.y) continue;
       if (npcAt(x, y)) continue;
       return { x, y };

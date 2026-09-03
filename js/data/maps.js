@@ -172,48 +172,102 @@ if (false) (function () {
   };
 })();
 
-// ---------------- 평원현 (탁현과 동일 크기로 확장 - 배치는 이후 라운드에서 다듬는다) ----------------
+// ---------------- 평원현 : 성내와 남문, 평야, 장순의 난 ----------------
 (function () {
   const w = 40, h = 28;
   const grid = makeGrid(w, h, 0);
-  rectFill(grid, 0, 0, w - 1, 0, 4);
-  rectFill(grid, 0, h - 1, w - 1, h - 1, 4);
-  rectFill(grid, 0, 0, 0, h - 1, 4);
-  rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
-  rectFill(grid, 5, 3, 9, 6, 2);   // 관아
-  rectFill(grid, 20, 17, 24, 20, 2); // 객잔
-  rectFill(grid, 30, 4, 35, 8, 2);   // 세력 막사
-  for (let x = 1; x < w - 1; x++) grid[14][x] = 1;
+
+  // 성내 대로와 남문 출정로. 평원 바깥 길은 막사와 장순 진지로 이어진다.
+  for (const r of [
+    [17,0,20,27],[1,4,38,5],[1,10,38,13],[11,12,16,18],
+    [2,16,16,18],[20,16,30,22],[28,21,36,25],
+  ]) rectFill(grid, ...r, 1);
+
+  // 배경의 가로 성벽과 정확히 맞춘 충돌. 남문 통로 두 칸(x17~18)만 통과 가능하다.
+  rectFill(grid,0,14,16,15,4);
+  rectFill(grid,19,14,39,15,4);
+
+  // 성내 건물과 시장. 계단/문 앞의 길은 막지 않아 대화 위치로 사용할 수 있다.
+  for (const r of [
+    [4,1,12,3,2],[17,1,24,3,2],[29,1,35,3,2],
+    [5,6,12,9,2],[15,6,22,9,2],[23,6,27,9,2],[32,7,37,10,2],
+    [3,11,9,13,2],[27,11,33,13,2],
+  ]) rectFill(grid,r[0],r[1],r[2],r[3],r[4]);
+
+  // 큰 나무와 수풀도 몸으로 통과하지 못하게 한다. 작은 풀/돌은 장식으로 남긴다.
+  for (const [x,y] of [
+    [1,1],[13,1],[16,2],[26,1],[37,1],[2,4],[2,7],[14,4],[24,5],
+    [29,7],[23,12],[36,13],[38,13],[13,17],[11,20],[32,19],[36,21],
+    [14,23],[20,25],[35,26],
+  ]) grid[y][x]=4;
+
+  // 농경지/수로, 유비 막사, 장순의 불법 진지는 내부를 통과할 수 없다.
+  rectFill(grid,1,19,10,26,4);
+  rectFill(grid,22,16,29,19,2);
+  rectFill(grid,31,23,37,26,2);
+  rectFill(grid,0,27,17,27,3);
 
   MAPS.pyeongwon = {
-    name: '평원현',
-    width: w, height: h,
-    tiles: grid,
-    playerStart: { x:17, y:14 },
-    decor: [
-      { type:'building', x:5, y:3, w:4, h:3, roof:'charcoal', label:'관아', sign:'官' },
-      { type:'building', x:20, y:17, w:4, h:3, roof:'red', sign:'客' }, // 미축 등 인접 NPC 이름표와 겹치지 않도록 건물 라벨은 생략
-      { type:'building', x:30, y:4, w:5, h:4, roof:'charcoal', label:'세력 막사', sign:'營' },
+    name:'평원현 · 남문과 평야', width:w, height:h, tiles:grid,
+    backgroundKey:'pyeongwon_city_overview',
+    playerStart:{ x:18, y:17 },
+    camera:{ viewportW:800, viewportH:480 },
+    foregroundCrops:[{ x:.39, y:.425, w:.13, h:.12 }],
+    decor:[
+      { type:'mapLabel', x:8.5, y:3.55, label:'민가', residenceIds:['yuyo'], revealedLabel:'유요의 집' },
+      { type:'mapLabel', x:21.0, y:3.55, label:'민가', residenceIds:['jindeung','jingyu'], revealedLabel:'진등·진규의 집' },
+      { type:'mapLabel', x:33.0, y:3.55, label:'민가', residenceIds:['choeyeom'], revealedLabel:'최염의 집' },
+      { type:'mapLabel', x:8.5, y:8.75, label:'민가', residenceIds:['mijuk'], revealedLabel:'미축의 집' },
+      { type:'mapLabel', x:18.8, y:8.75, label:'평원 주막' },
+      { type:'mapLabel', x:29.5, y:11.3, label:'평원현 관아' },
+      { type:'mapLabel', x:18.0, y:16.0, label:'평원현 남문' },
+      { type:'mapLabel', x:26.0, y:20.4, label:'유비 세력 막사' },
+      { type:'mapLabel', x:5.5, y:24.8, label:'평원 들판' },
+      { type:'mapLabel', x:34.0, y:26.0, label:'장순 반란군 진지', storyGate:'jangsunAppeared' },
     ],
-    npcs: [
-      { id:'yubi', x:32, y:9, label:'유비 (세력 막사)' },
-      { id:'jeonhae', x:9, y:14, label:'전해', randomSpawn:true },
-      { id:'gwanjeong', x:17, y:6, label:'관정', randomSpawn:true },
-      { id:'eomgang', x:26, y:8, label:'엄강', randomSpawn:true },
-      { id:'jowoon', x:34, y:17, label:'조운(?)', randomSpawn:true },
-      { id:'mijuk', x:29, y:20, label:'미축', randomSpawn:true },
-      { id:'mibang', x:31, y:20, label:'미방', randomSpawn:true },
-      { id:'songgeon', x:6, y:20, label:'손건', randomSpawn:true },
-      { id:'jindeung', x:23, y:22, label:'진등', randomSpawn:true },
-      { id:'jingyu', x:20, y:22, label:'진규', randomSpawn:true },
-      { id:'jangpae', x:12, y:20, label:'장패', randomSpawn:true },
-      { id:'taesaja', x:36, y:22, label:'태사자', randomSpawn:true },
-      { id:'yuyo', x:14, y:24, label:'유요', randomSpawn:true },
-      { id:'choeyeom', x:27, y:24, label:'최염', randomSpawn:true },
-      { id:'yujapyeong', x:7, y:8, label:'유자평' },
-      // 유자평과의 대화로 장순의 난이 시작되기 전까지는 등장하지 않는다.
-      { id:'jangsun', x:35, y:20, label:'장순(반란군)', storyGate:'jangsunAppeared' },
+    areaLabels:[
+      { x:18.5, y:13.4, text:'남문대로' },
+      { x:18.5, y:19.2, text:'출정로' },
+      { x:25.0, y:22.0, text:'평원 들길' },
     ],
+    npcs:[
+      { id:'yubi', x:30, y:20, label:'유비', fixed:true },
+      { id:'jeonhae', x:13, y:12, label:'전해', randomSpawn:true },
+      { id:'gwanjeong', x:18, y:5, label:'관정', randomSpawn:true, discoverable:true, discoveryRange:2,
+        discoveryText:'주막으로 향하던 선비가 관우의 걸음을 유심히 바라본다.',
+        residence:{ x:18, y:10, label:'관정' } },
+      { id:'eomgang', x:28, y:5, label:'엄강', randomSpawn:true },
+      { id:'jowoon', x:35, y:12, label:'조운(?)', randomSpawn:true },
+      { id:'mijuk', x:26, y:12, label:'미축', randomSpawn:true, discoverable:true, discoveryRange:2,
+        discoveryText:'단정한 차림의 상인이 장터의 물가와 사람들을 꼼꼼히 살피고 있다.',
+        residence:{ x:8, y:10, label:'미축' } },
+      { id:'mibang', x:25, y:12, label:'미방', randomSpawn:true },
+      { id:'songgeon', x:14, y:5, label:'손건', randomSpawn:true, discoverable:true, discoveryRange:2,
+        discoveryText:'주막 앞에서 죽간을 든 선비가 지나가는 소문을 기록하고 있다.',
+        residence:{ x:20, y:10, label:'손건' } },
+      { id:'jindeung', x:20, y:12, label:'진등', randomSpawn:true, discoverable:true, discoveryRange:2,
+        discoveryText:'젊은 선비가 농지와 수로를 번갈아 보며 무언가를 계산하고 있다.',
+        residence:{ x:20, y:5, label:'진등' } },
+      { id:'jingyu', x:18, y:12, label:'진규', randomSpawn:true, discoverable:true, discoveryRange:2,
+        discoveryText:'경륜 있어 보이는 노선비가 아들과 함께 세상 돌아가는 일을 논하고 있다.',
+        residence:{ x:22, y:5, label:'진규' } },
+      { id:'jangpae', x:11, y:12, label:'장패', randomSpawn:true },
+      { id:'taesaja', x:36, y:5, label:'태사자', randomSpawn:true },
+      { id:'yuyo', x:16, y:5, label:'유요', randomSpawn:true, discoverable:true, discoveryRange:2,
+        discoveryText:'기품 있는 선비가 한실의 소식을 묻고 다닌다.',
+        residence:{ x:8, y:5, label:'유요' } },
+      { id:'choeyeom', x:34, y:12, label:'최염', randomSpawn:true, discoverable:true, discoveryRange:2,
+        discoveryText:'수염을 단정히 기른 선비가 거리의 풍속을 말없이 살피고 있다.',
+        residence:{ x:33, y:5, label:'최염' } },
+      { id:'yujapyeong', x:15, y:12, label:'유자평', fixed:true },
+      { id:'jangsun', x:30, y:24, label:'장순(반란군)', fixed:true, storyGate:'jangsunAppeared' },
+    ],
+    ambient:[
+      ['merchant',13,5,'ash',2],['farmer',20,5,'earth',2],['woman',27,5,'ash',2],
+      ['elder',14,12,'earth',2],['porter',22,12,'ash',2],['woman',25,12,'dust',2],
+      ['guard',17,13,'iron',1],['guard',20,13,'iron',1],['child',11,12,'dust',2],
+      ['farmer',16,17,'earth',2],['porter',20,18,'ash',2],['merchant',35,12,'earth',2],
+    ].map(([archetype,x,y,palette,wander]) => ({ archetype,x,y,palette,wander,roadOnly:true })),
   };
 })();
 
