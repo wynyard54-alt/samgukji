@@ -272,7 +272,7 @@ if (false) (function () {
       { x:25.0, y:22.0, text:'평원 들길' },
     ],
     npcs:[
-      { id:'yubi', x:30, y:20, label:'유비', fixed:true },
+      { id:'yubi', x:24, y:20, label:'유비', fixed:true },
       { id:'jeonhae', x:13, y:12, label:'전해', randomSpawn:true },
       { id:'gwanjeong', x:18, y:5, label:'관정', randomSpawn:true, discoverable:true, discoveryRange:2,
         discoveryText:'주막으로 향하던 선비가 관우의 걸음을 유심히 바라본다.',
@@ -300,8 +300,8 @@ if (false) (function () {
       { id:'choeyeom', x:34, y:12, label:'최염', randomSpawn:true, discoverable:true, discoveryRange:2,
         discoveryText:'수염을 단정히 기른 선비가 거리의 풍속을 말없이 살피고 있다.',
         residence:{ x:33, y:5, label:'최염' } },
-      { id:'yujapyeong', x:15, y:12, label:'유자평', fixed:true },
-      { id:'jangsun', x:30, y:24, label:'장순(반란군)', fixed:true, storyGate:'jangsunAppeared' },
+      { id:'yujapyeong', x:25, y:13, label:'유자평', fixed:true },
+      { id:'jangsun', x:30, y:27, label:'장순(반란군)', fixed:true, storyGate:'jangsunAppeared' },
     ],
     ambient:[
       ['merchant',13,5,'ash',2],['farmer',20,5,'earth',2],['woman',27,5,'ash',2],
