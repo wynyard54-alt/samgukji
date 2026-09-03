@@ -90,7 +90,15 @@ const Dialogue = (function () {
 
   window.addEventListener('keydown', (ev) => {
     if (!active) return;
-    if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); advance(); }
+    if (ev.key === 'Enter' || ev.key === ' ') {
+      ev.preventDefault();
+      // 이 키 입력은 "대화를 닫는다"로만 처리한다. stopImmediatePropagation을 안 하면
+      // advance()가 대화를 닫아 Dialogue.isActive()가 곧장 false가 되고, 같은 키 입력을
+      // mapview.js의 keydown 리스너가 이어서 받아 인접한 인물과 새 대화를 즉시 열어버려
+      // "누르자마자 대화가 다시 뜨는" 것처럼 보인다.
+      ev.stopImmediatePropagation();
+      advance();
+    }
   });
 
   return { show, isActive: () => active };

@@ -1038,7 +1038,7 @@ function conscriptViaGeneral(id) {
 function interactRecruitedGeneral(id) {
   const rd = ROSTER[id];
   if (isScholarType(rd)) {
-    showChoice(`${rd.name}: "무슨 일로 오셨습니까?"`, [
+    showChoice(`${rd.name}: "무슨 일로 오셨습니까?" (${rd.name} 매력 ${rd.stats.cha})`, [
       { label: '모병을 부탁한다 (AP2, 금30)', cb: () => conscriptViaGeneral(id) },
       { label: '그냥 안부만 묻는다', cb: () => Dialogue.show([{ speaker: rd.name, text: '언제든 불러주십시오.' }]) },
     ]);
@@ -1067,17 +1067,19 @@ function renderRosterPanel() {
     { id: 'yubi', role: '군주', lord: true },
     { id: 'gwanwoo', role: '장수' },
     { id: 'jangbi', role: '장수' },
-    ...GameState.recruited.map((id) => ({ id, role: '장수' })),
+    ...GameState.recruited.map((id) => ({ id, role: null })),
   ];
   entries.forEach(({ id, role, lord }) => {
     const rd = ROSTER[id];
     if (!rd) return;
+    const scholar = !lord && (role === '책사' || (role == null && isScholarType(rd)));
+    const label = role || (scholar ? '책사' : '장수');
     const div = document.createElement('div');
     div.className = 'roster-row' + (lord ? ' lord' : '');
     const statsLine = rd.stats
       ? `<div class="roster-stats">${formatStatLine(rd.stats)}</div>`
       : '';
-    div.innerHTML = `<div class="roster-row-main"><span class="roster-role">${role}</span><span class="roster-name">${rd.name}</span></div>${statsLine}`;
+    div.innerHTML = `<div class="roster-row-main"><span class="roster-role${scholar ? ' scholar' : ''}">${label}</span><span class="roster-name">${rd.name}</span></div>${statsLine}`;
     wrap.appendChild(div);
   });
 }
@@ -1212,7 +1214,7 @@ function openArmyBox(onConfirm) {
     if (!rd || !isScholarType(rd)) return;
     const opt = document.createElement('option');
     opt.value = id;
-    opt.textContent = rd.name;
+    opt.textContent = `${rd.name} (지력 ${rd.stats.int})`;
     select.appendChild(opt);
   });
   select.onchange = updateArmyPower;
