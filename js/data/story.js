@@ -5,7 +5,7 @@ const STORY = {
     { speaker: '유비', text: '나 유현덕이오. 가진 것은 없으나 한실을 다시 일으키고픈 뜻만은 크외다.', scene: 'assets/illust/dowon_market.jpg' },
     { speaker: '관우', text: '그 뜻, 나 관운장이 함께하겠소.', scene: 'assets/illust/dowon_market.jpg' },
     { speaker: '장비', text: '복숭아나무 아래서 의형제를 맺읍시다! 한날한시에 나지 못했으나, 죽을 땐 한날한시에 죽기를!', scene: 'assets/illust/dowon_market.jpg' },
-    { speaker: '내레이션', text: '184년, 탁현의 어느 봄날. 세 사람은 하늘에 제를 올리고 의형제를 맺었다.', scene: 'assets/illust/dowon_oath.jpg', holdMs: 2000 },
+    { speaker: '내레이션', text: '184년, 탁현의 어느 봄날. 세 사람은 하늘에 제를 올리고 의형제를 맺었다.', scene: 'assets/illust/dowon_oath.jpg', holdMs: 3500 },
   ],
 
   act1_report: [

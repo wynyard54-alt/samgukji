@@ -414,6 +414,18 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 #toast.hidden{ display:none; }
 
+/* 행동력 소진처럼 놓치면 한참 헤매게 되는 중요 알림은, 화면 구석의 작은
+   토스트 대신 화면 한가운데에 큼직하게 띄운다. top/left 50%는 회전
+   트랜스폼 아래에서도(로컬 박스가 화면 전체에 정확히 겹쳐지므로) 항상
+   실제 화면 정중앙으로 그려진다. */
+#center-alert{
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
+  background:rgba(28,22,15,0.92); color:#fff8ea; padding:18px 26px; border-radius:14px;
+  font-size:17px; font-weight:700; text-align:center; line-height:1.5; max-width:min(78vw,420px);
+  z-index:85; box-shadow:0 12px 30px rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15);
+}
+#center-alert.hidden{ display:none; }
+
 /* ===== Duel VFX layer (GPT visual vertical slice / BASE 3b3524f) ===== */
 #battle-screen{overflow:hidden;background:#17140f;padding:18px 24px 20px;isolation:isolate;}
 #duel-arena{position:absolute;inset:0;z-index:-1;overflow:hidden;background:linear-gradient(#d8b875 0 44%,#9d7a45 45% 60%,#625238 61%);}

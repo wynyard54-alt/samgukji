@@ -1,5 +1,6 @@
 let stage = 'title';
 let toastTimer = null;
+let centerAlertTimer = null;
 let pyeongwonCheckpoint = null; // 평원현 도착 시점 GameState 스냅샷 (여포전 패배시 이 시점으로 복귀)
 
 const DEADLINES = { takhyeon: 186, pyeongwon: 188 };
@@ -25,6 +26,16 @@ function toast(msg) {
   el.classList.remove('hidden');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.add('hidden'), 2600);
+}
+
+// 행동력 소진처럼 놓치면 한참 헤매게 되는 알림은, 구석의 작은 토스트 대신
+// 화면 정중앙에 큼직하게 띄운다.
+function centerAlert(msg) {
+  const el = document.getElementById('center-alert');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+  clearTimeout(centerAlertTimer);
+  centerAlertTimer = setTimeout(() => el.classList.add('hidden'), 3000);
 }
 
 function showChoice(text, options) {
@@ -64,7 +75,7 @@ function scholarGoldIncome() {
 }
 
 function spend(n) {
-  if (!GameState.spendAP(n)) { toast('행동력이 부족합니다. "휴식"을 눌러보세요.'); return false; }
+  if (!GameState.spendAP(n)) { centerAlert('행동력이 부족합니다. "휴식"을 눌러보세요.'); return false; }
   updateHUD();
   return true;
 }
@@ -681,7 +692,7 @@ function goTakhyeonFree() {
     spawnDeadlineAbsMonth: absMonth(DEADLINES.takhyeon, 12) + 1,
     onAmbientInteract: runAmbientEvent,
     onApSpent: updateHUD,
-    onApBlocked: () => toast('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
+    onApBlocked: () => centerAlert('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
   });
   updateHUD();
 }
@@ -695,7 +706,7 @@ function goPyeongwonFree() {
     onInteract: interactNPC,
     spawnDeadlineAbsMonth: pyeongwonDeadlineAbsMonth(),
     onApSpent: updateHUD,
-    onApBlocked: () => toast('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
+    onApBlocked: () => centerAlert('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
     onAmbientInteract: runAmbientEvent,
   });
   updateHUD();
@@ -721,7 +732,7 @@ function goCoalitionCamp() {
   MapView.load('camp', {
     onInteract: interactNPC,
     onApSpent: updateHUD,
-    onApBlocked: () => toast('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
+    onApBlocked: () => centerAlert('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
   });
   updateHUD();
   Dialogue.show(STORY.camp_arrive);
@@ -759,7 +770,7 @@ function goWarmap() {
   MapView.load('warmap', {
     onInteract: interactNPC,
     onApSpent: updateHUD,
-    onApBlocked: () => toast('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
+    onApBlocked: () => centerAlert('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
   });
   updateHUD();
   Dialogue.show(STORY.warmap_intro);
