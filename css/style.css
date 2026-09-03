@@ -82,8 +82,9 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #map-hint{ font-size:11.5px; color:var(--ink-soft); margin-top:8px; text-align:center; }
 
 /* 컷신 일러스트 - 특정 대사 구간 동안 지도 위를 덮어 그 장면의 삽화를 보여준다 */
-#scene-illustration{ position:absolute; inset:0; z-index:2; background:#0d0b09; }
+#scene-illustration{ position:absolute; inset:0; z-index:2; background:#0d0b09; opacity:1; transition:opacity .5s ease; }
 #scene-illustration.hidden{ display:none; }
+#scene-illustration.fading{ opacity:0; }
 #scene-illustration img{ width:100%; height:100%; object-fit:contain; display:block; }
 /* 일러스트가 떠 있는 동안에는 지도 위 부가 패널들을 가려 화면을 깔끔하게 유지한다 */
 #explore-viewport.scene-active #location-banner,
@@ -207,9 +208,10 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   position:fixed; left:50%; bottom:26px; transform:translateX(-50%);
   width:min(680px,92vw); background:var(--panel); border:1px solid var(--panel-border);
   border-radius:12px; padding:16px 20px; box-shadow:0 12px 30px rgba(43,38,32,0.3);
-  cursor:pointer; z-index:50;
+  cursor:pointer; z-index:50; opacity:1; transition:opacity .5s ease;
 }
 #dialogue-box.hidden{ display:none; }
+#dialogue-box.fading{ opacity:0; }
 #dialogue-name{ font-weight:700; color:var(--accent-strong); margin-bottom:6px; font-size:13.5px; }
 #dialogue-name[data-kind="narration"]{ color:var(--ink-soft); font-style:italic; }
 #dialogue-text{ font-size:15px; line-height:1.6; }
