@@ -128,6 +128,9 @@ const MapView = (function () {
       if ((status === 'recruited' || status === 'resolved') && !fixedInTown && !n.residence) return false;
       if (n.randomSpawn && !GameState.npcSpawnPos[n.id]) return false; // 아직 등장 시점이 되지 않음
       if (n.storyGate && !GameState.flags[n.storyGate]) return false; // 특정 스토리 이벤트 전에는 등장하지 않음
+      // 아직 만나지 않은 상태로 장순의 난이 이미 끝났다면(제안의 명분 자체가 사라졌으므로)
+      // 더는 새로 등장시키지 않는다. 이미 만난 뒤라면(관계가 진행 중이므로) 그대로 둔다.
+      if (n.hideAfterJangsun && !status && GameState.npcStatus['jangsun'] === 'resolved') return false;
       return true;
     });
     for (const n of liveNpcs) {
@@ -723,5 +726,6 @@ const MapView = (function () {
     get camera(){return {...camera};},
     get playerPos(){return {x:player.x,y:player.y,dir:player.dir};},
     get mapSize(){return map ? {w:map.width,h:map.height} : {w:1,h:1};},
+    get liveNpcIds(){return liveNpcs.map((n) => n.id);},
   };
 })();
