@@ -91,13 +91,39 @@ const FieldAssets = (function () {
 
   function ready(img) { return !!(img && img.complete && img.naturalWidth); }
 
+  // 스프라이트 시트에서 한 프레임만 잘라낸 오프스크린 캔버스를 캐시해둔다.
+  // drawImage에 sx/sy/sw/sh로 서브사각형을 지정한 채 스무딩을 켜면, 브라우저가
+  // 확대/축소 필터링 과정에서 그 사각형 바로 바깥(옆 칸/윗줄 프레임)의 픽셀까지
+  // 살짝 섞어버려 캐릭터 머리 위나 발밑에 옆 프레임 색이 깜빡이며 새어나오는
+  // 현상이 생긴다. 프레임을 먼저 이웃 없는 캔버스로 분리해두면 그 문제가 없다.
+  const frameCache = Object.create(null);
+  function getFrame(key, img, sx, sy, sw, sh) {
+    const cacheKey = key + '|' + sx + ',' + sy + ',' + sw + ',' + sh;
+    let c = frameCache[cacheKey];
+    if (!c) {
+      c = document.createElement('canvas');
+      c.width = sw; c.height = sh;
+      const fctx = c.getContext('2d');
+      fctx.imageSmoothingEnabled = false;
+      fctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+      frameCache[cacheKey] = c;
+    }
+    return c;
+  }
+
   function draw(ctx, key, dx, dy, dw, dh, sx, sy, sw, sh, smoothing) {
     const img = get(key);
     if (!ready(img)) return false;
     const previousSmoothing = ctx.imageSmoothingEnabled;
     ctx.imageSmoothingEnabled = !!smoothing;
-    if (sx == null) ctx.drawImage(img, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));
-    else ctx.drawImage(img, sx, sy, sw, sh, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));
+    if (sx == null) {
+      ctx.drawImage(img, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));
+    } else if (smoothing) {
+      const frameImg = getFrame(key, img, sx, sy, sw, sh);
+      ctx.drawImage(frameImg, 0, 0, sw, sh, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));
+    } else {
+      ctx.drawImage(img, sx, sy, sw, sh, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));
+    }
     ctx.imageSmoothingEnabled = previousSmoothing;
     return true;
   }
