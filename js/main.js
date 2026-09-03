@@ -890,7 +890,7 @@ function startJangsunCampaign() {
     GameState.flags.jangsunAppeared = true;
     MapView.addNpc('jangsun');
     updateHUD();
-    toast('유비군이 먼저 앞서나갔다. 행동력을 아껴 뒤따르자.');
+    toast('유비군이 먼저 앞서나갔다. 서둘러 뒤따르자.');
   });
 }
 
