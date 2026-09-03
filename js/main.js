@@ -920,9 +920,22 @@ BattleEvents.on('battleEnd', (payload) => {
 });
 
 // ---------------- 부팅 ----------------
-document.getElementById('btn-start').onclick = () => showScreen('screen-select');
+// 인트로(타이틀) -> 챕터 고르기 -> 당시 세력 설명 -> 장수 고르기 순서로 진행한다.
+document.getElementById('btn-start').onclick = () => showScreen('screen-chapter');
+
+document.getElementById('chapter-card-1').onclick = () => showScreen('screen-factions');
+document.querySelectorAll('#screen-chapter .pick-card[data-ready="false"]').forEach((btn) => {
+  btn.onclick = () => toast('준비 중인 챕터입니다.');
+});
+
+document.getElementById('btn-faction-back').onclick = () => showScreen('screen-chapter');
+document.getElementById('btn-faction-next').onclick = () => showScreen('screen-select');
 
 document.querySelectorAll('.hero-card').forEach((card) => {
+  if (card.dataset.ready === 'false') {
+    card.onclick = () => toast('준비 중인 장수입니다.');
+    return;
+  }
   card.onclick = () => {
     GameState.reset(card.dataset.hero);
     MAPS.pyeongwon.apMovement = false; // 이전 회차의 장순의 난 군세 이동모드가 남아있지 않도록 초기화

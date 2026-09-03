@@ -17,6 +17,62 @@
   </div>
 </div>
 
+<div id="screen-chapter" class="screen">
+  <div class="pick-wrap">
+    <h2>챕터를 선택하세요</h2>
+    <div class="pick-grid">
+      <button class="pick-card" id="chapter-card-1">
+        <h3>챕터1 · 도원의 형제</h3>
+        <p>184년, 황건적의 난이 일어나다</p>
+      </button>
+      <button class="pick-card disabled" data-ready="false">
+        <h3>챕터2</h3>
+        <p>준비 중입니다</p>
+        <span class="ready-badge">준비중</span>
+      </button>
+      <button class="pick-card disabled" data-ready="false">
+        <h3>챕터3</h3>
+        <p>준비 중입니다</p>
+        <span class="ready-badge">준비중</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-factions" class="screen">
+  <div class="pick-wrap factions-wrap">
+    <h2>184년, 천하의 정세</h2>
+    <p class="subtitle">장수를 고르기 전, 당시 세상이 어떻게 돌아가고 있었는지 살펴보세요</p>
+    <div class="faction-scroll">
+      <div class="faction-row">
+        <div class="fname">후한 조정<div class="floc">낙양</div></div>
+        <div class="fdetail">영제(황제)와 대장군 하진, 십상시가 실권을 쥐고 있다. 토벌군 지휘는 노식(북중랑장)·황보숭(좌중랑장)·주준(우중랑장)이 맡았고, 조조는 기도위로, 손견은 주준의 막료로 참전했다.</div>
+      </div>
+      <div class="faction-row">
+        <div class="fname">황건적<div class="floc">기주·영천 등 각지</div></div>
+        <div class="fdetail">장각(천공장군)·장보(지공장군)·장량(인공장군) 삼형제가 여덟 개 주에서 동시에 봉기했다.</div>
+      </div>
+      <div class="faction-row">
+        <div class="fname">병주<div class="floc">진양</div></div>
+        <div class="fdetail">병주자사 정원 휘하에 여포, 장료 등이 소속되어 있다.</div>
+      </div>
+      <div class="faction-row">
+        <div class="fname">서량 반란군<div class="floc">량주 일대</div></div>
+        <div class="fdetail">마등·한수가 조정에 반기를 들었다.</div>
+      </div>
+      <div class="faction-row">
+        <div class="fname">재야 인사<div class="floc">각지</div></div>
+        <div class="fdetail">유표(학자로 이름 높으나 아직 관직 없음), 유언(조정 태상경), 동탁(중랑장으로 토벌 참전) 등이 아직 무대에 오르기 전이다.</div>
+      </div>
+    </div>
+    <div class="note-box">이 시점 유비·관우·장비는 아무 소속도 없는 완전한 의용군이다.</div>
+    <div class="step-nav">
+      <button class="btn-secondary" id="btn-faction-back">뒤로</button>
+      <button class="big-btn" id="btn-faction-next">다음: 장수 선택</button>
+    </div>
+  </div>
+</div>
+
 <div id="screen-select" class="screen">
   <div class="select-wrap">
     <h2>플레이할 장수를 고르세요</h2>
@@ -26,10 +82,29 @@
         <div class="hero-name">관우</div>
         <div class="hero-sub">청룡언월도 · 공92 방71 속58</div>
       </button>
-      <button class="hero-card" data-hero="jangbi">
+      <button class="hero-card disabled" data-ready="false">
         <div class="hero-swatch" style="background:#8a3b2a">장</div>
         <div class="hero-name">장비</div>
         <div class="hero-sub">장팔사모 · 공94 방79 속61</div>
+        <span class="ready-badge">준비중</span>
+      </button>
+      <button class="hero-card disabled" data-ready="false">
+        <div class="hero-swatch" style="background:#7a3a2b">조</div>
+        <div class="hero-name">조조</div>
+        <div class="hero-sub">기도위 · 황건적 토벌 참전</div>
+        <span class="ready-badge">준비중</span>
+      </button>
+      <button class="hero-card disabled" data-ready="false">
+        <div class="hero-swatch" style="background:#4a5a45">장</div>
+        <div class="hero-name">장료</div>
+        <div class="hero-sub">병주 정원 휘하 종사</div>
+        <span class="ready-badge">준비중</span>
+      </button>
+      <button class="hero-card disabled" data-ready="false">
+        <div class="hero-swatch" style="background:#6b4a8a">태</div>
+        <div class="hero-name">태사자</div>
+        <div class="hero-sub">동래 출신, 담력과 효심으로 이름남</div>
+        <span class="ready-badge">준비중</span>
       </button>
     </div>
   </div>
