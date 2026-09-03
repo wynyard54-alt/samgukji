@@ -49,7 +49,7 @@
 let stage = 'title';
 let toastTimer = null;
 let centerAlertTimer = null;
-let pyeongwonCheckpoint = null; // 평원현 도착 시점 GameState 스냅샷 (여포전 패배시 이 시점으로 복귀)
+let pyeongwonCheckpoint = null; // 어양(구 평원현 지도) 도착 시점 GameState 스냅샷 (여포전 패배시 이 시점으로 복귀)
 
 const DEADLINES = { takhyeon: 186, pyeongwon: 188 };
 const MIN_PYEONGWON_STAY_MONTHS = 12; // 탁현 체류가 길어져 늦게 도착해도 평원현에서 최소 이만큼은 머물게 보장
@@ -138,7 +138,7 @@ function describeReward(r) {
 
 const LOCATION_NAMES = {
   takhyeon: '탁현 · 장터',
-  pyeongwon: '평원현',
+  pyeongwon: '유주 · 어양',
   camp: '반동탁연합 진영',
   warmap: '호로관 전선',
 };
@@ -166,7 +166,7 @@ function getObjectives() {
       else list.push(`${rd.name}의 집 방문 중 (친밀도 ${fs}/100)`);
     });
 
-    if (gs.flags.act1) list.push('평원현으로 이동하기');
+    if (gs.flags.act1) list.push('안희현으로 이동하기');
   } else if (stage === 'pyeongwon_free') {
     if (gs.flags.jangsunStarted && !gs.army && gs.npcStatus['jangsun'] !== 'resolved') {
       list.push('막사에 가서 유비와 이야기하기');
@@ -175,7 +175,7 @@ function getObjectives() {
     } else if (gs.army) {
       list.push('장순의 반란군 토벌하기');
     }
-    list.push(`반동탁연합 참전 준비하기 (${DEADLINES.pyeongwon}년까지)`);
+    if (gs.flags.act2) list.push(`반동탁연합 참전 준비하기 (${DEADLINES.pyeongwon}년까지)`);
   } else if (stage === 'camp') {
     list.push('제후들과 인사하고 손견을 도와 화웅과 맞서기');
   } else if (stage === 'warmap') {
@@ -284,15 +284,19 @@ function updateHUD() {
   if (stage === 'takhyeon_free') {
     if (gs.flags.act1) {
       progressBtn.classList.remove('hidden');
-      progressBtn.textContent = '평원현으로 이동';
+      progressBtn.textContent = '안희현으로 이동';
       progressBtn.onclick = goPyeongwonFree;
     } else {
       progressBtn.classList.add('hidden');
     }
   } else if (stage === 'pyeongwon_free') {
-    progressBtn.classList.remove('hidden');
-    progressBtn.textContent = '반동탁연합 참전 준비';
-    progressBtn.onclick = () => openArmyBox(goCoalitionCamp);
+    if (gs.flags.act2) {
+      progressBtn.classList.remove('hidden');
+      progressBtn.textContent = '반동탁연합 참전 준비';
+      progressBtn.onclick = () => openArmyBox(goCoalitionCamp);
+    } else {
+      progressBtn.classList.add('hidden');
+    }
   } else {
     progressBtn.classList.add('hidden');
   }
@@ -314,7 +318,7 @@ function interactNPC(id, context) {
     return;
   }
 
-  if (id === 'yujapyeong') { handleYujapyeong(); return; }
+  if (id === 'yuwoo') { handleYuwoo(); return; }
 
   if (id === 'jangsun') { openWarCommandMenu('jangsun'); return; }
 
@@ -384,11 +388,11 @@ function handleYubi() {
       Dialogue.show(STORY.act1_appointment, () => {
         GameState.flags.act1 = true;
         GameState.addFame(60); // 안희현위 제수 공적
-        toast('안희현위에 제수되었다. 평원현으로 이동할 수 있습니다. (명성 +60)');
+        toast('안희현위에 제수되었다. 안희현으로 이동할 수 있습니다. (명성 +60)');
         updateHUD();
       });
     } else {
-      offerBarracksTraining('아우들, 평원으로 떠날 준비가 되었소.');
+      offerBarracksTraining('아우들, 안희로 떠날 준비가 되었소.');
     }
   } else if (stage === 'pyeongwon_free') {
     if (GameState.flags.jangsunStarted && !GameState.army && GameState.npcStatus['jangsun'] !== 'resolved') {
@@ -744,6 +748,7 @@ function checkDeadlines() {
     return true;
   }
   if (stage === 'pyeongwon_free' && absMonth(gs.year, gs.month) > pyeongwonDeadlineAbsMonth()) {
+    gs.flags.act2 = true;
     Dialogue.show(STORY.act2_forced, () => { openArmyBox(goCoalitionCamp); });
     return true;
   }
@@ -780,17 +785,19 @@ function goPyeongwonFree() {
     onAmbientInteract: runAmbientEvent,
   });
   updateHUD();
-  if (!GameState.flags.act2) {
-    Dialogue.show(STORY.act2_call, () => { GameState.flags.act2 = true; });
+  if (!GameState.flags.dokwooEvent) {
+    GameState.flags.dokwooEvent = true;
+    Dialogue.show(STORY.act1_dokwoo);
   }
 }
 
-// 여포전 패배 등으로 평원현 도착 시점으로 되돌아갈 때 사용한다.
+// 여포전 패배 등으로 어양 도착 시점으로 되돌아갈 때 사용한다.
 // 그 시점 이후 얻은 자원/등용/친밀도/연도 등은 모두 스냅샷 상태로 되돌아간다.
 function restoreToPyeongwonCheckpoint() {
   if (!pyeongwonCheckpoint) { location.reload(); return; }
   const snap = JSON.parse(JSON.stringify(pyeongwonCheckpoint));
   Object.keys(snap).forEach((k) => { GameState[k] = snap[k]; });
+  GameState.flags.dokwooEvent = true; // 재도전시 독우 매질/어양 도착 연출을 다시 보여줄 필요는 없다
   GameState.flags.act2 = true; // 재도전시 반동탁연합 합류 연출을 다시 보여줄 필요는 없다
   MAPS.pyeongwon.apMovement = false; // 장순의 난 출정 중 패배했다면 군세 이동모드도 함께 초기화
   goPyeongwonFree();
@@ -858,24 +865,24 @@ function checkWarmapClear() {
   }
 }
 
-// ---------------- 평원현 : 장순의 난 (군세전투 튜토리얼) ----------------
-// 유자평의 천거 -> 유비 막사에서 군세 편성(관우군) -> 유비군이 먼저 출발해 패퇴 ->
+// ---------------- 유주 어양 : 장순의 난 (군세전투 튜토리얼) ----------------
+// 유우의 천거 -> 유비 막사에서 군세 편성(관우군) -> 유비군이 먼저 출발해 패퇴 ->
 // 관우군이 행동력을 소모해 뒤따라가 [일기토(무조건 거절)]/[전투]로 격파 ->
-// 막사로 복귀해 군세 해산. 안희현위는 탁현 단계에서 이미 제수되었으므로 여기서는
-// 별도 관직 없이 공적만 알린다. 군세로 전환된 동안에는
-// (장수 혼자 돌아다닐 때와 달리) 한 칸 이동할 때마다 행동력을 소모한다.
-function handleYujapyeong() {
+// 막사로 복귀해 군세 해산 -> 공손찬이 죄를 사면하고 평원현령으로 천거(메시지) ->
+// 곧바로 반동탁연합 소집 소식. 군세로 전환된 동안에는 (장수 혼자 돌아다닐 때와
+// 달리) 한 칸 이동할 때마다 행동력을 소모한다.
+function handleYuwoo() {
   if (!GameState.flags.jangsunStarted) {
     Dialogue.show(STORY.jangsun_call, () => {
       GameState.flags.jangsunStarted = true;
       updateHUD();
     });
   } else if (GameState.npcStatus['jangsun'] === 'resolved') {
-    Dialogue.show([{ speaker: '유자평', text: '그대 덕분에 이 땅에 다시 평화가 찾아왔네. 참으로 고맙네.' }]);
+    Dialogue.show([{ speaker: '유우', text: '그대 덕분에 이 땅에 다시 평화가 찾아왔네. 참으로 고맙네.' }]);
   } else if (!GameState.army) {
-    Dialogue.show([{ speaker: '유자평', text: '어서 막사로 가서 유비 공과 상의하시게.' }]);
+    Dialogue.show([{ speaker: '유우', text: '어서 막사로 가서 유비 공과 상의하시게.' }]);
   } else {
-    Dialogue.show([{ speaker: '유자평', text: '장순의 반란군이 아직 근방에 있다 하네. 부디 조심하시게.' }]);
+    Dialogue.show([{ speaker: '유우', text: '장순의 반란군이 아직 근방에 있다 하네. 부디 조심하시게.' }]);
   }
 }
 
@@ -897,8 +904,14 @@ function disbandJangsunArmy() {
   updateHUD();
   Dialogue.show(STORY.jangsun_victory, () => {
     GameState.addFame(60); // 메인퀘스트: 장순의 난 평정
-    toast('안희현위에 제수되었다. (명성 +60)');
+    toast('명성 +60');
     updateHUD();
+    Dialogue.show(STORY.jangsun_aftermath, () => {
+      Dialogue.show(STORY.act2_call, () => {
+        GameState.flags.act2 = true;
+        updateHUD();
+      });
+    });
   });
 }
 
@@ -913,7 +926,7 @@ function resolveJangsunBattle(result) {
     Dialogue.show([{ speaker: '내레이션', text: `아군이 장순의 반란군에 크게 밀려 무너졌다. (아군 병력 ${result.playerTroopsLeft}명 남음)` }], () => {
       showChoice('아직 힘이 부족한 것 같다. 어떻게 할까?', [
         { label: '처음부터 다시 시작', cb: () => showScreen('screen-title') },
-        { label: '평원현에서 다시 시작', cb: () => restoreToPyeongwonCheckpoint() },
+        { label: '어양에서 다시 시작', cb: () => restoreToPyeongwonCheckpoint() },
       ]);
     });
   }
@@ -938,7 +951,7 @@ function startYeopoAssistScene() {
                   Dialogue.show(STORY.warmap_yeopo_defeat, () => {
                     showChoice(`${GameState.heroData().name}이(가) 여포 저지에 실패했다. 어떻게 할까?`, [
                       { label: '처음부터 다시 시작', cb: () => showScreen('screen-title') },
-                      { label: '평원현에서 다시 시작', cb: () => restoreToPyeongwonCheckpoint() },
+                      { label: '어양에서 다시 시작', cb: () => restoreToPyeongwonCheckpoint() },
                     ]);
                   });
                   return;
@@ -1345,7 +1358,7 @@ function openArmyBox(onConfirm) {
     const troop = armySteppers['army-troop'].get();
     const rice = armySteppers['army-rice'].get();
     if (troop < ARMY_MIN_TROOP) {
-      document.getElementById('army-hint').textContent = `병사가 부족합니다. 최소 ${ARMY_MIN_TROOP}명이 필요합니다. (탁현/평원현에서 징병하기를 이용하세요)`;
+      document.getElementById('army-hint').textContent = `병사가 부족합니다. 최소 ${ARMY_MIN_TROOP}명이 필요합니다. (탁현/어양에서 징병하기를 이용하세요)`;
       return;
     }
     const deputy = select.value || null;
@@ -1482,7 +1495,7 @@ document.getElementById('btn-nextmonth').onclick = () => {
   // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).
   // 같은 달 안에서 연달아 전투를 치를 때만 체력이 그대로 이어진다 - 휴식(다음달)을 거치면 항상 완전 회복.
   const inCampaign = stage === 'warmap';
-  // 장순의 난: 군세로 전환된 뒤에는 평원현이라도 warmap처럼 매달 행동력을 재보급받는다.
+  // 장순의 난: 군세로 전환된 뒤에는 어양이라도 warmap처럼 매달 행동력을 재보급받는다.
   const inJangsunMarch = stage === 'pyeongwon_free' && MAPS.pyeongwon.apMovement && !!GameState.army;
   GameState.heroHp = null;
   if (inCampaign || inJangsunMarch) GameState.ap = effectiveApMax();

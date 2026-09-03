@@ -195,7 +195,7 @@ if (false) (function () {
   };
 })();
 
-// ---------------- 평원현 : 성내와 남문, 평야, 장순의 난 ----------------
+// ---------------- 유주 어양 (구 평원현 배경 재사용) : 성내와 남문, 평야, 장순의 난 ----------------
 (function () {
   const w = 40, h = 28;
   const grid = makeGrid(w, h, 0);
@@ -250,7 +250,7 @@ if (false) (function () {
   ]) grid[y][x] = v;
 
   MAPS.pyeongwon = {
-    name:'평원현 · 남문과 평야', width:w, height:h, tiles:grid,
+    name:'유주 · 어양', width:w, height:h, tiles:grid,
     backgroundKey:'pyeongwon_city_overview',
     playerStart:{ x:18, y:17 },
     camera:{ viewportW:800, viewportH:480 },
@@ -260,17 +260,17 @@ if (false) (function () {
       { type:'mapLabel', x:21.0, y:3.55, label:'민가', residenceIds:['jindeung','jingyu'], revealedLabel:'진등·진규의 집' },
       { type:'mapLabel', x:33.0, y:3.55, label:'민가', residenceIds:['choeyeom'], revealedLabel:'최염의 집' },
       { type:'mapLabel', x:8.5, y:8.75, label:'민가', residenceIds:['mijuk'], revealedLabel:'미축의 집' },
-      { type:'mapLabel', x:18.8, y:8.75, label:'평원 주막' },
-      { type:'mapLabel', x:29.5, y:11.3, label:'평원현 관아' },
-      { type:'mapLabel', x:18.0, y:16.0, label:'평원현 남문' },
+      { type:'mapLabel', x:18.8, y:8.75, label:'어양 주막' },
+      { type:'mapLabel', x:29.5, y:11.3, label:'어양 관청' },
+      { type:'mapLabel', x:18.0, y:16.0, label:'어양 남문' },
       { type:'mapLabel', x:26.0, y:20.4, label:'유비 세력 막사' },
-      { type:'mapLabel', x:5.5, y:24.8, label:'평원 들판' },
+      { type:'mapLabel', x:5.5, y:24.8, label:'어양 들판' },
       { type:'mapLabel', x:34.0, y:26.0, label:'장순 반란군 진지', storyGate:'jangsunAppeared' },
     ],
     areaLabels:[
       { x:18.5, y:13.4, text:'남문대로' },
       { x:18.5, y:19.2, text:'출정로' },
-      { x:25.0, y:22.0, text:'평원 들길' },
+      { x:25.0, y:22.0, text:'어양 들길' },
     ],
     npcs:[
       { id:'yubi', x:24, y:20, label:'유비', fixed:true },
@@ -301,7 +301,7 @@ if (false) (function () {
       { id:'choeyeom', x:34, y:12, label:'최염', randomSpawn:true, discoverable:true, discoveryRange:2,
         discoveryText:'수염을 단정히 기른 선비가 거리의 풍속을 말없이 살피고 있다.',
         residence:{ x:33, y:5, label:'최염' } },
-      { id:'yujapyeong', x:25, y:13, label:'유자평', fixed:true },
+      { id:'yuwoo', x:25, y:13, label:'유우', fixed:true },
       { id:'jangsun', x:30, y:27, label:'장순(반란군)', fixed:true, storyGate:'jangsunAppeared' },
       { id:'gwanhae', x:6, y:22, label:'관해(황건적 잔당)' },
     ],
