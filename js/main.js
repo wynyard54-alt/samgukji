@@ -753,7 +753,7 @@ function checkDeadlines() {
 }
 
 function onApBlocked() {
-  centerAlert('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.');
+  centerAlert('행동력이 부족하다. 휴식하고 다음달에 다시 하자.');
 }
 
 function goTakhyeonFree() {

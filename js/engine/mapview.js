@@ -589,6 +589,9 @@ const MapView = (function () {
       if ((mapId === 'takhyeon' || mapId === 'pyeongwon') && map.tiles[y][x] !== 1) continue;
       // 평원현의 무작위 인물은 성내에서만 발견되며, 성벽 밖 전장은 배회하지 않는다.
       if (mapId === 'pyeongwon' && y >= 14) continue;
+      // 남문 통로(x17~18)와 그 바로 안쪽은 성 안팎을 잇는 유일한 길목이라, 무작위
+      // 인물이 여기 서버리면 지나갈 수 없게 막혀버린다 - 이 구간은 스폰에서 제외한다.
+      if (mapId === 'pyeongwon' && y >= 10 && (x === 17 || x === 18)) continue;
       if (x === player.x && y === player.y) continue;
       if (npcAt(x, y)) continue;
       return { x, y };
