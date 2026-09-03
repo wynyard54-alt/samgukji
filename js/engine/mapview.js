@@ -121,7 +121,9 @@ const MapView = (function () {
         if (!GameState.npcVisible[n.id]) return false;
       }
       const status = GameState.npcStatus[n.id];
-      if (status === 'recruited' || status === 'resolved' || status === 'dead' || status === 'fled') return false;
+      const fixedInTakhyeon = id === 'takhyeon' && (n.id === 'yubi' || n.id === 'yuwongi');
+      if (status === 'dead' || status === 'fled') return false;
+      if ((status === 'recruited' || status === 'resolved') && !fixedInTakhyeon) return false;
       if (n.randomSpawn && !GameState.npcSpawnPos[n.id]) return false; // 아직 등장 시점이 되지 않음
       if (n.storyGate && !GameState.flags[n.storyGate]) return false; // 특정 스토리 이벤트 전에는 등장하지 않음
       return true;
@@ -154,7 +156,7 @@ const MapView = (function () {
         const nx = p.x + dx, ny = p.y + dy;
         const radius = p.wander == null ? 2 : p.wander;
         if (Math.abs(nx-p._homeX) > radius || Math.abs(ny-p._homeY) > radius) continue;
-        if (!isWalkable(nx, ny)) continue;
+        if (!isNpcWalkable(p, nx, ny)) continue;
         if (Math.round(nx) === player.x && Math.round(ny) === player.y) continue;
         p.x = nx; p.y = ny; p._dir = dir;
       }
@@ -192,6 +194,13 @@ const MapView = (function () {
     return !TILE_BLOCKED[tile];
   }
 
+  function isNpcWalkable(person, x, y) {
+    if (!isWalkable(x, y)) return false;
+    if (person && person.roadOnly === false) return true;
+    const row = map.tiles[Math.round(y)];
+    return !person || !person.roadOnly || (!!row && row[Math.round(x)] === 1);
+  }
+
   function tileMoveCost(x, y) {
     const tile = map.tiles[Math.round(y)] && map.tiles[Math.round(y)][Math.round(x)];
     return TILE_ROUGH[tile] ? 2 : 1;
@@ -200,9 +209,13 @@ const MapView = (function () {
   function render() {
     if (!map) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawGround();
-    drawBackDecor();
+    if (map.backgroundKey) drawMapBackground();
+    else {
+      drawGround();
+      drawBackDecor();
+    }
     drawAreaLabels();
+    if (map.backgroundKey) drawMapLandmarkLabels();
 
     const actors = [];
     crowd.forEach((p, idx) => actors.push({ type:'ambient', y:p.y, data:p, idx }));
@@ -219,8 +232,20 @@ const MapView = (function () {
       else drawHero();
     }
 
-    drawFrontDecor();
+    if (!map.backgroundKey) drawFrontDecor();
     drawLocationRibbon();
+  }
+
+  function drawMapBackground() {
+    FieldAssets.draw(ctx,map.backgroundKey,worldX(0),worldY(0),map.width*TILE,map.height*TILE);
+  }
+
+  function drawMapLandmarkLabels() {
+    for (const d of (map.decor || [])) {
+      if (d.type !== 'mapLabel') continue;
+      const label = decorLabel(d);
+      if (label) drawTag(worldX(d.x), worldY(d.y), label, 'rgba(50,40,29,.82)');
+    }
   }
 
   function drawGround() {
@@ -547,6 +572,7 @@ const MapView = (function () {
       const x = 1 + Math.floor(Math.random() * (map.width - 2));
       const y = 1 + Math.floor(Math.random() * (map.height - 2));
       if (!isWalkable(x, y)) continue;
+      if (mapId === 'takhyeon' && map.tiles[y][x] !== 1) continue;
       if (x === player.x && y === player.y) continue;
       if (npcAt(x, y)) continue;
       return { x, y };

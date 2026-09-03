@@ -43,6 +43,7 @@ const FieldAssets = (function () {
     takhyeon_house_common:'takhyeon_house_common.png',
     takhyeon_fence_common:'takhyeon_fence_common.png',
     takhyeon_vegetation_edge:'takhyeon_vegetation_edge.png',
+    takhyeon_city_overview:'takhyeon_map_v10.png',
     v6_camp_yubi:'v6_camp_yubi.png',
     v6_house_front:'v6_house_front.png',
     v6_house_side:'v6_house_side.png',

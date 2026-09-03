@@ -11,11 +11,11 @@ function makeGrid(w, h, base) {
 
 const MAPS = {};
 
-// ---------------- 탁현 : 확장 성읍 v2 (그래픽 초기화 - 흙바닥+성벽만 남긴 상태) ----------------
+// ---------------- 탁현 : 이전 빈 바탕 자료 (비활성, 좌표 이력 보존용) ----------------
 // 28x20(560칸)에서 40x28(1120칸)로 확장. 정확히 2배 면적이다.
 // 건물/좌판/나무 등 개별 그래픽은 전부 제거하고, 성벽으로 둘러싼 흙바닥만 남겨
 // 다음 라운드에 그래픽을 하나씩 다시 얹기 위한 깨끗한 바탕으로 삼는다.
-(function () {
+if (false) (function () {
   const w = 40, h = 28;
   const grid = makeGrid(w, h, 0); // 내부는 전부 흙바닥(0)으로 트여있다.
 
@@ -90,6 +90,76 @@ const MAPS = {};
       { archetype:'child', x:22, y:20, palette:'dust', wander:2 },
       { archetype:'guard', x:31, y:14, palette:'iron', wander:1 },
     ],
+  };
+})();
+
+// ---------------- 탁현 : 조망도 기반 통합 성읍 ----------------
+// 완성된 조망도를 38x26 격자와 맞춘다. 그림과 충돌/인물은 별도 레이어다.
+(function () {
+  const w = 38, h = 26;
+  const grid = makeGrid(w, h, 0);
+
+  // 도로망: 북문-장터 주도로, 동서대로, 관아/민가/주막/막사/숲길.
+  for (const r of [
+    [17,2,20,25],[1,11,36,13],[2,14,16,17],[21,14,31,17],[21,18,34,20],
+    [28,20,34,24],[4,8,16,10],[23,8,36,10],[25,5,26,10],[32,5,33,10],
+  ]) rectFill(grid, ...r, 1);
+
+  // 외곽, 관아, 북동 민가, 장터, 주막, 유원기 집, 유비 막사, 작은 황건적 은신처.
+  for (const r of [
+    [0,0,w-1,0,4],[0,h-1,w-1,h-1,4],[0,0,0,h-1,4],[w-1,0,w-1,h-1,4],
+    [1,1,16,3,4],[21,1,36,3,4],
+    [6,4,13,7,2],[3,5,5,7,2],[2,3,15,3,4],[2,4,2,9,4],[15,4,15,8,4],
+    [24,4,28,7,2],[30,4,35,7,2],[24,8,28,10,2],[30,8,35,10,2],
+    [19,11,21,14,4],[5,14,7,15,2],[9,14,12,15,2],[14,14,15,16,2],
+    [3,19,13,23,2],[19,19,27,23,2],[28,14,34,17,2],
+    [31,21,32,22,2],[35,22,36,24,2],
+  ]) rectFill(grid, r[0], r[1], r[2], r[3], r[4]);
+  for (const [x,y] of [[28,22],[29,24],[35,20],[36,19],[36,22],[27,24]]) grid[y][x] = 4;
+
+  MAPS.takhyeon = {
+    name:'탁현 · 장터', width:w, height:h, tiles:grid,
+    backgroundKey:'takhyeon_city_overview',
+    playerStart:{ x:18, y:16 },
+    camera:{ viewportW:800, viewportH:480 },
+    decor:[
+      { type:'mapLabel', x:9.0, y:8.5, label:'탁현 관아' },
+      { type:'mapLabel', x:7.5, y:23.5, label:'주막' },
+      { type:'mapLabel', x:23.0, y:23.0, label:'유원기의 집' },
+      { type:'mapLabel', x:31.0, y:18.2, label:'유비 세력 막사' },
+      { type:'mapLabel', x:25.5, y:8.4, label:'민가', residenceId:'noshik' },
+      { type:'mapLabel', x:32.5, y:8.4, label:'민가', residenceId:'gongyung' },
+      { type:'mapLabel', x:33.2, y:24.0, label:'황건적 은신처' },
+    ],
+    areaLabels:[
+      { x:9, y:10.4, text:'관아 앞길' }, { x:18.8, y:10.4, text:'탁현 장터' },
+      { x:29.2, y:10.4, text:'민가 골목' }, { x:30.0, y:20.1, text:'남동 숲길' },
+    ],
+    npcs:[
+      { id:'yubi', x:29, y:18, label:'유비', fixed:true },
+      { id:'chujeong', x:14, y:12, label:'추정', randomSpawn:true },
+      { id:'noshik', x:16, y:12, label:'', discoverable:true, fixed:true, discoveryRange:2,
+        discoveryText:'장터의 큰 나무 곁에서 소란에 아랑곳하지 않고 책을 읽는 범상치 않은 선비가 보인다.',
+        residence:{ x:25, y:11, label:'노식의 집' } },
+      { id:'yuwongi', x:22, y:24, label:'유원기', fixed:true },
+      { id:'sossang', x:12, y:16, label:'소쌍', fixed:true },
+      { id:'jangsepyeong', x:14, y:17, label:'장세평', fixed:true },
+      { id:'gongyung', x:11, y:12, label:'', discoverable:true, fixed:true, discoveryRange:2,
+        discoveryText:'시장 좌판 옆에서 사람들의 언쟁을 조용히 듣던 선비가 문득 핵심을 찌르는 말을 던진다.',
+        residence:{ x:32, y:11, label:'공융이 머무는 집' } },
+      { id:'ganong', x:18, y:12, label:'간옹', randomSpawn:true },
+      { id:'gwanhae', x:30, y:21, label:'관해(황건적 잔당)' },
+      { id:'muangug', x:27, y:13, label:'무안국' },
+      { id:'deungmu', x:33, y:23, label:'등무(황건적 두목)', fixed:true },
+      { id:'jeongwonji', x:23, y:18, label:'정원지(황건적 잔당)', storyGate:'jeongwonjiEvent' },
+    ],
+    ambient:[
+      ['merchant',8,13,'ash',2],['farmer',12,12,'earth',3],['woman',15,13,'ash',2],
+      ['elder',18,9,'earth',2],['porter',22,13,'ash',3],['farmer',25,12,'earth',2],
+      ['merchant',7,16,'ash',2],['child',17,16,'dust',2],['guard',18,4,'iron',2],
+      ['guard',20,4,'iron',2],['woman',27,13,'dust',2],['porter',23,18,'earth',2],
+      ['farmer',4,12,'ash',2],['merchant',14,17,'earth',2],
+    ].map(([archetype,x,y,palette,wander]) => ({ archetype,x,y,palette,wander,roadOnly:true })),
   };
 })();
 
@@ -195,4 +265,3 @@ const MAPS = {};
     ],
   };
 })();
-
