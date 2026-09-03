@@ -389,23 +389,9 @@ const MapView = (function () {
     const scholar=isScholarType(rd);
     const role=scholar ? 'scholar' : 'guard';
 
-    // 미발견 인물은 군중처럼 보이고, 발견 뒤에는 전용/세력별 HD 시트로 바뀐다.
-    const yellowTurbanIds=['jeongwonji','deungmu','gwanhae'];
-    const dongtakIds=['hwaung','hojin','songheon','wisok','igak','gwaksa'];
-    const coalitionIds=['wonso','jojo','gongsonchan','songyeon'];
-    const merchantIds=['sossang','jangsepyeong','mijuk'];
-    const elderIds=['yuwongi','yujapyeong'];
-    let spec=null;
-    if (n.id==='jangsun') spec={key:'enemy_jangsun',fw:362,fh:362,sx:.18,sy:.18};
-    else if (!hidden && n.id==='yubi') spec={key:'hero_yubi',fw:362,fh:362,sx:.185,sy:.185};
-    else if (!hidden && n.id==='yeopo') spec={key:'hero_yeopo',fw:971/3,fh:1619/4,sx:.20,sy:.165};
-    else if (!hidden && n.id==='noshik') spec={key:'hero_noshik',fw:1024/3,fh:384,sx:.19,sy:.17};
-    else if (!hidden && yellowTurbanIds.includes(n.id)) spec={key:'enemy_yellowturban',fw:1024/3,fh:384,sx:.19,sy:.17};
-    else if (!hidden && dongtakIds.includes(n.id)) spec={key:'officer_dongtak',fw:1024/3,fh:384,sx:.19,sy:.17};
-    else if (!hidden && coalitionIds.includes(n.id)) spec={key:'officer_coalition',fw:362,fh:362,sx:.185,sy:.185};
-    else if (!hidden && merchantIds.includes(n.id)) spec={key:'npc_merchant',fw:96,fh:96,sx:.67,sy:.70};
-    else if (!hidden && elderIds.includes(n.id)) spec={key:'npc_elder',fw:96,fh:96,sx:.67,sy:.70};
-    else spec={key:`npc_${role}`,fw:96,fh:96,sx:.67,sy:.70};
+    // 미발견 인물은 군중처럼 보이고, 발견 뒤에는 ROSTER에 붙어있는 전용/세력별
+    // HD 시트로 바뀐다 (스프라이트 스펙 자체는 js/data/roster.js에 정의됨).
+    const spec = (!hidden && rd.sprite) ? rd.sprite : { key:`npc_${role}`, fw:96, fh:96, sx:.67, sy:.70 };
     const drawn=FieldAssets.sprite(ctx,spec.key,x,y,'down',animFrame,spec.fw,spec.fh,spec.sx,3,spec.sy);
     if (!drawn) {
       const palette=hidden

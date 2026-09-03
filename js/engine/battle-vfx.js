@@ -1,15 +1,10 @@
 // BattleVFX: BattleEvents를 구독해 전투 계산과 독립적으로 연출만 담당한다.
 // BASE 3b3524f에서 제작, 7a77e26의 battleEnd payload.hold와 호환.
-// 실제 캐릭터 PNG가 추가되면 CHARACTER_ART의 src만 연결하면 된다.
+// 캐릭터별 연출 정보(글리프/무기/PNG 등)는 ROSTER[id].battleArt에 데이터로 붙어있다 -
+// 실제 캐릭터 PNG를 추가할 때는 그 항목의 src만 연결하면 된다.
 const BattleVFX = (function () {
   const screen = document.getElementById('battle-screen');
   if (!screen || typeof BattleEvents === 'undefined') return { init(){} };
-
-  const CHARACTER_ART = {
-    gwanwoo: { glyph: '關', weapon: '靑龍偃月刀', title: '미염공 관우', className: 'hero-green', src: 'assets/battle/duel_gwanwoo.png' },
-    hwaung:  { glyph: '華', weapon: '長槍', title: '서량의 맹장 화웅', className: 'enemy-red', src: 'assets/battle/duel_hwaung.png' },
-    yeopo:   { glyph: '呂', weapon: '方天畫戟', title: '비장 여포', className: 'enemy-red', src: 'assets/battle/duel_yeopo.png' },
-  };
 
   let arena, playerActor, enemyActor, fxLayer, cutin, banner;
   let timers = [];
@@ -48,7 +43,8 @@ const BattleVFX = (function () {
   }
 
   function artFor(id, data) {
-    return CHARACTER_ART[id] || { glyph: (data?.name || '?')[0], weapon: '兵器', title: data?.name || id, className: 'generic' };
+    const rd = typeof ROSTER !== 'undefined' && ROSTER[id];
+    return (rd && rd.battleArt) || { glyph: (data?.name || '?')[0], weapon: '兵器', className: 'generic' };
   }
 
   function setActor(el, data) {
