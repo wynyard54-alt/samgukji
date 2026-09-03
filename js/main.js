@@ -147,8 +147,12 @@ function getObjectives() {
   const gs = GameState;
   const list = [];
   if (stage === 'takhyeon_free') {
-    const deungmuDone = ['recruited', 'resolved'].includes(gs.npcStatus['deungmu']);
-    if (!deungmuDone) list.push(`황건적 두목 등무 처치하기 (${DEADLINES.takhyeon}년까지)`);
+    const jeongwonjiDone = ['recruited', 'resolved'].includes(gs.npcStatus['jeongwonji']);
+    const goseungDone = ['recruited', 'resolved'].includes(gs.npcStatus['goseung']);
+    if (!jeongwonjiDone) list.push(`황건적 두목 정원지 처치하기 (${DEADLINES.takhyeon}년까지)`);
+    else if (!gs.flags.goseungEvent) list.push('유비에게 보고하기');
+    else if (!goseungDone) list.push('황건적 잔당 고승 처치하기');
+    else if (!gs.flags.act1) list.push('유비에게 보고하기');
 
     ['noshik', 'gongyung'].forEach((id) => {
       const rd = ROSTER[id];
@@ -162,7 +166,6 @@ function getObjectives() {
       else list.push(`${rd.name}의 집 방문 중 (친밀도 ${fs}/100)`);
     });
 
-    if (deungmuDone && !gs.flags.act1) list.push('유비에게 보고하기');
     if (gs.flags.act1) list.push('평원현으로 이동하기');
   } else if (stage === 'pyeongwon_free') {
     if (gs.flags.jangsunStarted && !gs.army && gs.npcStatus['jangsun'] !== 'resolved') {
@@ -279,8 +282,7 @@ function updateHUD() {
 
   const progressBtn = document.getElementById('btn-progress');
   if (stage === 'takhyeon_free') {
-    const deungmuDone = ['recruited', 'resolved'].includes(gs.npcStatus['deungmu']);
-    if (deungmuDone && gs.flags.act1) {
+    if (gs.flags.act1) {
       progressBtn.classList.remove('hidden');
       progressBtn.textContent = '평원현으로 이동';
       progressBtn.onclick = goPyeongwonFree;
@@ -360,21 +362,30 @@ function offerBarracksTraining(greetingText) {
 
 function handleYubi() {
   if (stage === 'takhyeon_free') {
-    const deungmuDone = ['recruited', 'resolved'].includes(GameState.npcStatus['deungmu']);
-    if (!deungmuDone) {
-      offerBarracksTraining('황건적 잔당이 아직 마을 근처를 떠돌고 있다 하오. 먼저 처리하고 오시겠소?');
-    } else if (!GameState.flags.act1) {
+    const jeongwonjiDone = ['recruited', 'resolved'].includes(GameState.npcStatus['jeongwonji']);
+    const goseungDone = ['recruited', 'resolved'].includes(GameState.npcStatus['goseung']);
+    if (!jeongwonjiDone) {
+      offerBarracksTraining('황건적 두목 정원지가 아직 마을 근처를 떠돌고 있다 하오. 먼저 처리하고 오시겠소?');
+    } else if (!GameState.flags.goseungEvent) {
       Dialogue.show(STORY.act1_report, () => {
-        GameState.flags.act1 = true;
         GameState.addFame(30); // 메인퀘스트 완료
         GameState.addFame(50); // 탁현 내 명성 확산
         GameState.addResource({ troop: 500 }); // 명성을 듣고 몰려온 장정들의 귀순
-        toast('평원현으로 이동할 수 있습니다. (명성 +80, 병사 +500)');
+        toast('명성 +80, 병사 +500');
         updateHUD();
-        Dialogue.show(STORY.jeongwonji_incident, () => {
-          GameState.flags.jeongwonjiEvent = true;
-          MapView.addNpc('jeongwonji');
+        Dialogue.show(STORY.goseung_incident, () => {
+          GameState.flags.goseungEvent = true;
+          MapView.addNpc('goseung');
         });
+      });
+    } else if (!goseungDone) {
+      offerBarracksTraining('황건적 잔당 고승이 아직 시장 근처를 떠돌고 있다 하오. 먼저 처리하고 오시겠소?');
+    } else if (!GameState.flags.act1) {
+      Dialogue.show(STORY.act1_appointment, () => {
+        GameState.flags.act1 = true;
+        GameState.addFame(60); // 안희현위 제수 공적
+        toast('안희현위에 제수되었다. 평원현으로 이동할 수 있습니다. (명성 +60)');
+        updateHUD();
       });
     } else {
       offerBarracksTraining('아우들, 평원으로 떠날 준비가 되었소.');
@@ -715,10 +726,17 @@ function offerCapturedRecruits(done) {
 function checkDeadlines() {
   const gs = GameState;
   if (stage === 'takhyeon_free' && gs.year > DEADLINES.takhyeon && !gs.flags.act1) {
-    const deungmuDone = ['recruited', 'resolved'].includes(gs.npcStatus['deungmu']);
-    if (!deungmuDone) {
-      gs.npcStatus['deungmu'] = 'resolved';
-      MapView.removeNpc('deungmu');
+    const jeongwonjiDone = ['recruited', 'resolved'].includes(gs.npcStatus['jeongwonji']);
+    if (!jeongwonjiDone) {
+      gs.npcStatus['jeongwonji'] = 'resolved';
+      MapView.removeNpc('jeongwonji');
+    }
+    if (gs.flags.goseungEvent) {
+      const goseungDone = ['recruited', 'resolved'].includes(gs.npcStatus['goseung']);
+      if (!goseungDone) {
+        gs.npcStatus['goseung'] = 'resolved';
+        MapView.removeNpc('goseung');
+      }
     }
     gs.flags.act1 = true;
     gs.addFame(30); // 메인퀘스트 완료 (관직 제수 서사는 생략되었으므로 그 명성은 제외)
@@ -843,7 +861,8 @@ function checkWarmapClear() {
 // ---------------- 평원현 : 장순의 난 (군세전투 튜토리얼) ----------------
 // 유자평의 천거 -> 유비 막사에서 군세 편성(관우군) -> 유비군이 먼저 출발해 패퇴 ->
 // 관우군이 행동력을 소모해 뒤따라가 [일기토(무조건 거절)]/[전투]로 격파 ->
-// 막사로 복귀해 군세 해산 -> 유자평이 안희현위 제수. 군세로 전환된 동안에는
+// 막사로 복귀해 군세 해산. 안희현위는 탁현 단계에서 이미 제수되었으므로 여기서는
+// 별도 관직 없이 공적만 알린다. 군세로 전환된 동안에는
 // (장수 혼자 돌아다닐 때와 달리) 한 칸 이동할 때마다 행동력을 소모한다.
 function handleYujapyeong() {
   if (!GameState.flags.jangsunStarted) {

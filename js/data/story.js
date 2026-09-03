@@ -15,10 +15,16 @@ const STORY = {
     { speaker: '내레이션', text: '그 소문을 들은 장정 500여 명이 유비 휘하에 들어오기를 자청했다. — 184년 여름' },
   ],
 
-  jeongwonji_incident: [
+  goseung_incident: [
     { speaker: '유비', text: '한데 아직 마음을 놓기는 이르오.' },
     { speaker: '유비', text: '방금 전갈이 왔는데, 시장 한복판에 황건적 잔당 하나가 또 나타나 행패를 부리고 있다 하오.' },
-    { speaker: '유비', text: '정원지라는 자라 들었소. 아우가 가서 처리해주겠소?' },
+    { speaker: '유비', text: '고승이라는 자라 들었소. 아우가 가서 처리해주겠소?' },
+  ],
+
+  act1_appointment: [
+    { speaker: '유비', text: '두 황건적 잔당을 모두 처치했으니, 이제 이 공을 조정에 알릴 수 있겠소.' },
+    { speaker: '내레이션', text: '탁현 일대의 황건적을 평정한 공으로, 유비는 안희현위에 제수되었다.' },
+    { speaker: '유비', text: '아우들, 이제 평원현으로 떠날 준비를 하세.' },
   ],
 
   jangsun_call: [
@@ -43,8 +49,8 @@ const STORY = {
   ],
 
   jangsun_victory: [
-    { speaker: '유자평', text: '그대의 공이 컸네. 이 유자평, 그대를 안희현위로 천거하겠네.' },
-    { speaker: '내레이션', text: '유비는 안희현위에 제수되었다.' },
+    { speaker: '유자평', text: '그대의 공이 참으로 크네. 이 땅의 백성들이 두 발 뻗고 잘 수 있게 됐어.' },
+    { speaker: '내레이션', text: '장순의 난이 평정되었다는 소식이 각지에 전해졌다.' },
   ],
 
   act1_forced: [

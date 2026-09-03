@@ -55,6 +55,8 @@ const ROSTER = {
     stats:{atk:44, def:35, spd:41, int:24, cha:22}, intro:'형님이 항복한다면 나도 따르겠소…', sprite:SPRITE_YELLOWTURBAN },
   gwanhae: { id:'gwanhae', name:'관해', kind:'enemy', forced:null, affiliation:'황건적',
     stats:{atk:53, def:44, spd:40, int:26, cha:24}, intro:'크윽… 북해를 넘본 것이 실수였군. 그대들 밑에서 다시 시작해보겠소.', sprite:SPRITE_YELLOWTURBAN },
+  goseung: { id:'goseung', name:'고승', kind:'enemy', forced:null, affiliation:'황건적',
+    stats:{atk:41, def:32, spd:38, int:22, cha:21}, intro:'크윽… 살려만 준다면 뭐든 하겠소!', sprite:SPRITE_YELLOWTURBAN },
   muangug: { id:'muangug', name:'무안국', kind:'enemy', forced:null, affiliation:'재야',
     stats:{atk:60, def:50, spd:47, int:33, cha:30}, intro:'…이 몸싸움, 내가 졌소. 그대들을 따르겠소.' },
 

@@ -179,10 +179,11 @@ if (false) (function () {
         discoveryText:'시장 좌판 옆에서 사람들의 언쟁을 조용히 듣던 선비가 문득 핵심을 찌르는 말을 던진다.',
         residence:{ x:32, y:11, label:'공융이 머무는 집' } },
       { id:'ganong', x:18, y:12, label:'간옹', randomSpawn:true },
-      { id:'gwanhae', x:30, y:21, label:'관해(황건적 잔당)' },
       { id:'muangug', x:27, y:13, label:'무안국' },
-      { id:'deungmu', x:33, y:23, label:'등무(황건적 두목)', fixed:true },
-      { id:'jeongwonji', x:23, y:18, label:'정원지(황건적 잔당)', storyGate:'jeongwonjiEvent' },
+      { id:'deungmu', x:33, y:23, label:'등무(황건적 잔당)', fixed:true },
+      { id:'jeongwonji', x:23, y:18, label:'정원지(황건적 두목)' },
+      // 정원지(두목)를 처치하고 유비에게 보고하면 등장하는 두 번째 사건.
+      { id:'goseung', x:23, y:18, label:'고승(황건적 잔당)', storyGate:'goseungEvent' },
     ],
     ambient:[
       ['merchant',8,13,'ash',2],['farmer',12,12,'earth',3],['woman',15,13,'ash',2],
@@ -302,6 +303,7 @@ if (false) (function () {
         residence:{ x:33, y:5, label:'최염' } },
       { id:'yujapyeong', x:25, y:13, label:'유자평', fixed:true },
       { id:'jangsun', x:30, y:27, label:'장순(반란군)', fixed:true, storyGate:'jangsunAppeared' },
+      { id:'gwanhae', x:6, y:22, label:'관해(황건적 잔당)' },
     ],
     ambient:[
       ['merchant',13,5,'ash',2],['farmer',20,5,'earth',2],['woman',27,5,'ash',2],
