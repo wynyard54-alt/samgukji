@@ -180,8 +180,8 @@ if (false) (function () {
         residence:{ x:32, y:11, label:'공융이 머무는 집' } },
       { id:'ganong', x:18, y:12, label:'간옹', randomSpawn:true },
       { id:'muangug', x:27, y:13, label:'무안국' },
-      { id:'deungmu', x:33, y:23, label:'등무(황건적 잔당)', fixed:true },
-      { id:'jeongwonji', x:23, y:18, label:'정원지(황건적 두목)' },
+      { id:'deungmu', x:30, y:21, label:'등무(황건적 잔당)', fixed:true },
+      { id:'jeongwonji', x:33, y:23, label:'정원지(황건적 두목)' },
       // 정원지(두목)를 처치하고 유비에게 보고하면 등장하는 두 번째 사건.
       { id:'goseung', x:23, y:18, label:'고승(황건적 잔당)', storyGate:'goseungEvent' },
     ],
