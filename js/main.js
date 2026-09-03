@@ -48,7 +48,6 @@
 })();
 
 let stage = 'title';
-let toastTimer = null;
 let centerAlertTimer = null;
 let pyeongwonCheckpoint = null; // 어양(구 평원현 지도) 도착 시점 GameState 스냅샷 (여포전 패배시 이 시점으로 복귀)
 
@@ -69,22 +68,19 @@ function showScreen(id) {
   document.getElementById(id).classList.add('active');
 }
 
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.remove('hidden');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.add('hidden'), 2600);
-}
-
-// 행동력 소진처럼 놓치면 한참 헤매게 되는 알림은, 구석의 작은 토스트 대신
-// 화면 정중앙에 큼직하게 띄운다.
+// 구석의 작은 토스트는 모바일 화면에서 특히 잘 안 보인다는 피드백이 있어,
+// 모든 안내 메시지를 화면 정중앙에 큼직하게 띄운다. toast()는 하위 호환을
+// 위해 이름만 남겨두고 centerAlert()로 위임한다.
 function centerAlert(msg) {
   const el = document.getElementById('center-alert');
   el.textContent = msg;
   el.classList.remove('hidden');
   clearTimeout(centerAlertTimer);
   centerAlertTimer = setTimeout(() => el.classList.add('hidden'), 3000);
+}
+
+function toast(msg) {
+  centerAlert(msg);
 }
 
 function showChoice(text, options) {

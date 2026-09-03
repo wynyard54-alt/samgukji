@@ -456,16 +456,8 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #ending-summary{ margin:16px 0 26px; font-size:14px; line-height:1.8; color:var(--ink-soft); text-align:left;
   background:var(--panel); border:1px solid var(--panel-border); border-radius:10px; padding:16px 20px; }
 
-/* 토스트 */
-#toast{
-  position:fixed; top:20px; left:50%; transform:translateX(-50%);
-  background:var(--ink); color:var(--paper); padding:10px 18px; border-radius:8px;
-  font-size:13px; z-index:80; box-shadow:0 8px 20px rgba(0,0,0,0.3);
-}
-#toast.hidden{ display:none; }
-
-/* 행동력 소진처럼 놓치면 한참 헤매게 되는 중요 알림은, 화면 구석의 작은
-   토스트 대신 화면 한가운데에 큼직하게 띄운다. top/left 50%는 회전
+/* 안내 메시지 - 화면 구석의 작은 토스트는 모바일에서 특히 잘 안 보여서,
+   모든 안내를 화면 한가운데에 큼직하게 띄운다. top/left 50%는 회전
    트랜스폼 아래에서도(로컬 박스가 화면 전체에 정확히 겹쳐지므로) 항상
    실제 화면 정중앙으로 그려진다. */
 #center-alert{
