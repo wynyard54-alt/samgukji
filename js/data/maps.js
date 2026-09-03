@@ -179,7 +179,7 @@ if (false) (function () {
         discoveryText:'시장 좌판 옆에서 사람들의 언쟁을 조용히 듣던 선비가 문득 핵심을 찌르는 말을 던진다.',
         residence:{ x:32, y:11, label:'공융이 머무는 집' } },
       { id:'ganong', x:18, y:12, label:'간옹', randomSpawn:true },
-      { id:'muangug', x:27, y:13, label:'무안국' },
+      { id:'muangug', x:22, y:8, label:'무안국' },
       { id:'deungmu', x:30, y:21, label:'등무(황건적 잔당)', fixed:true },
       { id:'jeongwonji', x:33, y:23, label:'정원지(황건적 두목)' },
       // 정원지(두목)를 처치하고 유비에게 보고하면 등장하는 두 번째 사건.
