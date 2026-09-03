@@ -455,50 +455,54 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #screen-explore{background:#c7b896;}
 #game-canvas{ background:#87956f; }
 
-/* ===== 오버레이 HUD 레이아웃 반응형 조정 ===== */
-@media (max-width:700px){
-  /* 모바일: 캔버스 세로폭이 크게 줄어들어 데스크톱 패널을 다 얹으면 겹침 →
-     보조 패널(미니맵/임무 트래커)은 숨기고 필수 요소만 배치하되, 글자는 손에
-     들고 보기 충분한 크기를 유지한다 (너무 작게 줄이면 안 보인다는 피드백 반영). */
-  #hud-top{
-    padding:7px 10px; gap:8px; font-size:13px;
-    flex-wrap:nowrap;
-  }
-  #hud-left{ gap:8px; overflow-x:auto; flex:1 1 auto; -webkit-overflow-scrolling:touch; }
-  #hud-left span{ white-space:nowrap; }
-  #hud-actions{ flex:none; gap:6px; }
-  #hud-actions button{ font-size:12px; padding:6px 9px; }
-
-  #location-banner{ top:44px; left:8px; padding:6px 10px; max-width:56%; }
-  #location-name{ font-size:13px; margin-bottom:1px; }
-  #location-task{ font-size:11.5px; }
-
-  #minimap-panel, #quest-panel{ display:none; }
-
-  #player-panel{
-    bottom:8px; left:8px; padding:6px 8px; gap:7px; align-items:center;
-  }
-  #player-portrait{ width:40px; height:40px; border-radius:7px; }
-  #player-info{ display:flex; flex-direction:column; }
-  #player-name{ font-size:13px; margin-bottom:0; }
-  .stat-row{ display:none; }
-  .hp-row{ display:flex; margin-bottom:0; padding-bottom:0; border-bottom:none; }
-  .hp-row .stat-bar{ width:56px; }
-  .hp-row .stat-val{ width:46px; font-size:11px; }
-
-  #bottom-menu{
-    /* 세로 화면에서는 player-panel/touchpad와 같은 줄에 두면 겹치므로 그 위에 별도 줄로 배치 */
-    bottom:64px; gap:5px; transform:translateX(-50%) scale(.92);
-    transform-origin:bottom center;
-  }
-  #bottom-menu button{ padding:6px 8px; }
-
-  #touchpad{
-    bottom:8px; right:8px;
-    grid-template-columns:42px 42px 42px;
-    grid-template-rows:38px 38px 38px;
-    gap:4px;
-  }
-  .tp-btn{ font-size:15px; }
-  .tp-action{ font-size:11px; }
+/* ===== 오버레이 HUD 레이아웃 반응형 조정 =====
+   창 너비가 아니라 mapview.js가 실제로 계산한 지도 폭(#explore-viewport의 실제
+   렌더링 크기)을 기준으로 컴팩트 배치 여부를 정한다 - 창은 넓어도 세로 공간이
+   부족해 지도가 좁게 그려지는 경우(가로로 든 폰 등)가 있어, 창 너비만 보는 media
+   query로는 그런 경우를 놓쳐 컴팩트 배치를 안 하고 겹쳐버리는 문제가 있었다. */
+/* 캔버스 세로폭이 크게 줄어들어 데스크톱 패널을 다 얹으면 겹침 →
+   보조 패널(미니맵/임무 트래커)은 숨기고 필수 요소만 배치하되, 글자는 손에
+   들고 보기 충분한 크기를 유지한다 (너무 작게 줄이면 안 보인다는 피드백 반영). */
+#explore-viewport.compact #hud-top{
+  padding:7px 10px; gap:8px; font-size:13px;
+  flex-wrap:nowrap;
 }
+#explore-viewport.compact #hud-left{ gap:8px; overflow-x:auto; flex:1 1 auto; -webkit-overflow-scrolling:touch; }
+#explore-viewport.compact #hud-left span{ white-space:nowrap; }
+#explore-viewport.compact #hud-actions{ flex:none; gap:6px; }
+#explore-viewport.compact #hud-actions button{ font-size:12px; padding:6px 9px; }
+
+#explore-viewport.compact #location-banner{ top:44px; left:8px; padding:6px 10px; max-width:56%; }
+#explore-viewport.compact #location-name{ font-size:13px; margin-bottom:1px; }
+#explore-viewport.compact #location-task{ font-size:11.5px; }
+
+#explore-viewport.compact #minimap-panel,
+#explore-viewport.compact #quest-panel{ display:none; }
+
+#explore-viewport.compact #player-panel{
+  bottom:8px; left:8px; padding:6px 8px; gap:7px; align-items:center;
+}
+#explore-viewport.compact #player-portrait{ width:40px; height:40px; border-radius:7px; }
+#explore-viewport.compact #player-info{ display:flex; flex-direction:column; }
+#explore-viewport.compact #player-name{ font-size:13px; margin-bottom:0; }
+#explore-viewport.compact .stat-row{ display:none; }
+#explore-viewport.compact .hp-row{ display:flex; margin-bottom:0; padding-bottom:0; border-bottom:none; }
+#explore-viewport.compact .hp-row .stat-bar{ width:56px; }
+#explore-viewport.compact .hp-row .stat-val{ width:46px; font-size:11px; }
+
+#explore-viewport.compact #bottom-menu{
+  /* 세로로 든 상태(회전 프리젠테이션)에서는 화면 중앙이 아니라 터치패드 쪽에
+     가깝게 배치해야 실제로 보이는 화면에서 인물 초상화 패널과 겹치지 않는다. */
+  left:auto; right:140px; bottom:8px; gap:5px; transform:scale(.92);
+  transform-origin:bottom right;
+}
+#explore-viewport.compact #bottom-menu button{ padding:6px 8px; }
+
+#explore-viewport.compact #touchpad{
+  bottom:8px; right:8px;
+  grid-template-columns:42px 42px 42px;
+  grid-template-rows:38px 38px 38px;
+  gap:4px;
+}
+#explore-viewport.compact .tp-btn{ font-size:15px; }
+#explore-viewport.compact .tp-action{ font-size:11px; }

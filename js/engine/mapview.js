@@ -42,30 +42,40 @@ const MapView = (function () {
   // vw/vh 같은 CSS 뷰포트 단위는 회전 트랜스폼 아래에서 실기기 브라우저마다 다르게
   // 계산되는 경우가 있어(카카오톡 인앱 브라우저 등), 여기서는 JS로 직접 픽셀 값을
   // 계산해 #explore-viewport에 그대로 적용한다 - 여백을 최소화해 화면을 최대한 채운다.
+  const MAX_DESKTOP_VIEW_W = 1400; // 데스크톱에서 창이 아주 커도 지나치게 확대되지 않도록 두는 상한
+
   function computeCameraSize(map) {
     const baseW = (map.camera && map.camera.viewportW) || Math.min(DEFAULT_VIEW_W, map.width * TILE);
     const baseH = (map.camera && map.camera.viewportH) || Math.min(DEFAULT_VIEW_H, map.height * TILE);
     const isRotated = window.innerWidth > 0 && window.innerHeight > 0 &&
       window.innerWidth < window.innerHeight && window.innerWidth <= 1024;
     const ratio = baseW / baseH;
-    let availW, availH;
+    let availW, availH, capW;
     if (isRotated) {
       // 회전된 상태의 가용 가로폭은 물리적 세로 길이, 가용 세로폭은 물리적 가로
       // 길이에서 안내문구 한 줄 정도의 최소 공간만 뺀 값이다.
       availW = window.innerHeight * 0.995;
       availH = Math.max(200, window.innerWidth - 30);
+      capW = baseW; // 모바일에서는 지도 설계 해상도 이상으로 확대하지 않는다
     } else {
+      // 데스크톱/일반 가로화면: 창 크기에 맞춰 최대한 채운다 - 예전에는 항상
+      // baseW(보통 800)로 고정되어 큰 창에서 여백이 크게 남았다.
       availW = window.innerWidth * 0.98;
       availH = Math.max(200, window.innerHeight - 40);
+      capW = MAX_DESKTOP_VIEW_W;
     }
-    let w = Math.min(baseW, availW);
+    let w = Math.min(capW, availW);
     let h = w / ratio;
     if (h > availH) { h = availH; w = h * ratio; }
     return { w: Math.round(w), h: Math.round(h) };
   }
 
+  const COMPACT_HUD_THRESHOLD = 700; // 실제 렌더링된 지도 폭이 이보다 좁으면 HUD를 컴팩트 배치로 전환
+
   // computeCameraSize의 결과를 캔버스 내부 해상도와 #explore-viewport의 실제 표시
   // 크기 양쪽에 그대로 반영한다 - CSS min()/vw/vh 계산에 기대지 않고 항상 일치시킨다.
+  // 컴팩트 HUD 여부도 (창 너비가 아니라) 실제로 계산된 지도 폭을 기준으로 판단한다 -
+  // 창은 넓어도 세로 공간이 부족해 지도가 좁게 그려지는 경우(가로로 든 폰 등)가 있어서다.
   function applyCameraSize() {
     if (!map) return;
     const size = computeCameraSize(map);
@@ -73,7 +83,10 @@ const MapView = (function () {
     camera.h = size.h;
     canvas.width = camera.w;
     canvas.height = camera.h;
-    if (viewportEl) viewportEl.style.width = camera.w + 'px';
+    if (viewportEl) {
+      viewportEl.style.width = camera.w + 'px';
+      viewportEl.classList.toggle('compact', camera.w < COMPACT_HUD_THRESHOLD);
+    }
     updateCamera(true);
   }
 
