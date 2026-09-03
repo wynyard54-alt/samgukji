@@ -122,6 +122,9 @@ if (false) (function () {
     [1,19,2,20,4], // 주막 옆 항아리 무더기
   ]) rectFill(grid, r[0], r[1], r[2], r[3], r[4]);
   for (const [x,y] of [[29,24],[35,20],[36,19],[36,22],[27,24]]) grid[y][x] = 4;
+  // 북동 민가 두 줄(위/아래) 사이에 사람이 지나다닐 골목을 낸다.
+  rectFill(grid, 24, 7, 28, 7, 1);
+  rectFill(grid, 30, 7, 35, 7, 1);
 
   MAPS.takhyeon = {
     name:'탁현 · 장터', width:w, height:h, tiles:grid,
