@@ -149,5 +149,5 @@ const FieldAssets = (function () {
     return draw(ctx, key, x - dw/2, footY - dh, dw, dh, col*frameW, row*frameH, frameW, frameH, frameW >= 96);
   }
 
-  return { get, ready, draw, tile, sprite };
+  return { get, ready, draw, tile, sprite, keys: () => Object.keys(manifest) };
 })();

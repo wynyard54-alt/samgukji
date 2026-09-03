@@ -1,3 +1,51 @@
+// ---------------- 시작 전 그림 미리 불러오기 ----------------
+// 지도 배경·삽화·인물 그림을 타이틀 화면이 보이기 전에 미리 받아둬서,
+// 플레이 중간중간 그림이 하나씩 늦게 뜨는 것을 막는다.
+(function preloadAssets() {
+  const extraUrls = [
+    'assets/illust/dowon_market.jpg', 'assets/illust/dowon_oath.jpg', 'assets/illust/pyeongwon_urgent.jpg',
+    'assets/ui/portrait_gwanwoo.png',
+    'assets/battle/duel_gwanwoo.png', 'assets/battle/duel_hwaung.png', 'assets/battle/duel_yeopo.png',
+  ];
+  const fieldKeys = FieldAssets.keys();
+  const total = fieldKeys.length + extraUrls.length;
+  let done = 0;
+  const screenEl = document.getElementById('preload-screen');
+  const fillEl = document.getElementById('preload-bar-fill');
+  const pctEl = document.getElementById('preload-percent');
+  let finished = false;
+
+  function finish() {
+    if (finished) return;
+    finished = true;
+    screenEl.classList.add('hidden');
+  }
+
+  function tick() {
+    done++;
+    const pct = Math.min(100, Math.round((done / total) * 100));
+    fillEl.style.width = pct + '%';
+    pctEl.textContent = `불러오는 중… ${pct}%`;
+    if (done >= total) finish();
+  }
+
+  if (!total) { finish(); return; }
+  fieldKeys.forEach((key) => {
+    const img = FieldAssets.get(key);
+    if (!img || (img.complete && img.naturalWidth)) { tick(); return; }
+    img.addEventListener('load', tick, { once: true });
+    img.addEventListener('error', tick, { once: true });
+  });
+  extraUrls.forEach((src) => {
+    const img = new Image();
+    img.addEventListener('load', tick, { once: true });
+    img.addEventListener('error', tick, { once: true });
+    img.src = src;
+  });
+  // 느린 네트워크에서 일부 그림이 끝내 안 불러와져도 화면이 멈춰있지 않도록 안전장치를 둔다.
+  setTimeout(finish, 15000);
+})();
+
 let stage = 'title';
 let toastTimer = null;
 let centerAlertTimer = null;
@@ -1084,6 +1132,33 @@ function renderRosterPanel() {
   });
 }
 
+// ---- 가방(인벤토리) ----
+const BAG_SLOTS = 10;
+// TODO: 실제 청룡언월도 아이콘 이미지를 받으면 icon을 이모지 대신 <img> 경로로 교체한다.
+const BAG_ITEMS = [
+  { name: '청룡언월도', icon: '🗡️', desc: '관우의 애병(愛兵).' },
+];
+
+function renderBagPanel() {
+  const grid = document.getElementById('bag-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < BAG_SLOTS; i++) {
+    const item = BAG_ITEMS[i];
+    const slot = document.createElement('div');
+    slot.className = 'bag-slot' + (item ? ' filled' : '');
+    if (item) {
+      slot.innerHTML = `<span>${item.icon}</span><span class="bag-slot-name">${item.name}</span>`;
+      slot.onclick = () => toast(`${item.name} — ${item.desc}`);
+    }
+    grid.appendChild(slot);
+  }
+}
+
+function openBagBox() {
+  renderBagPanel();
+  document.getElementById('bag-box').classList.remove('hidden');
+}
+
 function openRosterPanel() {
   renderRosterPanel();
   document.getElementById('roster-box').classList.remove('hidden');
@@ -1274,9 +1349,13 @@ window.addEventListener('keydown', (ev) => {
 document.querySelectorAll('#bottom-menu button').forEach((btn) => {
   btn.onclick = () => {
     if (btn.dataset.menu === 'generals') { openRosterPanel(); return; }
+    if (btn.dataset.menu === 'bag') { openBagBox(); return; }
     toast('준비 중인 기능입니다.');
   };
 });
+document.getElementById('bag-close').onclick = () => {
+  document.getElementById('bag-box').classList.add('hidden');
+};
 
 // ---- 마을 체류 중 다음달로 넘길 때 가끔 발생하는 돌발 이벤트 ----
 const RANDOM_EVENT_CHANCE = 0.3;

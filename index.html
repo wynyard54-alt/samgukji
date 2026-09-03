@@ -9,6 +9,12 @@
 </head>
 <body>
 
+<div id="preload-screen">
+  <div id="preload-title">삼국지 키즈</div>
+  <div id="preload-bar-track"><div id="preload-bar-fill"></div></div>
+  <div id="preload-percent">불러오는 중… 0%</div>
+</div>
+
 <div id="screen-title" class="screen active">
   <div class="title-wrap">
     <h1>도원결의</h1>
@@ -204,6 +210,13 @@
 <div id="choice-box" class="hidden">
   <div id="choice-text"></div>
   <div id="choice-buttons"></div>
+</div>
+
+<!-- 가방(인벤토리) -->
+<div id="bag-box" class="hidden">
+  <button id="bag-close" aria-label="닫기">✕</button>
+  <div id="bag-title">가방</div>
+  <div id="bag-grid"></div>
 </div>
 
 <!-- 장수탭 -->

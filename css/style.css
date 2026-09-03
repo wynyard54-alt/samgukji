@@ -16,6 +16,18 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .screen{ display:none; width:100vw; height:100vh; }
 .screen.active{ display:flex; }
 
+/* 불러오는 중 화면 - 지도 배경/삽화 같은 큰 그림들을 미리 받아둔 뒤에
+   타이틀 화면을 보여줘서, 게임 중간에 그림이 하나씩 늦게 뜨는 것을 막는다. */
+#preload-screen{
+  position:fixed; inset:0; z-index:200; background:var(--paper);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+}
+#preload-screen.hidden{ display:none; }
+#preload-title{ font-family:"Song Myung",serif; font-size:28px; color:var(--ink); letter-spacing:.04em; }
+#preload-bar-track{ width:min(280px,60vw); height:10px; border-radius:6px; background:var(--panel); border:1px solid var(--panel-border); overflow:hidden; }
+#preload-bar-fill{ width:0%; height:100%; background:var(--accent); transition:width .15s ease; }
+#preload-percent{ font-size:13px; color:var(--ink-soft); }
+
 /* 세로로 든 모바일/작은 화면에서는 안내문구 없이 body 자체를 90도 회전시켜
    처음부터 가로 게임 화면으로 보여준다 - 사용자가 화면을 보고 자연스럽게
    기기를 돌리면(실제 방향이 landscape가 되면) 이 규칙이 해제되어 정방향으로 보인다. */
@@ -291,6 +303,38 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   background:#fff8ea; cursor:pointer;
 }
 #choice-buttons button:hover{ border-color:var(--accent); }
+
+/* 가방 */
+#bag-box{
+  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:min(360px,90vw); max-height:80vh; overflow-y:auto;
+  background:var(--panel); border:1px solid var(--panel-border);
+  border-radius:12px; padding:20px; box-shadow:0 12px 30px rgba(43,38,32,0.35); z-index:60;
+}
+#bag-box.hidden{ display:none; }
+#bag-close{
+  position:absolute; top:12px; right:14px; width:28px; height:28px; border-radius:50%;
+  border:1px solid var(--panel-border); background:#fff8ea; color:var(--ink);
+  font-size:14px; line-height:1; cursor:pointer;
+}
+#bag-close:hover{ background:var(--accent); color:#fff8ea; }
+#bag-title{ font-family:"Song Myung",serif; font-size:18px; margin-bottom:14px; padding-right:24px; }
+#bag-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+.bag-slot{
+  aspect-ratio:1; border-radius:8px; border:1px solid var(--panel-border); background:#fff8ea;
+  display:flex; align-items:center; justify-content:center; font-size:22px; cursor:default; position:relative;
+}
+.bag-slot.filled{ cursor:pointer; border-color:var(--accent); }
+.bag-slot.filled:hover{ background:#fff2d9; }
+.bag-slot-name{
+  position:absolute; bottom:2px; left:2px; right:2px; font-size:8.5px; color:var(--ink-soft);
+  text-align:center; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+/* 세로 모바일 회전 트랜스폼 아래에서는 width는 vh, max-height는 vw 기준이어야
+   실제 화면 안에 들어온다 (군세 편성 창과 같은 이유). */
+@media (orientation:portrait) and (max-width:1024px){
+  #bag-box{ width:min(360px,80vh); max-height:min(86vw,480px); padding:16px; }
+}
 
 /* 장수탭 */
 #roster-box{
