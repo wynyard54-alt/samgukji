@@ -706,6 +706,7 @@ const MapView = (function () {
     if (!document.getElementById('choice-box').classList.contains('hidden')) return;
     if (!document.getElementById('roster-box').classList.contains('hidden')) return;
     if (!document.getElementById('army-box').classList.contains('hidden')) return;
+    if (!document.getElementById('bag-box').classList.contains('hidden')) return;
     if (!document.getElementById('battle-screen').classList.contains('hidden')) return;
     if (!document.getElementById('screen-explore').classList.contains('active')) return;
     let handled=true;

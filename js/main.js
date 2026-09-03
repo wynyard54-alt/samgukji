@@ -732,6 +732,10 @@ function checkDeadlines() {
   return false;
 }
 
+function onApBlocked() {
+  centerAlert('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.');
+}
+
 function goTakhyeonFree() {
   stage = 'takhyeon_free';
   showScreen('screen-explore');
@@ -740,7 +744,7 @@ function goTakhyeonFree() {
     spawnDeadlineAbsMonth: absMonth(DEADLINES.takhyeon, 12) + 1,
     onAmbientInteract: runAmbientEvent,
     onApSpent: updateHUD,
-    onApBlocked: () => centerAlert('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
+    onApBlocked,
   });
   updateHUD();
 }
@@ -754,7 +758,7 @@ function goPyeongwonFree() {
     onInteract: interactNPC,
     spawnDeadlineAbsMonth: pyeongwonDeadlineAbsMonth(),
     onApSpent: updateHUD,
-    onApBlocked: () => centerAlert('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
+    onApBlocked,
     onAmbientInteract: runAmbientEvent,
   });
   updateHUD();
@@ -780,7 +784,7 @@ function goCoalitionCamp() {
   MapView.load('camp', {
     onInteract: interactNPC,
     onApSpent: updateHUD,
-    onApBlocked: () => centerAlert('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
+    onApBlocked,
   });
   updateHUD();
   Dialogue.show(STORY.camp_arrive);
@@ -820,7 +824,7 @@ function goWarmap() {
   MapView.load('warmap', {
     onInteract: interactNPC,
     onApSpent: updateHUD,
-    onApBlocked: () => centerAlert('행동력이 부족하다. 다음달로 넘어가 행동력을 재보급받자.'),
+    onApBlocked,
   });
   updateHUD();
   Dialogue.show(STORY.warmap_intro);
@@ -1511,12 +1515,18 @@ document.getElementById('btn-nextmonth').onclick = () => {
 document.getElementById('btn-restart').onclick = () => showScreen('screen-title');
 
 // 모바일 터치 이동패드 (클릭=탭으로 동일하게 동작)
+function touchpadBlocked() {
+  return Dialogue.isActive() || !document.getElementById('bag-box').classList.contains('hidden')
+    || !document.getElementById('roster-box').classList.contains('hidden')
+    || !document.getElementById('army-box').classList.contains('hidden')
+    || !document.getElementById('choice-box').classList.contains('hidden');
+}
 function guardedMove(dx, dy) {
-  if (Dialogue.isActive()) return;
+  if (touchpadBlocked()) return;
   MapView.tryMove(dx, dy);
 }
 document.getElementById('tp-up').onclick = () => guardedMove(0, -1);
 document.getElementById('tp-down').onclick = () => guardedMove(0, 1);
 document.getElementById('tp-left').onclick = () => guardedMove(-1, 0);
 document.getElementById('tp-right').onclick = () => guardedMove(1, 0);
-document.getElementById('tp-action').onclick = () => { if (!Dialogue.isActive()) MapView.interactFacing(); };
+document.getElementById('tp-action').onclick = () => { if (!touchpadBlocked()) MapView.interactFacing(); };

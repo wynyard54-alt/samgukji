@@ -344,6 +344,11 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   border-radius:12px; padding:20px; box-shadow:0 12px 30px rgba(43,38,32,0.35); z-index:60;
 }
 #roster-box.hidden{ display:none; }
+/* 세로 모바일 회전 트랜스폼 아래에서는 width는 vh, max-height는 vw 기준이어야
+   실제 화면 안에 들어온다 (가방/군세 편성 창과 같은 이유). */
+@media (orientation:portrait) and (max-width:1024px){
+  #roster-box{ width:min(420px,80vh); max-height:min(86vw,520px); padding:16px; }
+}
 #roster-title{ font-family:"Song Myung",serif; font-size:18px; margin-bottom:14px; }
 #roster-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
 .roster-row{
