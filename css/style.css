@@ -547,7 +547,9 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .duel-slash{position:absolute;top:43%;width:150px;height:14px;background:linear-gradient(90deg,transparent,#fff7cf 35%,white 55%,transparent);filter:drop-shadow(0 0 7px #ffd36a);transform:rotate(-28deg);animation:duel-slash .38s ease-out forwards}.duel-slash.enemy{right:22%}.duel-slash.player{left:22%}.duel-slash.ultimate{width:240px;height:22px;filter:drop-shadow(0 0 14px #ffb52d)}
 .duel-impact{position:absolute;top:43%;width:20px;height:20px}.duel-impact.player{left:28%}.duel-impact.enemy{right:28%}.duel-impact i{position:absolute;left:50%;top:50%;width:5px;height:70px;background:linear-gradient(#fff4bf,transparent);transform-origin:50% 0}.duel-impact i:nth-child(2){transform:rotate(90deg)}.duel-impact i:nth-child(3){transform:rotate(180deg)}.duel-impact i:nth-child(4){transform:rotate(270deg)}
 #duel-cutin{position:absolute;z-index:30;left:0;right:0;top:32%;height:130px;background:linear-gradient(90deg,rgba(12,10,8,.05),rgba(96,24,17,.96) 15%,rgba(39,20,15,.97) 75%,rgba(12,10,8,.05));border-top:2px solid #e7bd65;border-bottom:2px solid #e7bd65;display:flex;align-items:center;justify-content:center;gap:26px;animation:cutin-in .7s ease both}#duel-cutin.hidden{display:none}.cutin-glyph{font-family:"Song Myung",serif;font-size:78px;font-weight:900;color:#f1d591;text-shadow:4px 4px #56261d}.cutin-copy{display:flex;flex-direction:column;color:#fff2ce}.cutin-copy small{font-size:15px;letter-spacing:.2em}.cutin-copy strong{font-family:"Song Myung",serif;font-size:38px;letter-spacing:.08em}
-#duel-banner{position:absolute;z-index:25;left:50%;top:47%;transform:translate(-50%,-50%);font-family:"Song Myung",serif;font-size:clamp(24px,5vw,48px);font-weight:900;color:#fff1c7;text-shadow:0 4px 0 #5b281f,0 0 14px #000;white-space:nowrap;animation:banner-in 1.05s ease both}#duel-banner.hidden{display:none}
+/* 대결 시작시 뜨는 "관우 VS 화웅" 문구는 체력바 두 개 사이(상단)에 두고,
+   전투 종료시의 승패 배너(.duel-result)만 화면 중앙으로 되돌린다. */
+#duel-banner{position:absolute;z-index:25;left:50%;top:60px;transform:translate(-50%,0);font-family:"Song Myung",serif;font-size:clamp(20px,4vw,38px);font-weight:900;color:#fff1c7;text-shadow:0 4px 0 #5b281f,0 0 14px #000;white-space:nowrap;animation:banner-in 1.05s ease both}#duel-banner.hidden{display:none}
 .duel-actor.attack.player{animation:attack-p .43s ease}.duel-actor.attack.enemy{animation:attack-e .43s ease}.duel-actor.hit{animation:hit-jolt .38s ease}.duel-actor.dodge.player{animation:dodge-p .52s ease}.duel-actor.dodge.enemy{animation:dodge-e .52s ease}.duel-actor.guard .duel-body{filter:drop-shadow(0 0 9px #9ed8ff)}.duel-actor.special .duel-body{filter:drop-shadow(0 0 12px #a8e6ad)}.duel-actor.gauge-ready .duel-body{filter:drop-shadow(0 0 7px #f2cf69)}.duel-actor.charge .duel-body{animation:charge .7s ease}
 .duel-shake{animation:screen-shake .32s linear}.duel-shake-heavy{animation:screen-shake-heavy .58s linear}.ultimate-dim #duel-arena:after{content:"";position:absolute;inset:0;background:rgba(18,12,9,.52);z-index:21;pointer-events:none}
 @keyframes duel-cloud{to{transform:translateX(120vw)}}@keyframes duel-float{0%{opacity:0;transform:translateY(20px) scale(.7)}25%{opacity:1;transform:translateY(-10px) scale(1.2)}100%{opacity:0;transform:translateY(-70px) scale(.9)}}
@@ -571,20 +573,21 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   background-repeat:no-repeat;
 }
 .duel-sky,.duel-mountains,.duel-ground,.duel-versus-mark{display:none}
-/* 두 캐릭터 다 같은 높이(vh)만으로 크기를 정하고, 너비는 어떤 그림도 절대
-   넘치지 않을 만큼 넉넉히만 잡는다 - contain이 항상 높이 기준으로만
-   맞춰지게 해서, 창 가로세로 비율이 바뀌어도(넓게/좁게 늘여도) 두 캐릭터
-   크기가 서로 어긋나지 않고 항상 같은 비율로 유지된다. 캐릭터별 너비를
-   따로 조절하던 것도 이 사이즈 흔들림의 원인이라 다 없앴다. */
+/* 두 캐릭터 다 같은 높이(vh) + 그 그림 고유의 가로세로비(aspect-ratio)로
+   너비를 자동 계산한다 - 그림마다 원본 캔버스 여백 비율이 달라서(예:
+   화웅은 관우보다 옆으로 넓은 캔버스라 예전엔 폭 기준으로 눌려 작아
+   보였다) 실제 그림 비율을 그대로 알려줘야 둘 다 화면에 꽉 차는
+   크기로 나온다. 창 가로세로 비율이 바뀌어도 높이 하나로만 크기가
+   정해지니 두 캐릭터 크기가 항상 서로 같게 유지된다. */
 .duel-actor{
-  width:42vw;
-  height:64vh;
-  bottom:10%;
+  height:58vh;
+  width:auto;
+  bottom:15%;
   transform:none;
   transform-origin:50% 88%;
 }
-.duel-actor.player{left:2%}
-.duel-actor.enemy{right:2%;transform:none}
+.duel-actor.player{left:4%}
+.duel-actor.enemy{right:4%;transform:none}
 .duel-actor.raster-art .duel-body{
   left:0;
   bottom:0;
@@ -598,6 +601,9 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 .duel-actor.raster-art.player .duel-body{transform:none}
 .duel-actor.enemy .duel-glyph,.duel-actor.enemy .duel-actor-label{transform:none}
+.duel-actor[data-id="gwanwoo"]{aspect-ratio:1312/1199}
+.duel-actor[data-id="hwaung"],.duel-actor[data-id="yeopo"]{aspect-ratio:1536/1024}
+.duel-actor.generic{aspect-ratio:2/3}
 .duel-actor.generic .duel-body{background-size:auto 142%;background-position:center 57%}
 .duel-shadow{left:20%;bottom:3%;width:60%;height:7%;opacity:.56}
 .duel-actor-label{display:none}
@@ -615,8 +621,11 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   box-shadow:inset 0 0 0 2px rgba(62,42,20,.9),0 7px 20px rgba(0,0,0,.38);
   backdrop-filter:none;
 }
-#battle-side-e{left:18px;top:18px}
-#battle-side-p{right:18px;top:18px}
+/* 관우(플레이어)는 화면 왼쪽에, 적장수는 오른쪽에 서므로 체력바도 같은
+   쪽에 둔다 - 예전엔 이게 서로 뒤바뀌어 있어서 관우 머리 위에 적
+   체력바가 뜨는 것처럼 보였다. */
+#battle-side-e{right:18px;top:18px}
+#battle-side-p{left:18px;top:18px}
 .battle-portrait{border-color:#c99a44;background:rgba(77,49,23,.75)}
 .battle-name{color:#fff2ce;font-size:18px}
 .battle-side .bar{height:11px;border:1px solid #d0a951;border-radius:2px;padding:1px}
@@ -684,10 +693,10 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
    이걸 모르고 일반 vw/vh로 짜여있어 적장수가 화면 밖으로 밀려나거나 안 보였다. */
 @media(max-width:680px){
   #battle-screen{padding:8px}
-  .duel-actor{width:54vh;height:46vw;bottom:20%;transform:none}
+  .duel-actor{height:46vw;width:auto;bottom:20%;transform:none}
   .duel-actor.player{left:-1%}.duel-actor.enemy{right:-1%;transform:none}
   .battle-side{width:48vh;padding:7px 8px}
-  #battle-side-e{left:6px;top:6px}#battle-side-p{right:6px;top:6px}
+  #battle-side-e{right:6px;top:6px}#battle-side-p{left:6px;top:6px}
   .battle-name{left:50px;top:7px;font-size:13px}.battle-portrait{width:35px;height:35px}.battle-side .bar,.battle-side .bar-text{margin-left:42px;width:calc(100% - 42px)}
   .battle-log{left:6px;bottom:112px;transform:none;width:46vh;max-height:62px;font-size:10px}
   #battle-actions{bottom:6px;grid-template-columns:1fr 1fr;width:calc(100vh - 12px);gap:5px;padding:5px}
@@ -697,7 +706,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 
 
 /* BattleVFX v1.1 — battleEnd hold 기반 승패 마무리 */
-#duel-banner.duel-result{display:flex;flex-direction:column;align-items:center;gap:5px;animation:duel-result-in .45s ease both}
+#duel-banner.duel-result{top:47%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:5px;animation:duel-result-in .45s ease both}
 #duel-banner.duel-result .duel-result-main{font-size:clamp(30px,6vw,58px);letter-spacing:.08em}
 #duel-banner.duel-result small{font-size:clamp(12px,2vw,17px);letter-spacing:.28em;color:#f2d793;text-shadow:0 2px 5px #000}
 .duel-actor.duel-defeated{animation:duel-defeat .72s ease forwards!important;filter:grayscale(.35) brightness(.65)}

@@ -100,6 +100,7 @@ const BattleVFX = (function () {
     ensureDOM(); clearTimers();
     setActor(playerActor, player); setActor(enemyActor, enemy);
     arena.classList.remove('arena-enter'); void arena.offsetWidth; arena.classList.add('arena-enter');
+    banner.classList.remove('duel-result');
     banner.textContent = `${player.name}  VS  ${enemy.name}`;
     banner.classList.remove('hidden');
     later(()=>banner.classList.add('hidden'), 1050);
