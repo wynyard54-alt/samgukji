@@ -228,6 +228,7 @@ if (false) (function () {
   rectFill(grid,1,19,10,26,4);
   rectFill(grid,22,16,29,19,2);
   rectFill(grid,31,23,37,26,2);
+  grid[26][31] = 0; // 장순을 모바일에서도 잘 보이는 자리로 옮기기 위해 한 칸만 뚫어둔다.
   rectFill(grid,0,27,17,27,3);
 
   // 엑셀로 한 칸씩 검토해 보정한 결과.
@@ -299,7 +300,7 @@ if (false) (function () {
         discoveryText:'수염을 단정히 기른 선비가 거리의 풍속을 말없이 살피고 있다.',
         residence:{ x:33, y:5, label:'최염' } },
       { id:'yuwoo', x:25, y:13, label:'유우', fixed:true },
-      { id:'jangsun', x:30, y:27, label:'장순(반란군)', fixed:true, storyGate:'jangsunAppeared' },
+      { id:'jangsun', x:31, y:26, label:'장순(반란군)', fixed:true, storyGate:'jangsunAppeared' },
       { id:'gwanhae', x:6, y:22, label:'관해(황건적 잔당)' },
     ],
     ambient:[
