@@ -596,7 +596,6 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .duel-actor[data-id="gwanwoo"]{aspect-ratio:1312/1199}
 .duel-actor[data-id="hwaung"],.duel-actor[data-id="yeopo"]{aspect-ratio:1536/1024}
 .duel-actor.generic{aspect-ratio:2/3}
-.duel-actor.generic .duel-body{background-size:auto 142%;background-position:center 57%}
 .duel-shadow{left:20%;bottom:3%;width:60%;height:7%;opacity:.56}
 .duel-actor-label{display:none}
 .duel-actor.enemy .duel-actor-label{left:50%;right:auto;transform:translateX(-50%)}
