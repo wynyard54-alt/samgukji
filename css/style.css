@@ -161,7 +161,6 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 /* 일러스트가 떠 있는 동안에는 지도 위 부가 패널들을 가려 화면을 깔끔하게 유지한다 */
 #explore-viewport.scene-active #location-banner,
 #explore-viewport.scene-active #minimap-panel,
-#explore-viewport.scene-active #quest-panel,
 #explore-viewport.scene-active #player-panel,
 #explore-viewport.scene-active #bottom-menu,
 #explore-viewport.scene-active #touchpad{ display:none; }
@@ -204,15 +203,6 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 #minimap-title{ font-size:11px; margin-bottom:3px; }
 #minimap-canvas{ display:block; border-radius:4px; background:#3a4a2f; }
-
-/* 임무 트래커 (우측 가운데) */
-#quest-panel{
-  top:112px; right:10px; z-index:4; padding:8px 12px; max-width:46%;
-}
-#quest-title{ font-weight:700; font-size:12.5px; margin-bottom:5px; }
-#quest-list{ margin:0; padding:0; list-style:none; font-size:11.5px; line-height:1.7; }
-#quest-list li{ position:relative; padding-left:12px; color:#e6d9b8; }
-#quest-list li:before{ content:"◆"; position:absolute; left:0; font-size:8px; top:5px; color:#e2c07a; }
 
 /* 플레이어 초상화 + 스텟 패널 (좌하단) */
 #player-panel{
@@ -465,6 +455,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   background:rgba(28,22,15,0.92); color:#fff8ea; padding:18px 26px; border-radius:14px;
   font-size:17px; font-weight:700; text-align:center; line-height:1.5; max-width:min(78vw,420px);
   z-index:85; box-shadow:0 12px 30px rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15);
+  cursor:pointer;
 }
 #center-alert.hidden{ display:none; }
 
@@ -746,8 +737,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #explore-viewport.compact #location-name{ font-size:13px; margin-bottom:1px; }
 #explore-viewport.compact #location-task{ font-size:11.5px; }
 
-#explore-viewport.compact #minimap-panel,
-#explore-viewport.compact #quest-panel{ display:none; }
+#explore-viewport.compact #minimap-panel{ display:none; }
 
 #explore-viewport.compact #player-panel{
   bottom:8px; left:8px; padding:6px 8px; gap:7px; align-items:center;

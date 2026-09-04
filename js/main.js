@@ -57,6 +57,7 @@ let centerAlertTimer = null;
 let pyeongwonCheckpoint = null; // 어양(구 평원현 지도) 도착 시점 GameState 스냅샷 (여포전 패배시 이 시점으로 복귀)
 
 const DEADLINES = { takhyeon: 186, pyeongwon: 188 };
+const JANGSUN_TROOP_GOAL = 2000; // 유우가 요구하는 최소 모병 규모 (장순 3000명에 맞선 승산 확보용)
 const MIN_PYEONGWON_STAY_MONTHS = 12; // 탁현 체류가 길어져 늦게 도착해도 평원현에서 최소 이만큼은 머물게 보장
 function absMonth(year, month) { return year * 12 + month; } // 연/월을 단조증가하는 절대 개월수로 환산
 // 평원현 마감 절대 개월수: 원래 기한(188년말)과, 실제 도착일+최소 체류기간 중 더 늦은 쪽을 사용한다.
@@ -83,6 +84,12 @@ function centerAlert(msg) {
   clearTimeout(centerAlertTimer);
   centerAlertTimer = setTimeout(() => el.classList.add('hidden'), 2200);
 }
+
+// 메시지가 다 사라질 때까지 기다리지 않고, 클릭/터치하면 바로 닫을 수 있게 한다.
+document.getElementById('center-alert').addEventListener('click', () => {
+  clearTimeout(centerAlertTimer);
+  document.getElementById('center-alert').classList.add('hidden');
+});
 
 function toast(msg) {
   centerAlert(msg);
@@ -172,7 +179,11 @@ function getObjectives() {
     if (gs.flags.act1) list.push('안희현으로 이동하기');
   } else if (stage === 'pyeongwon_free') {
     if (gs.flags.jangsunStarted && !gs.army && gs.npcStatus['jangsun'] !== 'resolved') {
-      list.push('막사에 가서 유비와 이야기하기');
+      if (gs.resources.troop < JANGSUN_TROOP_GOAL) {
+        list.push(`병사 ${JANGSUN_TROOP_GOAL}명 이상 모으기 (현재 ${gs.resources.troop}명)`);
+      } else {
+        list.push('막사에 가서 유비와 이야기하기');
+      }
     } else if (gs.army && gs.npcStatus['jangsun'] === 'resolved') {
       list.push('막사로 돌아가 군세 해산하기');
     } else if (gs.army) {
@@ -192,18 +203,10 @@ function getObjectives() {
 function renderLocationBanner() {
   const name = LOCATION_NAMES[MapView.currentMapId] || '';
   document.getElementById('location-name').textContent = name;
+  // 미니맵과 겹쳐 있던 별도 임무 트래커 패널을 없애고, 그 목록 전체를
+  // 여기(좌상단 위치 배너) 한 곳에 모아서 보여준다.
   const objectives = getObjectives();
-  document.getElementById('location-task').textContent = objectives[0] ? `◆ ${objectives[0]}` : '';
-}
-
-function renderQuestPanel() {
-  const wrap = document.getElementById('quest-list');
-  wrap.innerHTML = '';
-  getObjectives().forEach((text) => {
-    const li = document.createElement('li');
-    li.textContent = text;
-    wrap.appendChild(li);
-  });
+  document.getElementById('location-task').innerHTML = objectives.map((t) => `◆ ${t}`).join('<br>');
 }
 
 function renderMinimap() {
@@ -268,6 +271,14 @@ function updateHUD() {
   document.getElementById('hud-troop').textContent = `병사 ${gs.resources.troop}`;
   document.getElementById('hud-fame').textContent = `명성 ${gs.fame}`;
 
+  // 유우가 요구한 최소 병력을 채우면, 딱 한 번 유비와 상의하라고 알려준다.
+  if (stage === 'pyeongwon_free' && gs.flags.jangsunStarted && !gs.army &&
+      gs.npcStatus['jangsun'] !== 'resolved' && !gs.flags.jangsunTroopHinted &&
+      gs.resources.troop >= JANGSUN_TROOP_GOAL) {
+    gs.flags.jangsunTroopHinted = true;
+    centerAlert('반군의 기세가 날로 높아지고 있소. 하루빨리 유비 장군과 상의하여 토벌토록 하시오!');
+  }
+
   const armyEl = document.getElementById('hud-army');
   if (gs.army) {
     const deputy = gs.army.deputy ? ROSTER[gs.army.deputy] : null;
@@ -279,7 +290,6 @@ function updateHUD() {
   }
 
   renderLocationBanner();
-  renderQuestPanel();
   renderMinimap();
   renderPlayerPanel();
 
@@ -337,7 +347,11 @@ function interactNPC(id, context) {
       jojo: '관우, 그날 화웅을 상대하던 그대의 모습이 아직도 눈에 선하오. 과연 내 사람 보는 눈이 틀리지 않았소.',
       wonso: '한뜻으로 모인 제후들이라 했건만, 이제 보니 저마다 딴생각을 품은 듯하오. 동상이몽이라더니, 딱 그 짝이군.',
     };
-    const text = (stage === 'warmap' && warmapIntro[id]) || rd.intro;
+    // 공손찬은 어양(장순의 난)에서는 아직 반동탁연합 결성 전이라, 그 시점 대사를 따로 둔다.
+    const pyeongwonIntro = {
+      gongsonchan: '백규요. 장순 그 역적이 이 근방에서 날뛴다기에, 옛 동문 유현덕을 도우러 병력을 좀 보탰소.',
+    };
+    const text = (stage === 'warmap' && warmapIntro[id]) || (stage === 'pyeongwon_free' && pyeongwonIntro[id]) || rd.intro;
     Dialogue.show([{ speaker: rd.name, text }]);
     return;
   }
@@ -816,7 +830,7 @@ function goPyeongwonFree() {
   updateHUD();
   if (!GameState.flags.dokwooEvent) {
     GameState.flags.dokwooEvent = true;
-    Dialogue.show(STORY.act1_dokwoo);
+    Dialogue.show(STORY.act1_dokwoo, () => centerAlert('관청 근처 유우를 찾아가자.'));
   }
 }
 

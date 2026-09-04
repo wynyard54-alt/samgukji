@@ -47,7 +47,9 @@ const STORY = {
 
   jangsun_call: [
     { speaker: '유우', text: '자네가 유회 태수가 보낸 원군인가?' },
-    { speaker: '유우', text: '관공, 한시가 급하오. 형님과 함께 장순을 진압해주오!' },
+    { speaker: '관우', text: '관운장이오.' },
+    { speaker: '유우', text: '고작 그 정도 병력으로 어찌 10만 반군을 막는단 말이오.' },
+    { speaker: '유우', text: '이 근방의 유력한 인사들을 찾아가 병사를 좀 더 모으시오. 최소 2000은 넘어야 승산이 있을 것이오.' },
   ],
 
   jangsun_yubi_join: [

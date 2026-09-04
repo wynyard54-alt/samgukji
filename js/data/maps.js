@@ -273,6 +273,7 @@ if (false) (function () {
     ],
     npcs:[
       { id:'yubi', x:24, y:20, label:'유비', fixed:true },
+      { id:'gongsonchan', x:25, y:20, label:'공손찬', fixed:true },
       { id:'jeonhae', x:13, y:12, label:'전해', randomSpawn:true },
       { id:'gwanjeong', x:18, y:5, label:'관정', randomSpawn:true, discoverable:true, discoveryRange:2,
         discoveryText:'주막으로 향하던 선비가 관우의 걸음을 유심히 바라본다.',

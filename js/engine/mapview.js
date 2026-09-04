@@ -410,12 +410,16 @@ const MapView = (function () {
       drawTag(x, worldY(n.y)-7, `${rd.name} · ${scholar ? '모병' : '훈련'}`, '#2f4d33');
     } else if (n._atResidence) {
       drawTag(x, worldY(n.y)-7, n._label || `${rd.name}의 집`, '#72542f');
-    } else if (!hidden && n.label) {
+    } else if (!hidden) {
+      // 거주지 없이 discoverable로만 등장하는 인물(염유/전예 등)은 지도 데이터의
+      // label이 발견 전 군중 표시를 위해 빈 문자열이라, 발견된 뒤에도 그대로
+      // 빈 값이면 이름표가 영영 안 뜬다 - 그 경우 본명(rd.name)으로 대신한다.
       // 적 군세는 이름표 대신 [잔여병사/무력등급/지력등급]을 표기해 교전 전 전력을 가늠할 수 있게 한다.
       // rd.troop/능력치는 전투 결과에 따라 실시간으로 바뀌므로 매 프레임 다시 계산한다.
+      const baseLabel = n.label || rd.name;
       const label = (rd.kind === 'enemy' && rd.troop != null)
-        ? `${n.label} · 병${rd.troop} · 무${enemyArmyGrade(rd)} · 지${gradeFor(rd.stats.int, JIRYEOK_GRADES)}`
-        : n.label;
+        ? `${baseLabel} · 병${rd.troop} · 무${enemyArmyGrade(rd)} · 지${gradeFor(rd.stats.int, JIRYEOK_GRADES)}`
+        : baseLabel;
       drawTag(x, worldY(n.y)-7, label, '#40372c');
     } else if (hidden && Math.abs(n.x-player.x)+Math.abs(n.y-player.y)<=3) {
       ctx.fillStyle='rgba(45,40,34,.82)';ctx.beginPath();ctx.roundRect(x-13,worldY(n.y)-18,26,17,7);ctx.fill();
