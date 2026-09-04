@@ -905,7 +905,32 @@ function startJangsunCampaign() {
     MapView.addNpc('jangsun');
     updateHUD();
     toast('유비군이 먼저 앞서나갔다. 서둘러 뒤따르자.');
+    animateYubiDeparture();
   });
+}
+
+// 유비가 선봉대를 이끌고 먼저 출발하는 모습을 짧게 보여준 뒤(남쪽 출정로 방향으로
+// 몇 칸 이동) 막사에서 사라진다 - 다음 턴에 유비군 패퇴 소식이 오는 것과 맞물려,
+// "유비가 먼저 갔다"는 대사만 있고 정작 화면에는 그대로 서 있는 어색함을 없앤다.
+// 관우가 장순을 처치하면 다시 이 자리(원래 좌표)로 불러온다.
+function animateYubiDeparture() {
+  const n = MAPS.pyeongwon.npcs.find((npc) => npc.id === 'yubi');
+  if (!n) return;
+  const homeX = n.x, homeY = n.y;
+  const steps = 4;
+  let step = 0;
+  const tick = () => {
+    step++;
+    n.y = homeY + step; // 남쪽(출정로) 방향으로 이동
+    MapView.render();
+    if (step < steps) {
+      setTimeout(tick, 180);
+    } else {
+      MapView.removeNpc('yubi');
+      n.x = homeX; n.y = homeY; // 나중에 재등장할 때는 원래 막사 자리로
+    }
+  };
+  setTimeout(tick, 180);
 }
 
 function disbandJangsunArmy() {
@@ -931,6 +956,7 @@ function resolveJangsunBattle(result) {
     Dialogue.show([{ speaker: '내레이션', text: `치열한 접전 끝에 장순의 반란군을 격파했다! (아군 병력 ${result.playerTroopsLeft}명)` }], () => {
       GameState.npcStatus['jangsun'] = 'resolved';
       MapView.removeNpc('jangsun');
+      MapView.addNpc('yubi'); // 반란이 진압되었으니 막사로 돌아온 유비를 다시 보여준다
       toast('막사로 돌아가 유비에게 보고하고 군세를 해산하자.');
     });
   } else {
