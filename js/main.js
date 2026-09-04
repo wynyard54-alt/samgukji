@@ -358,15 +358,6 @@ function interactNPC(id, context) {
     return;
   }
 
-  if ((id === 'igak' || id === 'gwaksa') && stage === 'warmap') {
-    const lines = {
-      igak: '아직은 때가 아니다. 동탁 장군의 명이 떨어지기 전까지는 여기서 기다린다.',
-      gwaksa: '호로관이 뚫리면 그 다음은 우리 차례겠지… 하나 쉽게 무너지진 않을 거다.',
-    };
-    Dialogue.show([{ speaker: rd.name, text: lines[id] }]);
-    return;
-  }
-
   if (rd.kind === 'enemy') {
     if (stage === 'warmap' && !rd.forced) { openWarCommandMenu(id); return; }
     const afterCb = stage === 'warmap' ? checkWarmapClear : undefined;

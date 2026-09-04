@@ -403,10 +403,6 @@ if (false) (function () {
       { id:'songheon', x:20, y:15, label:'송헌 군세', fixed:true },
       { id:'wisok', x:20, y:11, label:'위속 군세', fixed:true },
       { id:'yeopo', x:20, y:7, label:'여포 군세', fixed:true },
-      // 함곡관에서 정식으로 맞붙기 전, 성 뒤쪽에 대기 중인 모습만 보여주는
-      // 장식용 NPC. 대화만 있고 여기서 전투/등용은 일어나지 않는다.
-      { id:'igak', x:15, y:5, label:'이각', fixed:true },
-      { id:'gwaksa', x:25, y:5, label:'곽사', fixed:true },
     ],
   };
 })();
