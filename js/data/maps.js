@@ -348,8 +348,8 @@ if (false) (function () {
     // 다섯 명 모두 각자 막사의 문 앞, 대로로 이어지는 길목에 세운다.
     npcs: [
       { id:'wonso', x:12, y:4, label:'원소', fixed:true },
-      { id:'jojo', x:4, y:8, label:'조조', fixed:true },
-      { id:'gongsonchan', x:19, y:8, label:'공손찬', fixed:true },
+      { id:'jojo', x:6, y:6, label:'조조', fixed:true },
+      { id:'gongsonchan', x:16, y:7, label:'공손찬', fixed:true },
       { id:'songyeon', x:4, y:14, label:'손견', fixed:true },
       { id:'yubi', x:19, y:14, label:'유비', fixed:true },
     ],
