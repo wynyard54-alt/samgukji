@@ -982,14 +982,16 @@ function goHamgokgwan() {
       player: GameState.heroData(), enemy: ROSTER.igak, maxRounds: 3,
       onEnd: () => {
         GameState.npcStatus['igak'] = 'fled';
-        Battle.start({
-          player: GameState.heroData(), enemy: ROSTER.gwaksa, maxRounds: 3,
-          onEnd: () => {
-            GameState.npcStatus['gwaksa'] = 'fled';
-            GameState.addFame(30); // 메인퀘스트: 함곡관 평정
-            updateHUD();
-            Dialogue.show(STORY.hamgokgwan_post, goEnding);
-          },
+        Dialogue.show(STORY.hamgokgwan_igak_result, () => {
+          Battle.start({
+            player: GameState.heroData(), enemy: ROSTER.gwaksa, maxRounds: 3,
+            onEnd: () => {
+              GameState.npcStatus['gwaksa'] = 'fled';
+              GameState.addFame(30); // 메인퀘스트: 함곡관 평정
+              updateHUD();
+              Dialogue.show(STORY.hamgokgwan_post, goEnding);
+            },
+          });
         });
       },
     });
