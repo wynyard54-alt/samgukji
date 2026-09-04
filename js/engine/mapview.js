@@ -23,7 +23,6 @@ const MapView = (function () {
   let onApBlocked = null;
   let onApSpent = null;
   let onAmbientInteract = null;
-  let getAmbientKinds = null; // 호출 시점의 상황에 맞는 말풍선 종류 목록을 돌려주는 콜백 (마을 지도에서만 넘어옴)
   let spawnDeadlineAbs = null; // 랜덤 등장 장수가 마감 기한의 50% 안쪽에 나오도록 하는 절대 개월수 상한
   let liveNpcs = [];
   let crowd = [];
@@ -32,8 +31,6 @@ const MapView = (function () {
   let ambientEvents = []; // [{ index, kind }] - 지나가던 백성 중 최대 2명에게 지금 걸린 말풍선 이벤트
   const AMBIENT_EVENT_CHANCE = 0.8;
   const AMBIENT_EVENT_MAX = 2;
-  const AMBIENT_STEPS_PER_ROLL = 4; // 마을에서 이 칸수만큼 걸을 때마다 한 번씩 말풍선 발생을 추가로 시도한다
-  let stepsSinceAmbientRoll = 0;
   window.addEventListener('fieldassetload', () => { if (map) render(); });
 
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
@@ -116,10 +113,8 @@ const MapView = (function () {
     onApBlocked = (opts && opts.onApBlocked) || null;
     onApSpent = (opts && opts.onApSpent) || null;
     onAmbientInteract = (opts && opts.onAmbientInteract) || null;
-    getAmbientKinds = (opts && opts.getAmbientKinds) || null;
     spawnDeadlineAbs = (opts && opts.spawnDeadlineAbsMonth) || null;
     ambientEvents = [];
-    stepsSinceAmbientRoll = 0;
 
     liveNpcs = map.npcs.filter((n) => {
       const rd = ROSTER[n.id];
@@ -154,7 +149,6 @@ const MapView = (function () {
     applyCameraSize();
     startCrowd();
     render();
-    if (getAmbientKinds) rollAmbientEvent(getAmbientKinds()); // 마을에 막 들어섰을 때도 바로 말을 걸어볼 거리가 있을 수 있다
   }
 
   function startCrowd() {
@@ -515,13 +509,6 @@ const MapView = (function () {
     }
     player.x=nx; player.y=ny;
     updateCamera();
-    if (getAmbientKinds) {
-      stepsSinceAmbientRoll++;
-      if (stepsSinceAmbientRoll >= AMBIENT_STEPS_PER_ROLL) {
-        stepsSinceAmbientRoll = 0;
-        rollAmbientEvent(getAmbientKinds());
-      }
-    }
     render();
     checkProximityDiscovery();
   }

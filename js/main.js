@@ -810,7 +810,6 @@ function goTakhyeonFree() {
     onInteract: interactNPC,
     spawnDeadlineAbsMonth: absMonth(DEADLINES.takhyeon, 12) + 1,
     onAmbientInteract: runAmbientEvent,
-    getAmbientKinds: availableAmbientKinds,
     onApSpent: updateHUD,
     onApBlocked,
   });
@@ -828,7 +827,6 @@ function goPyeongwonFree() {
     onApSpent: updateHUD,
     onApBlocked,
     onAmbientInteract: runAmbientEvent,
-    getAmbientKinds: availableAmbientKinds,
   });
   updateHUD();
   if (!GameState.flags.dokwooEvent) {
