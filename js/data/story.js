@@ -8,6 +8,13 @@ const STORY = {
     { speaker: '내레이션', text: '184년, 탁현의 어느 봄날. 세 사람은 하늘에 제를 올리고 의형제를 맺었다.', scene: 'assets/illust/dowon_oath.jpg', holdMs: 3500 },
   ],
 
+  // 도원결의 직후 유비를 처음 찾아갔을 때 받는 첫 임무 설명.
+  act1_briefing: [
+    { speaker: '유비', text: '아우, 왔는가.' },
+    { speaker: '유비', text: '탁현에 황건적 무리가 날뛰고 있다 하네. 그 두목이 정원지라는 자라더군.' },
+    { speaker: '유비', text: '아우들이 나서서 저 자를 처치해 주게.' },
+  ],
+
   act1_report: [
     { speaker: '추정', text: '그대들의 공이 크오. 조정에 보고해 상을 내리겠소.' },
     { speaker: '유비', text: '관직보다, 이 세상을 바로잡을 힘을 얻고 싶을 뿐이오.' },

@@ -146,7 +146,8 @@ function getObjectives() {
   if (stage === 'takhyeon_free') {
     const jeongwonjiDone = ['recruited', 'resolved'].includes(gs.npcStatus['jeongwonji']);
     const goseungDone = ['recruited', 'resolved'].includes(gs.npcStatus['goseung']);
-    if (!jeongwonjiDone) list.push(`황건적 두목 정원지 처치하기 (${DEADLINES.takhyeon}년까지)`);
+    if (!jeongwonjiDone && !gs.flags.act1Briefed) list.push('유비를 찾아가자');
+    else if (!jeongwonjiDone) list.push(`황건적 두목 정원지 처치하기 (${DEADLINES.takhyeon}년까지)`);
     else if (!gs.flags.goseungEvent) list.push('유비에게 보고하기');
     else if (!goseungDone) list.push('황건적 잔당 고승 처치하기');
     else if (!gs.flags.act1) list.push('유비에게 보고하기');
@@ -374,7 +375,12 @@ function handleYubi() {
     const jeongwonjiDone = ['recruited', 'resolved'].includes(GameState.npcStatus['jeongwonji']);
     const goseungDone = ['recruited', 'resolved'].includes(GameState.npcStatus['goseung']);
     if (!jeongwonjiDone) {
-      offerBarracksTraining('황건적 두목 정원지가 아직 마을 근처를 떠돌고 있다 하오. 먼저 처리하고 오시겠소?');
+      if (!GameState.flags.act1Briefed) {
+        GameState.flags.act1Briefed = true;
+        Dialogue.show(STORY.act1_briefing, () => updateHUD());
+      } else {
+        offerBarracksTraining('황건적 두목 정원지가 아직 마을 근처를 떠돌고 있다 하오. 먼저 처리하고 오시겠소?');
+      }
     } else if (!GameState.flags.goseungEvent) {
       Dialogue.show(STORY.act1_report, () => {
         GameState.addFame(30); // 메인퀘스트 완료
@@ -1044,7 +1050,7 @@ document.querySelectorAll('.hero-card').forEach((card) => {
     GameState.reset(card.dataset.hero);
     MAPS.pyeongwon.apMovement = false; // 이전 회차의 장순의 난 군세 이동모드가 남아있지 않도록 초기화
     goTakhyeonFree();
-    Dialogue.show(STORY.intro);
+    Dialogue.show(STORY.intro, () => centerAlert('유비를 찾아가자.'));
   };
 });
 
