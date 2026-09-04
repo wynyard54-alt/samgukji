@@ -571,15 +571,20 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   background-repeat:no-repeat;
 }
 .duel-sky,.duel-mountains,.duel-ground,.duel-versus-mark{display:none}
+/* 두 캐릭터 다 같은 높이(vh)만으로 크기를 정하고, 너비는 어떤 그림도 절대
+   넘치지 않을 만큼 넉넉히만 잡는다 - contain이 항상 높이 기준으로만
+   맞춰지게 해서, 창 가로세로 비율이 바뀌어도(넓게/좁게 늘여도) 두 캐릭터
+   크기가 서로 어긋나지 않고 항상 같은 비율로 유지된다. 캐릭터별 너비를
+   따로 조절하던 것도 이 사이즈 흔들림의 원인이라 다 없앴다. */
 .duel-actor{
-  width:clamp(330px,44vw,640px);
-  height:clamp(300px,61vh,560px);
-  bottom:13%;
+  width:42vw;
+  height:64vh;
+  bottom:10%;
   transform:none;
   transform-origin:50% 88%;
 }
-.duel-actor.player{left:1.5%}
-.duel-actor.enemy{right:0;bottom:18%;transform:none}
+.duel-actor.player{left:2%}
+.duel-actor.enemy{right:2%;transform:none}
 .duel-actor.raster-art .duel-body{
   left:0;
   bottom:0;
@@ -593,9 +598,6 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 .duel-actor.raster-art.player .duel-body{transform:none}
 .duel-actor.enemy .duel-glyph,.duel-actor.enemy .duel-actor-label{transform:none}
-.duel-actor[data-id="gwanwoo"]{width:clamp(330px,41vw,590px)}
-.duel-actor[data-id="yeopo"],.duel-actor[data-id="hwaung"]{width:clamp(390px,48vw,690px)}
-.duel-actor.generic{width:clamp(360px,43vw,610px);right:2%}
 .duel-actor.generic .duel-body{background-size:auto 142%;background-position:center 57%}
 .duel-shadow{left:20%;bottom:3%;width:60%;height:7%;opacity:.56}
 .duel-actor-label{display:none}
@@ -614,7 +616,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   backdrop-filter:none;
 }
 #battle-side-e{left:18px;top:18px}
-#battle-side-p{right:18px;bottom:96px}
+#battle-side-p{right:18px;top:18px}
 .battle-portrait{border-color:#c99a44;background:rgba(77,49,23,.75)}
 .battle-name{color:#fff2ce;font-size:18px}
 .battle-side .bar{height:11px;border:1px solid #d0a951;border-radius:2px;padding:1px}
@@ -682,13 +684,10 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
    이걸 모르고 일반 vw/vh로 짜여있어 적장수가 화면 밖으로 밀려나거나 안 보였다. */
 @media(max-width:680px){
   #battle-screen{padding:8px}
-  .duel-actor{width:54vh;height:46vw;bottom:25%;transform:none}
-  .duel-actor.player{left:-3%}.duel-actor.enemy{right:-3%;bottom:29%;transform:none}
-  .duel-actor[data-id="gwanwoo"]{width:50vh}
-  .duel-actor[data-id="yeopo"],.duel-actor[data-id="hwaung"]{width:57vh}
-  .duel-actor.generic{width:52vh;right:-2%}
+  .duel-actor{width:54vh;height:46vw;bottom:20%;transform:none}
+  .duel-actor.player{left:-1%}.duel-actor.enemy{right:-1%;transform:none}
   .battle-side{width:48vh;padding:7px 8px}
-  #battle-side-e{left:6px;top:6px}#battle-side-p{right:6px;bottom:112px}
+  #battle-side-e{left:6px;top:6px}#battle-side-p{right:6px;top:6px}
   .battle-name{left:50px;top:7px;font-size:13px}.battle-portrait{width:35px;height:35px}.battle-side .bar,.battle-side .bar-text{margin-left:42px;width:calc(100% - 42px)}
   .battle-log{left:6px;bottom:112px;transform:none;width:46vh;max-height:62px;font-size:10px}
   #battle-actions{bottom:6px;grid-template-columns:1fr 1fr;width:calc(100vh - 12px);gap:5px;padding:5px}
