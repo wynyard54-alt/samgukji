@@ -559,6 +559,139 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 @media(max-width:680px){#battle-screen{padding:10px 10px 12px}.duel-actor{width:130px;height:175px;bottom:29%;transform:scale(.82);transform-origin:bottom center}.duel-actor.player{left:4%}.duel-actor.enemy{right:4%;transform:scaleX(-1) scale(.82)}#battle-actions{grid-template-columns:1fr 1fr}.battle-log{max-height:86px;font-size:11px}.battle-side{width:58vw}.duel-float.player{left:22%}.duel-float.enemy{right:22%}.cutin-glyph{font-size:56px}.cutin-copy strong{font-size:28px}}
 @media(prefers-reduced-motion:reduce){#duel-arena *,#battle-screen{animation-duration:.01ms!important;animation-iteration-count:1!important}}
 
+/* ===== Duel Visuals v2 — 승인 시안 기반 고해상도 일기토 ===== */
+#battle-screen{
+  padding:18px 22px 16px;
+  background:#17110b;
+}
+#duel-arena{
+  background-image:linear-gradient(rgba(20,12,6,.04),rgba(20,12,6,.16)),url("../assets/battle/duel_bg_hulao_v1.png");
+  background-position:center;
+  background-size:cover;
+  background-repeat:no-repeat;
+}
+.duel-sky,.duel-mountains,.duel-ground,.duel-versus-mark{display:none}
+.duel-actor{
+  width:clamp(330px,44vw,640px);
+  height:clamp(300px,61vh,560px);
+  bottom:13%;
+  transform:none;
+  transform-origin:50% 88%;
+}
+.duel-actor.player{left:1.5%}
+.duel-actor.enemy{right:0;bottom:18%;transform:none}
+.duel-actor.raster-art .duel-body{
+  left:0;
+  bottom:0;
+  width:100%;
+  height:100%;
+  background-position:center bottom;
+  background-repeat:no-repeat;
+  background-size:contain;
+  transform:none;
+  filter:drop-shadow(0 9px 5px rgba(0,0,0,.55));
+}
+.duel-actor.raster-art.player .duel-body{transform:none}
+.duel-actor.enemy .duel-glyph,.duel-actor.enemy .duel-actor-label{transform:none}
+.duel-actor[data-id="gwanwoo"]{width:clamp(330px,41vw,590px)}
+.duel-actor[data-id="yeopo"],.duel-actor[data-id="hwaung"]{width:clamp(390px,48vw,690px)}
+.duel-actor.generic{width:clamp(360px,43vw,610px);right:2%}
+.duel-actor.generic .duel-body{background-size:auto 142%;background-position:center 57%}
+.duel-shadow{left:20%;bottom:3%;width:60%;height:7%;opacity:.56}
+.duel-actor-label{display:none}
+.duel-actor.enemy .duel-actor-label{left:50%;right:auto;transform:translateX(-50%)}
+
+/* 승인 시안과 같은 검은 목재/금속 테두리 HUD */
+.battle-side{
+  position:absolute;
+  z-index:24;
+  width:min(310px,40vw);
+  padding:12px 14px;
+  border:2px solid #a77931;
+  border-radius:8px!important;
+  background:rgba(13,11,8,.91);
+  box-shadow:inset 0 0 0 2px rgba(62,42,20,.9),0 7px 20px rgba(0,0,0,.38);
+  backdrop-filter:none;
+}
+#battle-side-e{left:18px;top:18px}
+#battle-side-p{right:18px;bottom:96px}
+.battle-portrait{border-color:#c99a44;background:rgba(77,49,23,.75)}
+.battle-name{color:#fff2ce;font-size:18px}
+.battle-side .bar{height:11px;border:1px solid #d0a951;border-radius:2px;padding:1px}
+.battle-side .bar.hp .bar-fill{background:linear-gradient(90deg,#168b2f,#75db43)}
+.battle-side .bar.gauge .bar-fill{background:linear-gradient(90deg,#1666a4,#4db9ea)}
+.battle-log{
+  position:absolute;
+  z-index:23;
+  left:50%;
+  bottom:84px;
+  transform:translateX(-50%);
+  width:min(480px,48vw);
+  max-height:76px;
+  padding:7px 12px;
+  border-color:rgba(201,154,68,.75);
+  background:rgba(16,13,9,.78);
+  font-size:11.5px;
+}
+#battle-actions{
+  position:absolute;
+  left:50%;
+  bottom:10px;
+  transform:translateX(-50%);
+  width:min(820px,96vw);
+  border:2px solid #89652d;
+  border-radius:8px;
+  background:rgba(14,12,9,.93);
+}
+#battle-actions button{font-size:15px;border:2px solid #9f7130;background:linear-gradient(#704521,#3e2515);color:#fff0c8}
+#battle-actions button:hover,#battle-actions button:focus{background:linear-gradient(#92602d,#57351b)}
+
+/* PNG 베기 효과: 일반 공격은 짧고, 필살기만 청룡 효과를 크게 사용 */
+.duel-slash{
+  top:32%;
+  width:min(330px,34vw);
+  height:min(230px,34vh);
+  background:url("../assets/battle/fx_slash_arc_v1.png") center/contain no-repeat;
+  filter:none;
+  transform:none;
+  animation:duel-slash-image .43s ease-out forwards;
+}
+.duel-slash.player{left:36%}.duel-slash.enemy{right:36%;transform:scaleX(-1)}
+.duel-slash.ultimate{
+  top:23%;
+  width:min(480px,49vw);
+  height:min(350px,49vh);
+  background-image:url("../assets/battle/fx_ultimate_dragon_v1.png");
+  animation-duration:.68s;
+}
+.duel-slash.ultimate.enemy{transform:scaleX(-1);filter:hue-rotate(115deg) saturate(1.15)}
+.duel-slash.ultimate.player:not([data-actor="gwanwoo"]){filter:hue-rotate(115deg) saturate(1.1)}
+@keyframes duel-slash-image{
+  0%{opacity:0;scale:.35}
+  30%{opacity:1;scale:1}
+  100%{opacity:0;scale:1.12}
+}
+@keyframes attack-p{0%,100%{transform:translateX(0)}45%{transform:translateX(15vw) rotate(-2deg)}}
+@keyframes attack-e{0%,100%{transform:translateX(0)}45%{transform:translateX(-15vw) rotate(2deg)}}
+@keyframes dodge-p{50%{transform:translateX(-65px)}}
+@keyframes dodge-e{50%{transform:translateX(65px)}}
+
+@media(max-width:680px){
+  #battle-screen{padding:8px}
+  .duel-actor{width:54vw;height:46vh;bottom:25%;transform:none}
+  .duel-actor.player{left:-3%}.duel-actor.enemy{right:-3%;bottom:29%;transform:none}
+  .duel-actor[data-id="gwanwoo"]{width:50vw}
+  .duel-actor[data-id="yeopo"],.duel-actor[data-id="hwaung"]{width:57vw}
+  .duel-actor.generic{width:52vw;right:-2%}
+  .battle-side{width:48vw;padding:7px 8px}
+  #battle-side-e{left:6px;top:6px}#battle-side-p{right:6px;bottom:112px}
+  .battle-name{left:50px;top:7px;font-size:13px}.battle-portrait{width:35px;height:35px}.battle-side .bar,.battle-side .bar-text{margin-left:42px;width:calc(100% - 42px)}
+  .battle-log{left:6px;bottom:112px;transform:none;width:46vw;max-height:62px;font-size:10px}
+  #battle-actions{bottom:6px;grid-template-columns:1fr 1fr;width:calc(100vw - 12px);gap:5px;padding:5px}
+  #battle-actions button{font-size:12px;padding:8px 3px}
+  .duel-slash.player{left:28%}.duel-slash.enemy{right:28%}
+}
+
 
 /* BattleVFX v1.1 — battleEnd hold 기반 승패 마무리 */
 #duel-banner.duel-result{display:flex;flex-direction:column;align-items:center;gap:5px;animation:duel-result-in .45s ease both}

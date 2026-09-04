@@ -44,7 +44,12 @@ const BattleVFX = (function () {
 
   function artFor(id, data) {
     const rd = typeof ROSTER !== 'undefined' && ROSTER[id];
-    return (rd && rd.battleArt) || { glyph: (data?.name || '?')[0], weapon: '兵器', className: 'generic' };
+    return (rd && rd.battleArt) || {
+      glyph: (data?.name || '?')[0],
+      weapon: '長槍',
+      className: 'generic',
+      src: 'assets/battle/duel_generic_officer_v2.png'
+    };
   }
 
   function setActor(el, data) {
@@ -77,6 +82,7 @@ const BattleVFX = (function () {
   function slash(side, ultimate=false) {
     const el = document.createElement('div');
     el.className = `duel-slash ${side}${ultimate ? ' ultimate' : ''}`;
+    el.dataset.actor = actor(side)?.dataset.id || 'generic';
     fxLayer.appendChild(el);
     later(()=>el.remove(), ultimate ? 700 : 450);
   }

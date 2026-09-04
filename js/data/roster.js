@@ -21,7 +21,7 @@ const ROSTER = {
   gwanwoo: { id:'gwanwoo', name:'관우', role:'PC', kind:'playable', affiliation:'유비군',
     stats:{atk:92, def:71, spd:58, int:52, cha:76}, weapon:'청룡언월도',
     skills:['samdanchigi'],
-    battleArt:{ glyph:'關', weapon:'靑龍偃月刀', className:'hero-green', src:'assets/battle/duel_gwanwoo.png' } },
+    battleArt:{ glyph:'關', weapon:'靑龍偃月刀', className:'hero-green', src:'assets/battle/duel_gwanwoo_v2.png' } },
 
   jangbi: { id:'jangbi', name:'장비', role:'PC', kind:'playable', affiliation:'유비군',
     stats:{atk:94, def:79, spd:61, int:29, cha:41}, weapon:'장팔사모',
@@ -105,7 +105,7 @@ const ROSTER = {
   hwaung: { id:'hwaung', name:'화웅', kind:'enemy', forced:'kill', affiliation:'동탁군',
     stats:{atk:81, def:62, spd:58, int:31, cha:22}, intro:'이런 촌뜨기들까지 나선단 말이냐? 목이나 내놓아라!',
     sprite:SPRITE_DONGTAK,
-    battleArt:{ glyph:'華', weapon:'長槍', className:'enemy-red', src:'assets/battle/duel_hwaung.png' } },
+    battleArt:{ glyph:'華', weapon:'長槍', className:'enemy-red', src:'assets/battle/duel_hwaung_v2.png' } },
   hojin: { id:'hojin', name:'호진', kind:'enemy', forced:null, affiliation:'동탁군', troop:1500,
     stats:{atk:72, def:61, spd:49, int:38, cha:33}, intro:'…내가 졌다. 동탁을 섬긴 것도 딱히 충심은 아니었소. 그대들이라면 나쁘지 않겠군.', sprite:SPRITE_DONGTAK },
 
@@ -113,7 +113,7 @@ const ROSTER = {
   yeopo: { id:'yeopo', name:'여포', kind:'enemy', forced:'escape', affiliation:'동탁군', troop:5000,
     stats:{atk:99, def:88, spd:91, int:26, cha:14}, intro:'제후군 따위, 내 방천화극 앞에 몇이나 버틴다더냐!',
     sprite:{ key:'hero_yeopo', fw:971/3, fh:1619/4, sx:.20, sy:.165 },
-    battleArt:{ glyph:'呂', weapon:'方天畫戟', className:'enemy-red', src:'assets/battle/duel_yeopo.png' } },
+    battleArt:{ glyph:'呂', weapon:'方天畫戟', className:'enemy-red', src:'assets/battle/duel_yeopo_v2.png' } },
   // 장제는 훗날 조카 장수와 이어지는 서사가 있어 여기서 등용되면 안 된다.
   // 패색이 짙으면 등용 제안 없이 군세를 버리고 달아난다 (이각·곽사와 동일한 처리).
   jangje: { id:'jangje', name:'장제', kind:'enemy', forced:'escape', affiliation:'동탁군', troop:1700,
