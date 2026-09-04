@@ -692,9 +692,11 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   .duel-actor.player{left:-1%}.duel-actor.enemy{right:-1%;transform:none}
   .duel-actor.generic{height:57vw}
   .duel-actor.enemy.generic{right:4%}
-  .battle-side{width:48vh;padding:7px 8px}
+  .battle-side{width:24vh;padding:4px 6px}
   #battle-side-e{right:6px;top:6px}#battle-side-p{left:6px;top:6px}
-  .battle-name{left:50px;top:7px;font-size:13px}.battle-portrait{width:35px;height:35px}.battle-side .bar,.battle-side .bar-text{margin-left:42px;width:calc(100% - 42px)}
+  .battle-name{left:30px;top:2px;font-size:10px}.battle-portrait{width:22px;height:22px;font-size:12px}
+  .battle-side .bar{height:6px;margin-left:30px;width:calc(100% - 30px)}
+  .battle-side .bar-text{font-size:9px;margin-left:30px;width:calc(100% - 30px)}
   .battle-log{left:6px;bottom:112px;transform:none;width:46vh;max-height:62px;font-size:10px}
   #battle-actions{bottom:6px;grid-template-columns:1fr 1fr;width:calc(100vh - 12px);gap:5px;padding:5px}
   #battle-actions button{font-size:12px;padding:8px 3px}
@@ -743,7 +745,12 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #explore-viewport.compact #location-name{ font-size:13px; margin-bottom:1px; }
 #explore-viewport.compact #location-task{ font-size:11.5px; }
 
-#explore-viewport.compact #minimap-panel{ display:none; }
+/* 모바일(컴팩트)에서도 미니맵은 작게라도 계속 보여준다 - 화면이 좁아 한눈에
+   지도가 안 보이는 모바일일수록 오히려 미니맵이 더 필요하다는 피드백 반영.
+   위치 배너(좌측, 최대 56% 폭)와 겹치지 않게 우측에 작게 배치한다. */
+#explore-viewport.compact #minimap-panel{ top:44px; right:6px; padding:4px 5px; }
+#explore-viewport.compact #minimap-title{ font-size:9px; margin-bottom:2px; }
+#explore-viewport.compact #minimap-canvas{ width:62px; height:44px; }
 
 #explore-viewport.compact #player-panel{
   bottom:8px; left:8px; padding:6px 8px; gap:7px; align-items:center;
