@@ -595,7 +595,11 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .duel-actor.enemy .duel-glyph,.duel-actor.enemy .duel-actor-label{transform:none}
 .duel-actor[data-id="gwanwoo"]{aspect-ratio:1312/1199}
 .duel-actor[data-id="hwaung"],.duel-actor[data-id="yeopo"]{aspect-ratio:1536/1024}
-.duel-actor.generic{aspect-ratio:2/3}
+/* 일반장수 그림은 세로로 좁고 긴 캔버스(2:3)라 다른 캐릭터들과 같은 높이로
+   두면 실루엣이 좁아 보여 상대적으로 왜소해 보인다. contain으로 잘리는 부분
+   없이 다 보여주면서도(잘림 방지) 체급을 맞추기 위해 박스 자체를 더 키운다 -
+   bottom 위치는 그대로라 발밑은 고정된 채 위로만 커진다. */
+.duel-actor.generic{aspect-ratio:2/3;height:72vh}
 .duel-shadow{left:20%;bottom:3%;width:60%;height:7%;opacity:.56}
 .duel-actor-label{display:none}
 .duel-actor.enemy .duel-actor-label{left:50%;right:auto;transform:translateX(-50%)}
@@ -686,6 +690,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   #battle-screen{padding:8px}
   .duel-actor{height:46vw;width:auto;bottom:20%;transform:none}
   .duel-actor.player{left:-1%}.duel-actor.enemy{right:-1%;transform:none}
+  .duel-actor.generic{height:57vw}
   .duel-actor.enemy.generic{right:4%}
   .battle-side{width:48vh;padding:7px 8px}
   #battle-side-e{right:6px;top:6px}#battle-side-p{left:6px;top:6px}
