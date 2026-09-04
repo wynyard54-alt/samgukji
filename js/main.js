@@ -1037,6 +1037,10 @@ function startYeopoAssistScene() {
 function goHamgokgwan() {
   stage = 'hamgokgwan';
   Dialogue.show(STORY.hamgokgwan_pre, () => {
+    // 여포전과는 시간 간격이 있는 별개의 전투이므로 체력을 완전히 회복한 채 시작한다.
+    // 이각→곽사는 곧바로 이어지는 전투라 기존처럼 체력을 그대로 넘긴다.
+    GameState.heroHp = null;
+    updateHUD();
     Battle.start({
       player: GameState.heroData(), enemy: ROSTER.igak, maxRounds: 3,
       startHp: heroCurrentHp(),

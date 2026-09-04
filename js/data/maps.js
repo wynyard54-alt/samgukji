@@ -350,8 +350,8 @@ if (false) (function () {
       { id:'wonso', x:12, y:4, label:'원소', fixed:true },
       { id:'jojo', x:6, y:6, label:'조조', fixed:true },
       { id:'gongsonchan', x:16, y:7, label:'공손찬', fixed:true },
-      { id:'songyeon', x:4, y:14, label:'손견', fixed:true },
-      { id:'yubi', x:19, y:14, label:'유비', fixed:true },
+      { id:'songyeon', x:6, y:12, label:'손견', fixed:true },
+      { id:'yubi', x:16, y:13, label:'유비', fixed:true },
     ],
   };
 })();
