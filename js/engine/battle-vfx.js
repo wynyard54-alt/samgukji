@@ -55,7 +55,7 @@ const BattleVFX = (function () {
   function setActor(el, data) {
     const art = artFor(data.id, data);
     el.dataset.id = data.id;
-    el.classList.remove('hero-green','enemy-red','generic','raster-art','attack','hit','dodge','guard','special','ultimate');
+    el.classList.remove('hero-green','enemy-red','generic','raster-art','attack','hit','dodge','guard','special','ultimate','duel-defeated','duel-victor');
     el.classList.add(art.className);
     el.classList.toggle('raster-art', !!art.src);
     el.querySelector('.duel-body').style.backgroundImage = art.src ? `url("${art.src}")` : '';
