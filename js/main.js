@@ -8,7 +8,12 @@
     'assets/ui/portrait_gwanwoo.png',
     'assets/battle/duel_gwanwoo.png', 'assets/battle/duel_hwaung.png', 'assets/battle/duel_yeopo.png',
   ];
-  const fieldKeys = FieldAssets.keys();
+  // 평원/막사/호로관 배경은 각각 3MB대라, 타이틀 화면 뜨기 전에 다 같이 받으면
+  // (특히 오늘 막사·호로관 배경이 추가된 뒤로) 시작이 눈에 띄게 느려진다.
+  // 게임 초반에 바로 보이는 탁현만 미리 받고, 나머지는 실제로 그 지도에
+  // 들어갈 때 FieldAssets가 알아서 그때 받아오게 둔다.
+  const deferredFieldKeys = ['pyeongwon_city_overview', 'camp_overview', 'warmap_overview'];
+  const fieldKeys = FieldAssets.keys().filter((k) => !deferredFieldKeys.includes(k));
   const total = fieldKeys.length + extraUrls.length;
   let done = 0;
   const screenEl = document.getElementById('preload-screen');
