@@ -308,6 +308,10 @@ function interactNPC(id, context) {
   if (st === 'recruited' && (stage === 'takhyeon_free' || stage === 'pyeongwon_free')) { interactRecruitedGeneral(id); return; }
   if (st === 'recruited' || st === 'resolved' || st === 'dead' || st === 'fled') return;
 
+  if (id === 'yubi' && stage === 'camp') {
+    Dialogue.show([{ speaker: '유비', text: '아우들, 반동탁연합에 합류했으니 이제부터가 진짜 시작일세. 마음 단단히 먹게.' }]);
+    return;
+  }
   if (id === 'yubi') { handleYubi(); return; }
 
   if (id === 'songyeon' && stage === 'camp') {
@@ -351,6 +355,15 @@ function interactNPC(id, context) {
 
   if (id === 'yeopo' && stage === 'warmap') {
     startYeopoAssistScene();
+    return;
+  }
+
+  if ((id === 'igak' || id === 'gwaksa') && stage === 'warmap') {
+    const lines = {
+      igak: '아직은 때가 아니다. 동탁 장군의 명이 떨어지기 전까지는 여기서 기다린다.',
+      gwaksa: '호로관이 뚫리면 그 다음은 우리 차례겠지… 하나 쉽게 무너지진 않을 거다.',
+    };
+    Dialogue.show([{ speaker: rd.name, text: lines[id] }]);
     return;
   }
 

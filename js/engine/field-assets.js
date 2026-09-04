@@ -27,6 +27,8 @@ const FieldAssets = (function () {
     tile_water:'tile_water.png',
     takhyeon_city_overview:'takhyeon_map_v10.png',
     pyeongwon_city_overview:'pyeongwon_map_v1.png',
+    camp_overview:'camp_map_v1.png',
+    warmap_overview:'warmap_map_v1.png',
   };
 
   function get(key) {

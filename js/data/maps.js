@@ -312,58 +312,99 @@ if (false) (function () {
 
 // ---------------- 반동탁연합 진영 ----------------
 (function () {
-  const w = 16, h = 11;
+  const w = 24, h = 16;
   const grid = makeGrid(w, h, 0);
+
+  // 외곽 숲/바위. 남쪽 정문(관문)만 열어둔다.
   rectFill(grid, 0, 0, w - 1, 0, 4);
   rectFill(grid, 0, h - 1, w - 1, h - 1, 4);
   rectFill(grid, 0, 0, 0, h - 1, 4);
   rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
-  rectFill(grid, 6, 1, 9, 2, 2);   // 원소 맹주 막사
-  rectFill(grid, 1, 4, 3, 5, 2);   // 조조 막사
-  rectFill(grid, 12, 4, 14, 5, 2); // 공손찬 막사
-  rectFill(grid, 6, 7, 9, 8, 2);   // 손견 막사
-  for (let x = 1; x < w - 1; x++) grid[6][x] = 1;
+  rectFill(grid, 11, h - 1, 13, h - 1, 0); // 남문 통로
+
+  // 배경 그림의 5개 막사 자리만 막고, 나머지 지면은 전부 트여있게 두어
+  // 어디로 가든 걸리지 않는 동선을 확보한다.
+  rectFill(grid, 10, 0, 14, 3, 2);  // 원소 맹주 막사 (12시)
+  rectFill(grid, 1, 3, 6, 7, 2);    // 조조 막사 (10시)
+  rectFill(grid, 17, 3, 22, 7, 2);  // 공손찬 막사 (2시)
+  rectFill(grid, 1, 10, 6, 14, 2);  // 손견 막사 (7시)
+  rectFill(grid, 17, 10, 22, 14, 2); // 유비 막사 (5시)
 
   MAPS.camp = {
     name: '반동탁연합 진영',
     width: w, height: h,
     tiles: grid,
-    playerStart: { x:7, y:6 },
+    backgroundKey: 'camp_overview',
+    playerStart: { x:12, y:14 },
+    camera: { viewportW:800, viewportH:480 },
+    decor: [
+      { type:'mapLabel', x:12.0, y:1.5, label:'원소 맹주 막사' },
+      { type:'mapLabel', x:3.5, y:5.0, label:'조조 막사' },
+      { type:'mapLabel', x:19.5, y:5.0, label:'공손찬 막사' },
+      { type:'mapLabel', x:3.5, y:12.0, label:'손견 막사' },
+      { type:'mapLabel', x:19.5, y:12.0, label:'유비 막사' },
+    ],
     npcs: [
-      { id:'wonso', x:7, y:3, label:'원소' },
-      { id:'jojo', x:2, y:6, label:'조조' },
-      { id:'gongsonchan', x:13, y:6, label:'공손찬' },
-      { id:'songyeon', x:7, y:9, label:'손견' },
+      { id:'wonso', x:12, y:4, label:'원소', fixed:true },
+      { id:'jojo', x:7, y:5, label:'조조', fixed:true },
+      { id:'gongsonchan', x:16, y:5, label:'공손찬', fixed:true },
+      { id:'songyeon', x:7, y:12, label:'손견', fixed:true },
+      { id:'yubi', x:16, y:12, label:'유비', fixed:true },
     ],
   };
 })();
 
 // ---------------- 호로관 전선 (사수관 이후 잔당 소탕 + 여포) ----------------
 (function () {
-  const w = 20, h = 11;
+  const w = 40, h = 28;
   const grid = makeGrid(w, h, 0);
-  rectFill(grid, 0, 0, w - 1, 0, 4);
-  rectFill(grid, 0, h - 1, w - 1, h - 1, 4);
-  rectFill(grid, 0, 0, 0, h - 1, 4);
-  rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
-  rectFill(grid, 9, 0, 10, 2, 2);  // 호로관 관문
-  for (let x = 1; x < w - 1; x++) grid[8][x] = 1;
-  rectFill(grid, 13, 1, 15, 3, 5); // 산악지형 (이동력 2배)
-  rectFill(grid, 6, 9, 8, 9, 5);   // 강물지형 (이동력 2배)
+
+  // 우측은 그대로 절벽지대라 전부 이동불가. 좌측도 절벽이지만 장식용 오솔길이
+  // 하나 있어 그 한 칸 폭만 남기고 나머지는 막는다 (실제 진행로로는 쓰지 않음).
+  rectFill(grid, 32, 0, w - 1, h - 1, 4);
+  rectFill(grid, 0, 0, 6, h - 1, 4);
+  const leftTrail = [
+    [1,27],[2,25],[3,23],[2,21],[3,19],[4,17],[3,15],
+    [2,13],[3,11],[2,9],[3,7],[2,5],[3,3],[2,1],
+  ];
+  for (let i = 0; i < leftTrail.length - 1; i++) {
+    const [x0,y0] = leftTrail[i], [x1,y1] = leftTrail[i + 1];
+    const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+    for (let s = 0; s <= steps; s++) {
+      grid[Math.round(y0 + (y1 - y0) * s / steps)][Math.round(x0 + (x1 - x0) * s / steps)] = 0;
+    }
+  }
+
+  // 상단 호로관 성벽/관문. 실제 통과 지점이 아니라 배경 그대로 막힌 벽으로 둔다.
+  rectFill(grid, 7, 0, 31, 4, 2);
+
+  // 하단 출정로 목책 두 무더기. 사이와 바깥쪽 동선은 그대로 열어둔다.
+  rectFill(grid, 13, 24, 16, 26, 4);
+  rectFill(grid, 24, 24, 27, 26, 4);
 
   MAPS.warmap = {
     name: '호로관 전선',
     width: w, height: h,
     tiles: grid,
+    backgroundKey: 'warmap_overview',
     apMovement: true, // 이동시 행동력을 소모하는 전쟁맵 (일반타일 1, 험지 2배)
-    playerStart: { x:2, y:8 },
+    playerStart: { x:20, y:26 },
+    camera: { viewportW:800, viewportH:480 },
+    decor: [
+      { type:'mapLabel', x:20, y:2.0, label:'호로관' },
+      { type:'mapLabel', x:20, y:25.5, label:'출정로' },
+    ],
     npcs: [
-      { id:'jojo', x:3, y:5, label:'조조 군세' },
-      { id:'wonso', x:3, y:3, label:'원소 군세' },
-      { id:'hojin', x:8, y:6, label:'호진 군세' },
-      { id:'songheon', x:12, y:4, label:'송헌 군세' },
-      { id:'wisok', x:12, y:9, label:'위속 군세' },
-      { id:'yeopo', x:17, y:6, label:'여포 군세' },
+      { id:'jojo', x:13, y:27, label:'조조 군세', fixed:true },
+      { id:'wonso', x:27, y:27, label:'원소 군세', fixed:true },
+      { id:'hojin', x:20, y:20, label:'호진 군세', fixed:true },
+      { id:'songheon', x:20, y:15, label:'송헌 군세', fixed:true },
+      { id:'wisok', x:20, y:11, label:'위속 군세', fixed:true },
+      { id:'yeopo', x:20, y:7, label:'여포 군세', fixed:true },
+      // 함곡관에서 정식으로 맞붙기 전, 성 뒤쪽에 대기 중인 모습만 보여주는
+      // 장식용 NPC. 대화만 있고 여기서 전투/등용은 일어나지 않는다.
+      { id:'igak', x:15, y:5, label:'이각', fixed:true },
+      { id:'gwaksa', x:25, y:5, label:'곽사', fixed:true },
     ],
   };
 })();
