@@ -579,6 +579,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 .duel-actor.player{left:4%}
 .duel-actor.enemy{right:4%;transform:none}
+.duel-actor.enemy.generic{right:9%}
 .duel-actor.raster-art .duel-body{
   left:0;
   bottom:0;
@@ -686,6 +687,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   #battle-screen{padding:8px}
   .duel-actor{height:46vw;width:auto;bottom:20%;transform:none}
   .duel-actor.player{left:-1%}.duel-actor.enemy{right:-1%;transform:none}
+  .duel-actor.enemy.generic{right:4%}
   .battle-side{width:48vh;padding:7px 8px}
   #battle-side-e{right:6px;top:6px}#battle-side-p{left:6px;top:6px}
   .battle-name{left:50px;top:7px;font-size:13px}.battle-portrait{width:35px;height:35px}.battle-side .bar,.battle-side .bar-text{margin-left:42px;width:calc(100% - 42px)}
