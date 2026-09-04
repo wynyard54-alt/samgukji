@@ -810,6 +810,7 @@ function goTakhyeonFree() {
     onInteract: interactNPC,
     spawnDeadlineAbsMonth: absMonth(DEADLINES.takhyeon, 12) + 1,
     onAmbientInteract: runAmbientEvent,
+    getAmbientKinds: availableAmbientKinds,
     onApSpent: updateHUD,
     onApBlocked,
   });
@@ -827,6 +828,7 @@ function goPyeongwonFree() {
     onApSpent: updateHUD,
     onApBlocked,
     onAmbientInteract: runAmbientEvent,
+    getAmbientKinds: availableAmbientKinds,
   });
   updateHUD();
   if (!GameState.flags.dokwooEvent) {
@@ -1562,12 +1564,78 @@ function maybeRandomEvent() {
 // ---- 지나가는 백성 - 가끔 "…" 말풍선을 달고 나타나 말을 걸면 짧은 대화를 나눈다 ----
 // 매달 자동으로 뜨는 안내문구 대신, 돌아다니다 우연히 마주치는 이런 짧은 상호작용이
 // 마을에 더 살아있는 느낌을 준다.
+
+// 어르신에게 들을 수 있는 세상 돌아가는 이야기 - 지금 시점까지 실제로 벌어진 일만
+// 들려준다 (아직 일어나지 않은 이후 전개는 언급하지 않는다). act1/act2 진행에 따라
+// 들을 수 있는 이야기 풀이 점점 넓어진다.
+const LORE_EVENT_LINES = {
+  base: [
+    '원소와 원술은 사촌 형제간인데, 두 집안 모두 대대로 삼공을 배출한 명문가라고 하오.',
+    '손견이라는 장수가 여러 전장에서 크게 이름을 떨치고 있다고 하오.',
+    '낙양 조정에서는 십상시라는 환관 무리가 국정을 어지럽히고 있다는 소문이 파다하오.',
+    '황건적의 우두머리 장각 삼형제는 이미 토벌되었지만, 잔당이 아직 곳곳에 남아있다는군.',
+  ],
+  act1: [
+    '한당이라는 장수가 손견을 주군으로 모시고 있다고 하오.',
+    '동탁이라는 자가 낙양으로 들어와 어린 황제를 폐하고 진류왕을 새 황제로 세웠다는 소식이오.',
+    '동탁의 횡포에 낙양 백성들의 원성이 자자하다는군.',
+    '상산 땅에 조자룡이라는 젊은 장수가 무예가 뛰어나다고 소문이 자자하오.',
+  ],
+  act2: [
+    '조조가 진류에서 사재를 털어 의병을 모았다고 하오.',
+    '동탁의 폭정을 더는 두고 볼 수 없다며 각지 제후들이 힘을 합치려 한다는군.',
+    '서량 쪽에서 마등과 한수가 병사를 일으켰다는 소문이 있소.',
+    '원소가 맹주로 추대되어 제후 연합을 이끌게 되었다고 하오.',
+  ],
+};
+
+function availableLoreLines() {
+  let pool = LORE_EVENT_LINES.base.slice();
+  if (GameState.flags.act1) pool = pool.concat(LORE_EVENT_LINES.act1);
+  if (GameState.flags.act2) pool = pool.concat(LORE_EVENT_LINES.act2);
+  return pool;
+}
+
+// 아직 만나지 않은 발견형 NPC에 대한 귀띔 - discoveryText(가까이 가면 보이는 묘사)와는
+// 달리, 다른 사람에게서 전해 들은 소문 형태라 근처에 가지 않아도 들을 수 있다.
+const RUMOR_HINTS = {
+  noshik: '장터 근처에 학식이 깊어 보이는 노학자가 나타났다는 소문이오.',
+  gongyung: '비단전 쪽에서 언쟁을 딱 부러지게 정리해주는 선비를 봤다는 사람이 있소.',
+  gwanjeong: '주막 근처에서 눈빛이 예사롭지 않은 나그네를 봤다는군.',
+  jeonju: '마을 사람들이 어느 은둔 선비에게 자꾸 세상에 나오라 권하고 있다던데.',
+  songgeon: '주막 앞에서 떠도는 소문을 죽간에 옮겨 적는 사람이 있다고 하오.',
+  jeonye: '유비 장군 진영 근처를 서성이는 낯선 학자를 봤다는 소문이오.',
+  yeomyu: '성벽 밖에서 오환족 얘기를 하는 병사들 무리를 봤다고 하오.',
+  yuyo: '한실 소식을 궁금해하는 기품 있는 선비가 돌아다닌다는군.',
+  choeyeom: '거리의 풍속을 유심히 살피는 수염 기른 선비를 봤다고 하오.',
+};
+
+function rumorCandidates() {
+  const map = MAPS[MapView.currentMapId];
+  if (!map) return [];
+  return map.npcs.filter((n) => n.discoverable && RUMOR_HINTS[n.id] && !GameState.npcStatus[n.id]);
+}
+
+// 마을 체류 중(취락지) 상황에 따라 지금 뽑을 수 있는 말풍선 종류 목록.
+// 마을 지도 진입시/이동 중/다음달 넘길 때 모두 이 함수로 매번 새로 계산한다.
+function availableAmbientKinds() {
+  // 장순의 난 진압을 위해 군세로 전환되어 행군 중일 때는(관우군이 유비를 뒤따라
+  // 이동력을 소모해가며 급히 쫓아가는 상황) 한가한 백성과의 잡담은 어울리지 않는다.
+  const inJangsunMarch = stage === 'pyeongwon_free' && MAPS.pyeongwon.apMovement && !!GameState.army;
+  if (inJangsunMarch) return [];
+  const kinds = ['beggar', 'thanks', 'festival', 'lore', 'recruit', 'lostitem'];
+  if (rumorCandidates().length) kinds.push('rumor');
+  if (GameState.flags.helpedVillagerOnce) kinds.push('gratitude');
+  return kinds;
+}
+
 const AMBIENT_EVENTS = {
   beggar: {
     run: () => {
       Dialogue.show([{ speaker: '가난한 백성', text: '나리, 부디 금 5냥만 도와주십시오...' }], () => {
         const amount = Math.min(5, GameState.resources.gold);
         GameState.resources.gold -= amount;
+        if (amount > 0) GameState.flags.helpedVillagerOnce = true;
         toast(amount > 0 ? `가엾은 백성에게 금 ${amount}을(를) 나누어 주었다.` : '가진 금이 없어 도와주지 못했다.');
         updateHUD();
       });
@@ -1591,8 +1659,52 @@ const AMBIENT_EVENTS = {
       });
     },
   },
+  lore: {
+    run: () => {
+      const pool = availableLoreLines();
+      const line = pool[Math.floor(Math.random() * pool.length)];
+      Dialogue.show([{ speaker: '나이 지긋한 어르신', text: line }]);
+    },
+  },
+  rumor: {
+    run: () => {
+      const candidates = rumorCandidates();
+      if (!candidates.length) { triggerFlavorEvent(); return; } // 안전망 - 통상 availableAmbientKinds에서 이미 걸러짐
+      const target = candidates[Math.floor(Math.random() * candidates.length)];
+      Dialogue.show([{ speaker: '지나가던 백성', text: RUMOR_HINTS[target.id] }]);
+    },
+  },
+  recruit: {
+    run: () => {
+      const amount = 10 + Math.floor(Math.random() * 21); // 10~30
+      Dialogue.show([{ speaker: '마을 청년', text: '나리, 저도 나리 밑에서 한번 싸워보고 싶습니다!' }], () => {
+        GameState.resources.troop += amount;
+        toast(`마을 청년들이 병사 ${amount}명을 자청해 보탰다.`);
+        updateHUD();
+      });
+    },
+  },
+  lostitem: {
+    run: () => {
+      const rice = 10 + Math.floor(Math.random() * 16); // 10~25
+      Dialogue.show([{ speaker: '허둥대는 짐꾼', text: '아이고, 제가 방금 봇짐을 흘렸었나 봅니다... 아, 여기 있었군요! 감사합니다, 나리 덕에 찾았습니다.' }], () => {
+        GameState.flags.helpedVillagerOnce = true;
+        GameState.addResource({ rice });
+        toast(`짐꾼에게서 사례로 쌀 ${rice}을(를) 받았다.`);
+        updateHUD();
+      });
+    },
+  },
+  gratitude: {
+    run: () => {
+      Dialogue.show([{ speaker: '낯선 백성', text: '나리가 예전에 도와주셨던 그분이, 늘 고마워하며 안부를 전해달라 하셨습니다.' }], () => {
+        GameState.addFame(3);
+        toast('훈훈한 소문이 퍼지고 있다. (명성 +3)');
+        updateHUD();
+      });
+    },
+  },
 };
-const AMBIENT_EVENT_KINDS = Object.keys(AMBIENT_EVENTS);
 
 function runAmbientEvent(kind) {
   const ev = AMBIENT_EVENTS[kind];
@@ -1645,7 +1757,7 @@ document.getElementById('btn-nextmonth').onclick = () => {
     // 적 군세의 턴: 한 칸씩 걸어서 접근하는 모습을 보여준 뒤, 사거리 안이면 공격한다.
     MapView.runAiTurn((aiBattle) => { if (!aiBattle) finishTurn(); }); // 전투가 발동했으면 턴종료 토스트는 생략
   } else if (inTown) {
-    MapView.rollAmbientEvent(AMBIENT_EVENT_KINDS);
+    MapView.rollAmbientEvent(availableAmbientKinds());
     if (!maybeRandomEvent()) finishTurn();
     // maybeRandomEvent가 발생했다면 그 자체의 대사/토스트가 턴 진행 피드백을 대신한다.
   } else {

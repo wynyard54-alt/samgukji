@@ -23,12 +23,17 @@ const MapView = (function () {
   let onApBlocked = null;
   let onApSpent = null;
   let onAmbientInteract = null;
+  let getAmbientKinds = null; // 호출 시점의 상황에 맞는 말풍선 종류 목록을 돌려주는 콜백 (마을 지도에서만 넘어옴)
   let spawnDeadlineAbs = null; // 랜덤 등장 장수가 마감 기한의 50% 안쪽에 나오도록 하는 절대 개월수 상한
   let liveNpcs = [];
   let crowd = [];
   let crowdTimer = null;
   let animFrame = 0;
-  let ambientEvent = null; // { index, kind } - 지나가던 백성 중 한 명에게 지금 걸린 말풍선 이벤트
+  let ambientEvents = []; // [{ index, kind }] - 지나가던 백성 중 최대 2명에게 지금 걸린 말풍선 이벤트
+  const AMBIENT_EVENT_CHANCE = 0.8;
+  const AMBIENT_EVENT_MAX = 2;
+  const AMBIENT_STEPS_PER_ROLL = 4; // 마을에서 이 칸수만큼 걸을 때마다 한 번씩 말풍선 발생을 추가로 시도한다
+  let stepsSinceAmbientRoll = 0;
   window.addEventListener('fieldassetload', () => { if (map) render(); });
 
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
@@ -111,8 +116,10 @@ const MapView = (function () {
     onApBlocked = (opts && opts.onApBlocked) || null;
     onApSpent = (opts && opts.onApSpent) || null;
     onAmbientInteract = (opts && opts.onAmbientInteract) || null;
+    getAmbientKinds = (opts && opts.getAmbientKinds) || null;
     spawnDeadlineAbs = (opts && opts.spawnDeadlineAbsMonth) || null;
-    ambientEvent = null;
+    ambientEvents = [];
+    stepsSinceAmbientRoll = 0;
 
     liveNpcs = map.npcs.filter((n) => {
       const rd = ROSTER[n.id];
@@ -147,6 +154,7 @@ const MapView = (function () {
     applyCameraSize();
     startCrowd();
     render();
+    if (getAmbientKinds) rollAmbientEvent(getAmbientKinds()); // 마을에 막 들어섰을 때도 바로 말을 걸어볼 거리가 있을 수 있다
   }
 
   function startCrowd() {
@@ -232,7 +240,7 @@ const MapView = (function () {
     actors.sort((a,b) => a.y - b.y);
 
     for (const a of actors) {
-      if (a.type === 'ambient') drawAmbient(a.data, !!ambientEvent && ambientEvent.index === a.idx);
+      if (a.type === 'ambient') drawAmbient(a.data, ambientEvents.some((e) => e.index === a.idx));
       else if (a.type === 'npc') drawNpc(a.data);
       else drawHero();
     }
@@ -507,6 +515,13 @@ const MapView = (function () {
     }
     player.x=nx; player.y=ny;
     updateCamera();
+    if (getAmbientKinds) {
+      stepsSinceAmbientRoll++;
+      if (stepsSinceAmbientRoll >= AMBIENT_STEPS_PER_ROLL) {
+        stepsSinceAmbientRoll = 0;
+        rollAmbientEvent(getAmbientKinds());
+      }
+    }
     render();
     checkProximityDiscovery();
   }
@@ -536,29 +551,32 @@ const MapView = (function () {
       const npc=npcAt(player.x+dx,player.y+dy);
       if(npc){interact(npc,false);return;}
     }
-    if (ambientEvent) {
-      const p = crowd[ambientEvent.index];
-      if (p) {
-        for (const [dx,dy] of dirs) {
-          if (p.x === player.x+dx && p.y === player.y+dy) {
-            const kind = ambientEvent.kind;
-            ambientEvent = null;
-            render();
-            if (onAmbientInteract) onAmbientInteract(kind);
-            return;
-          }
+    for (const ev of ambientEvents) {
+      const p = crowd[ev.index];
+      if (!p) continue;
+      for (const [dx,dy] of dirs) {
+        if (p.x === player.x+dx && p.y === player.y+dy) {
+          const kind = ev.kind;
+          ambientEvents = ambientEvents.filter((e) => e !== ev);
+          render();
+          if (onAmbientInteract) onAmbientInteract(kind);
+          return;
         }
       }
     }
   }
 
-  // 마을 체류 중 가끔 지나가던 백성 한 명에게 짧은 대화거리를 걸어둔다 (이미 걸려있으면 그대로 둔다).
+  // 마을 체류 중 가끔 지나가던 백성 중 한둘에게 짧은 대화거리를 걸어둔다
+  // (최대 AMBIENT_EVENT_MAX명까지 동시에, 이미 걸려있는 사람은 다시 뽑지 않는다).
   function rollAmbientEvent(kinds) {
-    if (ambientEvent || !crowd.length || !kinds || !kinds.length) return;
-    if (Math.random() >= 0.6) return;
-    const index = Math.floor(Math.random() * crowd.length);
+    if (ambientEvents.length >= AMBIENT_EVENT_MAX || !crowd.length || !kinds || !kinds.length) return;
+    if (Math.random() >= AMBIENT_EVENT_CHANCE) return;
+    const usedIndexes = new Set(ambientEvents.map((e) => e.index));
+    const available = crowd.map((_, i) => i).filter((i) => !usedIndexes.has(i));
+    if (!available.length) return;
+    const index = available[Math.floor(Math.random() * available.length)];
     const kind = kinds[Math.floor(Math.random() * kinds.length)];
-    ambientEvent = { index, kind };
+    ambientEvents.push({ index, kind });
     render();
   }
 
