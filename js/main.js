@@ -54,7 +54,8 @@
 
 let stage = 'title';
 let centerAlertTimer = null;
-let pyeongwonCheckpoint = null; // 어양(구 평원현 지도) 도착 시점 GameState 스냅샷 (여포전 패배시 이 시점으로 복귀)
+let pyeongwonCheckpoint = null; // 어양(구 평원현 지도) 도착 시점 GameState 스냅샷 (장순전 패배시 이 시점으로 복귀)
+let coalitionDepartCheckpoint = null; // 반동탁연합 출정(군세 편성) 직전 GameState 스냅샷 (여포전 등 호로관 이후 패배시 이 시점으로 복귀)
 
 const DEADLINES = { takhyeon: 186, pyeongwon: 188 };
 const JANGSUN_TROOP_GOAL = 2000; // 유우가 요구하는 최소 모병 규모 (장순 3000명에 맞선 승산 확보용)
@@ -306,7 +307,7 @@ function updateHUD() {
     if (gs.flags.act2) {
       progressBtn.classList.remove('hidden');
       progressBtn.textContent = '반동탁연합 참전 준비';
-      progressBtn.onclick = () => openArmyBox(goCoalitionCamp);
+      progressBtn.onclick = () => { captureCoalitionDepartCheckpoint(); openArmyBox(goCoalitionCamp); };
     } else {
       progressBtn.classList.add('hidden');
     }
@@ -792,7 +793,7 @@ function checkDeadlines() {
   }
   if (stage === 'pyeongwon_free' && absMonth(gs.year, gs.month) > pyeongwonDeadlineAbsMonth()) {
     gs.flags.act2 = true;
-    Dialogue.show(STORY.act2_forced, () => { openArmyBox(goCoalitionCamp); });
+    Dialogue.show(STORY.act2_forced, () => { captureCoalitionDepartCheckpoint(); openArmyBox(goCoalitionCamp); });
     return true;
   }
   return false;
@@ -834,16 +835,30 @@ function goPyeongwonFree() {
   }
 }
 
-// 여포전 패배 등으로 어양 도착 시점으로 되돌아갈 때 사용한다.
-// 그 시점 이후 얻은 자원/등용/친밀도/연도 등은 모두 스냅샷 상태로 되돌아간다.
+// 반동탁연합 출정(군세 편성) 직전 시점의 GameState를 남겨둔다 - 진행 버튼과
+// 마감일 강제 이벤트, 두 출정 경로 모두에서 army-box를 열기 직전에 호출한다.
+function captureCoalitionDepartCheckpoint() {
+  coalitionDepartCheckpoint = JSON.parse(JSON.stringify(GameState));
+}
+
+// 장순전 패배(아직 반동탁연합 합류 전)와 여포전 등 호로관 이후 패배(합류해 출정한
+// 이후) 양쪽에서 호출된다. 합류 이후 패배라면 너무 가혹하다는 피드백을 반영해
+// "어양 도착 시점"이 아니라 "출정 직전" 스냅샷으로 되돌린다 - 장순의 난 진압과
+// 반동탁연합 합류 준비(등용/자원/친밀도 등)는 그대로 유지된다.
 function restoreToPyeongwonCheckpoint() {
-  if (!pyeongwonCheckpoint) { location.reload(); return; }
-  // 이 함수는 장순전 패배(아직 반동탁연합 합류 전)와 여포전 패배(합류 이후) 양쪽에서
-  // 호출된다. 스냅샷 자체는 항상 반동탁연합 합류 이전 시점이라 두 플래그가 꺼진
-  // 상태인데, 패배 시점에 이미 켜져 있던 플래그(=여포전까지 갔던 경우)만 복원 후에도
-  // 유지해 연출을 다시 보여주지 않는다. 장순전 패배는 아직 꺼져 있던 상태이므로 그대로 둔다.
-  const hadDokwoo = GameState.flags.dokwooEvent;
   const hadAct2 = GameState.flags.act2;
+  if (hadAct2 && coalitionDepartCheckpoint) {
+    const snap = JSON.parse(JSON.stringify(coalitionDepartCheckpoint));
+    Object.keys(snap).forEach((k) => { GameState[k] = snap[k]; });
+    MAPS.pyeongwon.apMovement = false;
+    goPyeongwonFree();
+    return;
+  }
+  if (!pyeongwonCheckpoint) { location.reload(); return; }
+  // 스냅샷 자체는 항상 반동탁연합 합류 이전 시점이라 act2 플래그가 꺼진 상태인데,
+  // 패배 시점에 이미 켜져 있었다면(=coalitionDepartCheckpoint가 없는 예외적인 경우)
+  // 복원 후에도 유지해 연출을 다시 보여주지 않는다. 장순전 패배는 그대로 둔다.
+  const hadDokwoo = GameState.flags.dokwooEvent;
   const snap = JSON.parse(JSON.stringify(pyeongwonCheckpoint));
   Object.keys(snap).forEach((k) => { GameState[k] = snap[k]; });
   if (hadDokwoo) GameState.flags.dokwooEvent = true;
