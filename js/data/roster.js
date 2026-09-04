@@ -114,8 +114,10 @@ const ROSTER = {
     stats:{atk:99, def:88, spd:91, int:26, cha:14}, intro:'제후군 따위, 내 방천화극 앞에 몇이나 버틴다더냐!',
     sprite:{ key:'hero_yeopo', fw:971/3, fh:1619/4, sx:.20, sy:.165 },
     battleArt:{ glyph:'呂', weapon:'方天畫戟', className:'enemy-red', src:'assets/battle/duel_yeopo.png' } },
-  jangje: { id:'jangje', name:'장제', kind:'enemy', forced:null, affiliation:'동탁군', troop:1700,
-    stats:{atk:65, def:57, spd:47, int:36, cha:31}, intro:'…제법이군. 동탁 어른도 가셨으니, 나쁘지 않은 선택일지도 모르겠소.', sprite:SPRITE_DONGTAK },
+  // 장제는 훗날 조카 장수와 이어지는 서사가 있어 여기서 등용되면 안 된다.
+  // 패색이 짙으면 등용 제안 없이 군세를 버리고 달아난다 (이각·곽사와 동일한 처리).
+  jangje: { id:'jangje', name:'장제', kind:'enemy', forced:'escape', affiliation:'동탁군', troop:1700,
+    stats:{atk:65, def:57, spd:47, int:36, cha:31}, intro:'…서량의 사내들은 이런 걸로 꺾이지 않는다. 훗날을 도모하마.', sprite:SPRITE_DONGTAK },
   beonjo: { id:'beonjo', name:'번조', kind:'enemy', forced:null, affiliation:'동탁군', troop:1600,
     stats:{atk:62, def:55, spd:53, int:34, cha:30}, intro:'…동탁 어른 없이 서량에 남을 이유도 없지. 그대라면, 한번 믿어볼 만하겠소.', sprite:SPRITE_DONGTAK },
   // 여포군 소속 부장. 호로관에서는 등장시키지 않고, 훗날 여포를 배신하는

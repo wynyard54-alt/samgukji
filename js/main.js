@@ -703,6 +703,15 @@ function onFreeBattleEnd(id, result, afterCb, persistHp) {
   if (persistHp) { GameState.heroHp = result.playerHp; updateHUD(); }
   if (result.outcome === 'win') {
     if (isOverwhelmingWin(rd, result)) { captureCommander(id, afterCb); return; }
+    if (rd.forced === 'escape') {
+      GameState.npcStatus[id] = 'fled';
+      MapView.removeNpc(id);
+      Dialogue.show([{ speaker: '내레이션', text: `${rd.name}이(가) 승산이 없다고 보았는지 군세를 버리고 달아났다.` }], () => {
+        toast(`${rd.name}이(가) 달아났다.`);
+        if (afterCb) afterCb();
+      });
+      return;
+    }
     showChoice(rd.intro, [
       { label: '등용을 제안한다', cb: () => { attemptPersuadeCaptured(id); if (afterCb) afterCb(); } },
       { label: '그냥 보내준다', cb: () => {
