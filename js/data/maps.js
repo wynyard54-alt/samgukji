@@ -400,8 +400,8 @@ if (false) (function () {
       { id:'jojo', x:17, y:25, label:'조조 군세', fixed:true },
       { id:'wonso', x:23, y:25, label:'원소 군세', fixed:true },
       { id:'hojin', x:20, y:20, label:'호진 군세', fixed:true },
-      { id:'songheon', x:20, y:15, label:'송헌 군세', fixed:true },
-      { id:'wisok', x:20, y:11, label:'위속 군세', fixed:true },
+      { id:'jangje', x:20, y:15, label:'장제 군세', fixed:true },
+      { id:'beonjo', x:20, y:11, label:'번조 군세', fixed:true },
       { id:'yeopo', x:20, y:7, label:'여포 군세', fixed:true },
     ],
   };

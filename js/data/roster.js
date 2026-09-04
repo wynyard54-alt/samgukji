@@ -114,6 +114,12 @@ const ROSTER = {
     stats:{atk:99, def:88, spd:91, int:26, cha:14}, intro:'제후군 따위, 내 방천화극 앞에 몇이나 버틴다더냐!',
     sprite:{ key:'hero_yeopo', fw:971/3, fh:1619/4, sx:.20, sy:.165 },
     battleArt:{ glyph:'呂', weapon:'方天畫戟', className:'enemy-red', src:'assets/battle/duel_yeopo.png' } },
+  jangje: { id:'jangje', name:'장제', kind:'enemy', forced:null, affiliation:'동탁군', troop:1700,
+    stats:{atk:65, def:57, spd:47, int:36, cha:31}, intro:'…제법이군. 동탁 어른도 가셨으니, 나쁘지 않은 선택일지도 모르겠소.', sprite:SPRITE_DONGTAK },
+  beonjo: { id:'beonjo', name:'번조', kind:'enemy', forced:null, affiliation:'동탁군', troop:1600,
+    stats:{atk:62, def:55, spd:53, int:34, cha:30}, intro:'…동탁 어른 없이 서량에 남을 이유도 없지. 그대라면, 한번 믿어볼 만하겠소.', sprite:SPRITE_DONGTAK },
+  // 여포군 소속 부장. 호로관에서는 등장시키지 않고, 훗날 여포를 배신하는
+  // 서사(챕터2)를 위해 남겨둔다.
   songheon: { id:'songheon', name:'송헌', kind:'enemy', forced:null, affiliation:'여포군', troop:2000,
     stats:{atk:58, def:52, spd:51, int:35, cha:30}, intro:'여포 밑에 있어봐야 하루하루가 살얼음판이었소. 차라리 잘 됐군.', sprite:SPRITE_DONGTAK },
   wisok: { id:'wisok', name:'위속', kind:'enemy', forced:null, affiliation:'여포군', troop:1800,

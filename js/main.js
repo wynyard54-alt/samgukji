@@ -877,7 +877,7 @@ function goWarmap() {
 }
 
 function checkWarmapClear() {
-  const ids = ['hojin', 'songheon', 'wisok', 'yeopo'];
+  const ids = ['hojin', 'jangje', 'beonjo', 'yeopo'];
   const allDone = ids.every((id) => ['resolved', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]));
   if (allDone) {
     GameState.addFame(30); // 메인퀘스트: 호로관 평정
