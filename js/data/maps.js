@@ -323,12 +323,13 @@ if (false) (function () {
   rectFill(grid, 11, h - 1, 13, h - 1, 0); // 남문 통로
 
   // 배경 그림의 5개 막사 자리만 막고, 나머지 지면은 전부 트여있게 두어
-  // 어디로 가든 걸리지 않는 동선을 확보한다.
+  // 어디로 가든 걸리지 않는 동선을 확보한다. 남쪽의 두 막사(손견/유비)는
+  // 지도 남쪽 외곽과 가까워 한 칸만 얕게 잡아 문 앞에 설 자리를 남긴다.
   rectFill(grid, 10, 0, 14, 3, 2);  // 원소 맹주 막사 (12시)
   rectFill(grid, 1, 3, 6, 7, 2);    // 조조 막사 (10시)
   rectFill(grid, 17, 3, 22, 7, 2);  // 공손찬 막사 (2시)
-  rectFill(grid, 1, 10, 6, 14, 2);  // 손견 막사 (7시)
-  rectFill(grid, 17, 10, 22, 14, 2); // 유비 막사 (5시)
+  rectFill(grid, 1, 10, 6, 13, 2);  // 손견 막사 (7시)
+  rectFill(grid, 17, 10, 22, 13, 2); // 유비 막사 (5시)
 
   MAPS.camp = {
     name: '반동탁연합 진영',
@@ -344,12 +345,13 @@ if (false) (function () {
       { type:'mapLabel', x:3.5, y:12.0, label:'손견 막사' },
       { type:'mapLabel', x:19.5, y:12.0, label:'유비 막사' },
     ],
+    // 다섯 명 모두 각자 막사의 문 앞, 대로로 이어지는 길목에 세운다.
     npcs: [
       { id:'wonso', x:12, y:4, label:'원소', fixed:true },
-      { id:'jojo', x:7, y:5, label:'조조', fixed:true },
-      { id:'gongsonchan', x:16, y:5, label:'공손찬', fixed:true },
-      { id:'songyeon', x:7, y:12, label:'손견', fixed:true },
-      { id:'yubi', x:16, y:12, label:'유비', fixed:true },
+      { id:'jojo', x:4, y:8, label:'조조', fixed:true },
+      { id:'gongsonchan', x:19, y:8, label:'공손찬', fixed:true },
+      { id:'songyeon', x:4, y:14, label:'손견', fixed:true },
+      { id:'yubi', x:19, y:14, label:'유비', fixed:true },
     ],
   };
 })();
@@ -395,8 +397,8 @@ if (false) (function () {
       { type:'mapLabel', x:20, y:25.5, label:'출정로' },
     ],
     npcs: [
-      { id:'jojo', x:13, y:27, label:'조조 군세', fixed:true },
-      { id:'wonso', x:27, y:27, label:'원소 군세', fixed:true },
+      { id:'jojo', x:17, y:25, label:'조조 군세', fixed:true },
+      { id:'wonso', x:23, y:25, label:'원소 군세', fixed:true },
       { id:'hojin', x:20, y:20, label:'호진 군세', fixed:true },
       { id:'songheon', x:20, y:15, label:'송헌 군세', fixed:true },
       { id:'wisok', x:20, y:11, label:'위속 군세', fixed:true },
