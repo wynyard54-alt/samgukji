@@ -676,18 +676,22 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 @keyframes dodge-p{50%{transform:translateX(-65px)}}
 @keyframes dodge-e{50%{transform:translateX(65px)}}
 
+/* 이 미디어쿼리는 세로로 든 모바일(위 90도 회전 프리젠테이션) 기준이라, 여기서
+   말하는 시각적 "너비"는 회전 때문에 실제로는 vh, "높이"는 vw로 계산해야 한다
+   (body{width:100vh;height:100vw;rotate(90deg)} 참고). 지피티가 준 원래 코드는
+   이걸 모르고 일반 vw/vh로 짜여있어 적장수가 화면 밖으로 밀려나거나 안 보였다. */
 @media(max-width:680px){
   #battle-screen{padding:8px}
-  .duel-actor{width:54vw;height:46vh;bottom:25%;transform:none}
+  .duel-actor{width:54vh;height:46vw;bottom:25%;transform:none}
   .duel-actor.player{left:-3%}.duel-actor.enemy{right:-3%;bottom:29%;transform:none}
-  .duel-actor[data-id="gwanwoo"]{width:50vw}
-  .duel-actor[data-id="yeopo"],.duel-actor[data-id="hwaung"]{width:57vw}
-  .duel-actor.generic{width:52vw;right:-2%}
-  .battle-side{width:48vw;padding:7px 8px}
+  .duel-actor[data-id="gwanwoo"]{width:50vh}
+  .duel-actor[data-id="yeopo"],.duel-actor[data-id="hwaung"]{width:57vh}
+  .duel-actor.generic{width:52vh;right:-2%}
+  .battle-side{width:48vh;padding:7px 8px}
   #battle-side-e{left:6px;top:6px}#battle-side-p{right:6px;bottom:112px}
   .battle-name{left:50px;top:7px;font-size:13px}.battle-portrait{width:35px;height:35px}.battle-side .bar,.battle-side .bar-text{margin-left:42px;width:calc(100% - 42px)}
-  .battle-log{left:6px;bottom:112px;transform:none;width:46vw;max-height:62px;font-size:10px}
-  #battle-actions{bottom:6px;grid-template-columns:1fr 1fr;width:calc(100vw - 12px);gap:5px;padding:5px}
+  .battle-log{left:6px;bottom:112px;transform:none;width:46vh;max-height:62px;font-size:10px}
+  #battle-actions{bottom:6px;grid-template-columns:1fr 1fr;width:calc(100vh - 12px);gap:5px;padding:5px}
   #battle-actions button{font-size:12px;padding:8px 3px}
   .duel-slash.player{left:28%}.duel-slash.enemy{right:28%}
 }
