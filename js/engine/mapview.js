@@ -479,8 +479,11 @@ const MapView = (function () {
   const FOOT_TILES_PER_AP = 10; // 군세와 달리 장수 혼자 이동할 때는 10칸마다 행동력 1을 쓴다
   let footTileCount = 0;
 
+  let movementLocked = false;
+  function lockMovement(v) { movementLocked = !!v; }
+
   function tryMove(dx, dy) {
-    if (!map) return;
+    if (!map || movementLocked) return;
     const nx=player.x+dx, ny=player.y+dy;
     player.dir = dx<0?'left':dx>0?'right':dy<0?'up':'down';
     if (!isWalkable(nx,ny)) { render(); return; }
@@ -521,6 +524,7 @@ const MapView = (function () {
   }
 
   function interactFacing() {
+    if (movementLocked) return;
     const dirs = player.dir==='up' ? [[0,-1],[-1,0],[1,0],[0,1]] :
       player.dir==='down' ? [[0,1],[-1,0],[1,0],[0,-1]] :
       player.dir==='left' ? [[-1,0],[0,-1],[0,1],[1,0]] : [[1,0],[0,-1],[0,1],[-1,0]];
@@ -724,7 +728,7 @@ const MapView = (function () {
   });
 
   return {
-    load,render,removeNpc,addNpc,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,
+    load,render,removeNpc,addNpc,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},
     get playerPos(){return {x:player.x,y:player.y,dir:player.dir};},

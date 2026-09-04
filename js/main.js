@@ -905,32 +905,40 @@ function startJangsunCampaign() {
     MapView.addNpc('jangsun');
     updateHUD();
     toast('유비군이 먼저 앞서나갔다. 서둘러 뒤따르자.');
-    animateYubiDeparture();
+    // 안내 메시지가 화면에 떠 있는 동안(약 2.2초)에는 플레이어가 먼저 움직여버릴 수
+    // 있어, 메시지가 꺼지기 직전에 유비가 남쪽으로 떠나는 모습을 보여준다. 그동안
+    // 플레이어 이동은 잠가, 유비가 앞서 나가는 장면에 자연히 시선이 가게 한다.
+    MapView.lockMovement(true);
+    setTimeout(() => {
+      animateYubiDeparture(() => MapView.lockMovement(false));
+    }, 1500);
   });
 }
 
-// 유비가 선봉대를 이끌고 먼저 출발하는 모습을 짧게 보여준 뒤(남쪽 출정로 방향으로
-// 몇 칸 이동) 막사에서 사라진다 - 다음 턴에 유비군 패퇴 소식이 오는 것과 맞물려,
-// "유비가 먼저 갔다"는 대사만 있고 정작 화면에는 그대로 서 있는 어색함을 없앤다.
-// 관우가 장순을 처치하면 다시 이 자리(원래 좌표)로 불러온다.
-function animateYubiDeparture() {
+// 유비가 선봉대를 이끌고 먼저 출발하는 모습을 보여준 뒤(남쪽 출정로 방향으로
+// 최대 8칸, 지도 끝을 넘지 않는 선에서 이동) 막사에서 사라진다 - 다음 턴에
+// 유비군 패퇴 소식이 오는 것과 맞물려, "유비가 먼저 갔다"는 대사만 있고 정작
+// 화면에는 그대로 서 있는 어색함을 없앤다. 관우가 장순을 처치하면 다시
+// 이 자리(원래 좌표)로 불러온다.
+function animateYubiDeparture(onDone) {
   const n = MAPS.pyeongwon.npcs.find((npc) => npc.id === 'yubi');
-  if (!n) return;
+  if (!n) { if (onDone) onDone(); return; }
   const homeX = n.x, homeY = n.y;
-  const steps = 4;
+  const steps = Math.max(1, Math.min(8, MAPS.pyeongwon.height - 1 - homeY));
   let step = 0;
   const tick = () => {
     step++;
     n.y = homeY + step; // 남쪽(출정로) 방향으로 이동
     MapView.render();
     if (step < steps) {
-      setTimeout(tick, 180);
+      setTimeout(tick, 150);
     } else {
       MapView.removeNpc('yubi');
       n.x = homeX; n.y = homeY; // 나중에 재등장할 때는 원래 막사 자리로
+      if (onDone) onDone();
     }
   };
-  setTimeout(tick, 180);
+  setTimeout(tick, 150);
 }
 
 function disbandJangsunArmy() {
