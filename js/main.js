@@ -210,6 +210,10 @@ function renderLocationBanner() {
   document.getElementById('location-task').innerHTML = objectives.map((t) => `◆ ${t}`).join('<br>');
 }
 
+// 미니맵에 초록 점으로 짚어줄, 찾아가야 할 핵심 인물들. 각 지도의 npcs 목록에
+// 실제로 등장해 있는(스토리 게이트를 통과한) 경우에만 표시된다.
+const MINIMAP_QUEST_NPC_IDS = ['yubi', 'yuwoo', 'jeongwonji', 'jangsun'];
+
 function renderMinimap() {
   const canvas = document.getElementById('minimap-canvas');
   const ctx = canvas.getContext('2d');
@@ -218,10 +222,41 @@ function renderMinimap() {
   const mapId = MapView.currentMapId;
   document.getElementById('minimap-title').textContent = LOCATION_NAMES[mapId] ? LOCATION_NAMES[mapId].split(' ')[0] : (mapId || '');
   if (!mapId) return;
+  const map = MAPS[mapId];
   const size = MapView.mapSize;
   const pos = MapView.playerPos;
   ctx.fillStyle = '#3a4a2f';
   ctx.fillRect(0, 0, w, h);
+
+  if (map && map.tiles) {
+    const tileW = w / Math.max(1, size.w);
+    const tileH = h / Math.max(1, size.h);
+    ctx.fillStyle = '#c0392b';
+    for (let ty = 0; ty < map.tiles.length; ty++) {
+      const row = map.tiles[ty];
+      for (let tx = 0; tx < row.length; tx++) {
+        if (row[tx] === 2 || row[tx] === 3 || row[tx] === 4) {
+          ctx.fillRect(tx * tileW, ty * tileH, Math.ceil(tileW), Math.ceil(tileH));
+        }
+      }
+    }
+  }
+
+  if (map && map.npcs) {
+    const liveIds = new Set(MapView.liveNpcIds);
+    ctx.fillStyle = '#3fcf5a';
+    for (const id of MINIMAP_QUEST_NPC_IDS) {
+      if (!liveIds.has(id)) continue;
+      const npc = map.npcs.find((n) => n.id === id);
+      if (!npc) continue;
+      const nx = (npc.x / Math.max(1, size.w)) * w;
+      const ny = (npc.y / Math.max(1, size.h)) * h;
+      ctx.beginPath();
+      ctx.arc(nx, ny, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   const px = (pos.x / Math.max(1, size.w)) * w;
   const py = (pos.y / Math.max(1, size.h)) * h;
   ctx.fillStyle = '#f2c94c';
