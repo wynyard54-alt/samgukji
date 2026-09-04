@@ -565,7 +565,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   background:#17110b;
 }
 #duel-arena{
-  background-image:linear-gradient(rgba(20,12,6,.04),rgba(20,12,6,.16)),url("../assets/battle/duel_bg_hulao_v1.png");
+  background-image:linear-gradient(rgba(20,12,6,.04),rgba(20,12,6,.16)),url("../assets/battle/duel_bg_hulao_v1.jpg");
   background-position:center;
   background-size:cover;
   background-repeat:no-repeat;

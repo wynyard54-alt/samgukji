@@ -25,10 +25,10 @@ const FieldAssets = (function () {
     tile_road:'tile_road.png',
     tile_grass:'tile_grass.png',
     tile_water:'tile_water.png',
-    takhyeon_city_overview:'takhyeon_map_v10.png',
-    pyeongwon_city_overview:'pyeongwon_map_v1.png',
-    camp_overview:'camp_map_v1.png',
-    warmap_overview:'warmap_map_v1.png',
+    takhyeon_city_overview:'takhyeon_map_v10.jpg',
+    pyeongwon_city_overview:'pyeongwon_map_v1.jpg',
+    camp_overview:'camp_map_v1.jpg',
+    warmap_overview:'warmap_map_v1.jpg',
   };
 
   function get(key) {
