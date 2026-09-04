@@ -52,7 +52,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #screen-title{ align-items:center; justify-content:center; background:
   radial-gradient(ellipse at 50% 20%, rgba(255,255,255,0.08), transparent 60%), var(--paper); }
 .title-wrap{ text-align:center; width:100%; min-width:0; box-sizing:border-box; padding:20px; }
-.title-wrap h1{ font-size:48px; letter-spacing:.03em; }
+.title-wrap h1{ font-size:48px; letter-spacing:.03em; margin-bottom:28px; }
 .subtitle{ color:var(--ink-soft); margin-bottom:26px; font-size:13px; letter-spacing:.03em; }
 
 .big-btn{
