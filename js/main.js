@@ -320,7 +320,15 @@ function interactNPC(id, context) {
   if (id === 'jangsun') { openWarCommandMenu('jangsun'); return; }
 
   if (rd.kind === 'flavor') {
-    Dialogue.show([{ speaker: rd.name, text: rd.intro }]);
+    // 조조·원소는 진영(사수관 전투 전)과 호로관 전선(화웅을 이미 처치한 뒤) 두 맵에
+    // 걸쳐 등장하는데, intro 한 줄만으로는 호로관 시점에도 사수관 이전 상황을
+    // 말하는 것처럼 어색하게 읽힌다. 호로관에서는 그 이후를 반영한 대사로 바꾼다.
+    const warmapIntro = {
+      jojo: '관우, 그날 화웅을 상대하던 그대의 모습이 아직도 눈에 선하오. 과연 내 사람 보는 눈이 틀리지 않았소.',
+      wonso: '한뜻으로 모인 제후들이라 했건만, 이제 보니 저마다 딴생각을 품은 듯하오. 동상이몽이라더니, 딱 그 짝이군.',
+    };
+    const text = (stage === 'warmap' && warmapIntro[id]) || rd.intro;
+    Dialogue.show([{ speaker: rd.name, text }]);
     return;
   }
 
