@@ -819,10 +819,16 @@ function goPyeongwonFree() {
 // 그 시점 이후 얻은 자원/등용/친밀도/연도 등은 모두 스냅샷 상태로 되돌아간다.
 function restoreToPyeongwonCheckpoint() {
   if (!pyeongwonCheckpoint) { location.reload(); return; }
+  // 이 함수는 장순전 패배(아직 반동탁연합 합류 전)와 여포전 패배(합류 이후) 양쪽에서
+  // 호출된다. 스냅샷 자체는 항상 반동탁연합 합류 이전 시점이라 두 플래그가 꺼진
+  // 상태인데, 패배 시점에 이미 켜져 있던 플래그(=여포전까지 갔던 경우)만 복원 후에도
+  // 유지해 연출을 다시 보여주지 않는다. 장순전 패배는 아직 꺼져 있던 상태이므로 그대로 둔다.
+  const hadDokwoo = GameState.flags.dokwooEvent;
+  const hadAct2 = GameState.flags.act2;
   const snap = JSON.parse(JSON.stringify(pyeongwonCheckpoint));
   Object.keys(snap).forEach((k) => { GameState[k] = snap[k]; });
-  GameState.flags.dokwooEvent = true; // 재도전시 독우 매질/어양 도착 연출을 다시 보여줄 필요는 없다
-  GameState.flags.act2 = true; // 재도전시 반동탁연합 합류 연출을 다시 보여줄 필요는 없다
+  if (hadDokwoo) GameState.flags.dokwooEvent = true;
+  if (hadAct2) GameState.flags.act2 = true;
   MAPS.pyeongwon.apMovement = false; // 장순의 난 출정 중 패배했다면 군세 이동모드도 함께 초기화
   goPyeongwonFree();
 }
