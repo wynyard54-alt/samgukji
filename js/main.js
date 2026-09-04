@@ -1012,12 +1012,17 @@ function goHamgokgwan() {
   Dialogue.show(STORY.hamgokgwan_pre, () => {
     Battle.start({
       player: GameState.heroData(), enemy: ROSTER.igak, maxRounds: 3,
-      onEnd: () => {
+      startHp: heroCurrentHp(),
+      onEnd: (result) => {
+        GameState.heroHp = result.playerHp; // 이각전에서 닳은 체력을 곽사전까지 그대로 이어간다
+        updateHUD();
         GameState.npcStatus['igak'] = 'fled';
         Dialogue.show(STORY.hamgokgwan_igak_result, () => {
           Battle.start({
             player: GameState.heroData(), enemy: ROSTER.gwaksa, maxRounds: 3,
-            onEnd: () => {
+            startHp: heroCurrentHp(),
+            onEnd: (result2) => {
+              GameState.heroHp = result2.playerHp;
               GameState.npcStatus['gwaksa'] = 'fled';
               GameState.addFame(30); // 메인퀘스트: 함곡관 평정
               updateHUD();
