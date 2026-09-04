@@ -76,7 +76,7 @@ function centerAlert(msg) {
   el.textContent = msg;
   el.classList.remove('hidden');
   clearTimeout(centerAlertTimer);
-  centerAlertTimer = setTimeout(() => el.classList.add('hidden'), 3000);
+  centerAlertTimer = setTimeout(() => el.classList.add('hidden'), 2200);
 }
 
 function toast(msg) {
