@@ -5,6 +5,7 @@
   const extraUrls = [
     'assets/illust/dowon_market.jpg', 'assets/illust/dowon_oath.jpg', 'assets/illust/pyeongwon_urgent.jpg',
     'assets/illust/anhee_dokwoo.jpg',
+    'assets/illust/sasugwan_pledge.jpg', 'assets/illust/sasugwan_victory.jpg',
     'assets/ui/portrait_gwanwoo.png',
     'assets/battle/duel_gwanwoo.png', 'assets/battle/duel_hwaung.png', 'assets/battle/duel_yeopo.png',
   ];
