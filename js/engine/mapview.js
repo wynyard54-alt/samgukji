@@ -407,7 +407,7 @@ const MapView = (function () {
 
     // 등용된 장수는 마을에 남아 모병/훈련을 돕는다 - 이름표에 담당 역할을 표기한다.
     if (GameState.npcStatus[n.id] === 'recruited') {
-      drawTag(x, worldY(n.y)-7, `${rd.name} · ${isScholarType(rd) ? '모병' : '훈련'}`, '#2f4d33');
+      drawTag(x, worldY(n.y)-7, `${rd.name} · ${scholar ? '모병' : '훈련'}`, '#2f4d33');
     } else if (n._atResidence) {
       drawTag(x, worldY(n.y)-7, n._label || `${rd.name}의 집`, '#72542f');
     } else if (!hidden && n.label) {
