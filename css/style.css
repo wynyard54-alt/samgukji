@@ -411,6 +411,31 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   #army-box{ width:min(420px,80vh); max-height:min(86vw,520px); padding:16px; }
 }
 
+/* 설정 */
+#settings-box{
+  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:min(360px,92vw);
+  background:var(--panel); border:1px solid var(--panel-border);
+  border-radius:12px; padding:20px; box-shadow:0 12px 30px rgba(43,38,32,0.35); z-index:59;
+}
+#settings-box.hidden{ display:none; }
+#settings-close{
+  position:absolute; top:12px; right:14px; width:28px; height:28px; border-radius:50%;
+  border:1px solid var(--panel-border); background:#fff8ea; color:var(--ink);
+  font-size:14px; line-height:1; cursor:pointer;
+}
+#settings-close:hover{ background:var(--accent); color:#fff8ea; }
+#settings-title{ font-family:"Song Myung",serif; font-size:18px; margin-bottom:14px; padding-right:24px; }
+#settings-menu-list{ display:flex; flex-direction:column; gap:8px; }
+.settings-menu-btn{
+  font-family:inherit; font-size:13.5px; padding:12px; border-radius:8px;
+  border:1px solid var(--panel-border); background:#fff8ea; color:var(--ink); cursor:pointer;
+}
+.settings-menu-btn:hover{ border-color:var(--accent); }
+@media (orientation:portrait) and (max-width:1024px){
+  #settings-box{ width:min(360px,80vh); padding:16px; }
+}
+
 /* 저장/불러오기 */
 #save-box{
   position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);

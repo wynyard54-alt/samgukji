@@ -1721,12 +1721,17 @@ function confirmQuit() {
 }
 
 function openSettingsMenu() {
-  showChoice('설정', [
-    { label: '저장/불러오기', cb: () => openSaveBox() },
-    { label: '처음으로', cb: () => confirmGoTitle() },
-    { label: '게임종료', cb: () => confirmQuit() },
-  ]);
+  document.getElementById('settings-box').classList.remove('hidden');
 }
+
+function closeSettingsMenu() {
+  document.getElementById('settings-box').classList.add('hidden');
+}
+
+document.getElementById('settings-close').onclick = closeSettingsMenu;
+document.getElementById('settings-save').onclick = () => { closeSettingsMenu(); openSaveBox(); };
+document.getElementById('settings-gotitle').onclick = () => { closeSettingsMenu(); confirmGoTitle(); };
+document.getElementById('settings-quit').onclick = () => { closeSettingsMenu(); confirmQuit(); };
 
 document.getElementById('btn-continue').onclick = () => openSaveBox();
 
