@@ -31,6 +31,25 @@ const WORLDMAP_FACTION_NAMES = {
   hanbok: '한복', hanna: '한나라', neutral: '미상',
 };
 
+// [병력]/[농업량] 보기 모드에서 값 구간별로 쓰는 색상(연한 -> 진한). 마지막
+// 구간을 넘으면 마지막(가장 진한) 색을 쓴다.
+const WORLDMAP_TROOPS_THRESHOLDS = [500, 1000, 5000, 10000, 30000, 50000, 100000];
+const WORLDMAP_TROOPS_COLORS = [
+  '#fdeceb', '#fac9c5', '#f5a29c', '#ee7972', '#e04f47', '#c62f28', '#a11e19', '#7a1410',
+];
+
+const WORLDMAP_RICE_THRESHOLDS = [100, 200, 300, 500, 700, 1000, 1200];
+const WORLDMAP_RICE_COLORS = [
+  '#eef7ea', '#d7edc9', '#b9e0a0', '#96d073', '#6ebd49', '#4a9f2e', '#337a1e', '#1f5511',
+];
+
+function worldmapTierColor(value, thresholds, colors) {
+  for (let i = 0; i < thresholds.length; i++) {
+    if (value <= thresholds[i]) return colors[i];
+  }
+  return colors[colors.length - 1];
+}
+
 // type: 'city'(2중네모, 성) | 'fort'(네모, 요새/관문) | 'port'(세모, 항구)
 const WORLDMAP_LOCATIONS = [
   { id: 'bukpyeong', name: '북평', type: 'city', faction: 'gongsonchan', x: 79.4, y: 9.2, troops: 1950, defCur: 2100, defMax: 2900, rice: 290 },

@@ -425,7 +425,14 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   font-size:14px; line-height:1; cursor:pointer; z-index:1;
 }
 #worldmap-close:hover{ background:var(--accent); color:#fff8ea; }
-#worldmap-title{ font-family:"Song Myung",serif; font-size:18px; margin-bottom:12px; }
+#worldmap-title{ font-family:"Song Myung",serif; font-size:18px; margin-bottom:8px; }
+#worldmap-modes{ display:flex; justify-content:center; gap:8px; margin-bottom:12px; }
+.wm-mode-btn{
+  font-family:inherit; font-size:12.5px; padding:6px 16px; border-radius:14px;
+  border:1px solid var(--panel-border); background:#fff8ea; color:var(--ink); cursor:pointer;
+}
+.wm-mode-btn:hover{ border-color:var(--accent); }
+.wm-mode-btn.active{ background:var(--accent); border-color:var(--accent); color:#fff8ea; }
 #worldmap-frame{ position:relative; display:inline-block; max-width:100%; line-height:0; }
 #worldmap-img{ display:block; width:auto; height:auto; max-width:100%; max-height:78vh; border-radius:6px; }
 .wm-marker{ position:absolute; transform:translate(-50%,-50%); cursor:pointer; }

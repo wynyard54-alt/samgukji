@@ -1694,6 +1694,14 @@ function renderSaveBox() {
 }
 
 // ---------------- 대지도 ----------------
+let worldMapMode = 'faction'; // 'faction' | 'troops' | 'rice'
+
+function worldMapMarkerColor(loc, faction) {
+  if (worldMapMode === 'troops') return worldmapTierColor(loc.troops, WORLDMAP_TROOPS_THRESHOLDS, WORLDMAP_TROOPS_COLORS);
+  if (worldMapMode === 'rice') return worldmapTierColor(loc.rice, WORLDMAP_RICE_THRESHOLDS, WORLDMAP_RICE_COLORS);
+  return WORLDMAP_FACTION_COLORS[faction] || WORLDMAP_FACTION_COLORS.neutral;
+}
+
 function renderWorldMap() {
   const wrap = document.getElementById('worldmap-markers');
   wrap.innerHTML = '';
@@ -1705,7 +1713,7 @@ function renderWorldMap() {
     el.style.left = `${loc.x}%`;
     el.style.top = `${loc.y}%`;
     const faction = overrides[loc.id] || loc.faction;
-    el.style.setProperty('--wm-color', WORLDMAP_FACTION_COLORS[faction] || WORLDMAP_FACTION_COLORS.neutral);
+    el.style.setProperty('--wm-color', worldMapMarkerColor(loc, faction));
     const label = document.createElement('div');
     label.className = 'wm-label';
     label.textContent = loc.name;
@@ -1721,8 +1729,18 @@ function renderWorldMap() {
   });
 }
 
-function openWorldMapBox() {
+function setWorldMapMode(mode) {
+  worldMapMode = mode;
+  document.querySelectorAll('.wm-mode-btn').forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
   renderWorldMap();
+}
+
+document.querySelectorAll('.wm-mode-btn').forEach((btn) => {
+  btn.onclick = () => setWorldMapMode(btn.dataset.mode);
+});
+
+function openWorldMapBox() {
+  setWorldMapMode('faction');
   document.getElementById('worldmap-box').classList.remove('hidden');
 }
 
