@@ -1552,11 +1552,26 @@ function loadSaveSlots() {
 function writeSaveSlots(slots) {
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(slots));
+    updateContinueButton();
     return true;
   } catch (e) {
     toast('저장에 실패했습니다 (브라우저 저장공간 문제일 수 있어요).');
     return false;
   }
+}
+
+// 타이틀 화면의 "이어하기" - 10칸 중 가장 최근에 저장된 기록을 찾아 바로 이어간다.
+function findMostRecentSave() {
+  const slots = loadSaveSlots();
+  let best = null;
+  slots.forEach((s) => { if (s && (!best || s.savedAt > best.savedAt)) best = s; });
+  return best;
+}
+
+function updateContinueButton() {
+  const btn = document.getElementById('btn-continue');
+  if (!btn) return;
+  btn.classList.toggle('hidden', !findMostRecentSave());
 }
 
 function canSaveNow() {
@@ -1699,11 +1714,43 @@ function closeSaveBox() {
 
 document.getElementById('save-close').onclick = closeSaveBox;
 
+function confirmGoTitle() {
+  showChoice('처음 화면으로 돌아갈까요? 저장하지 않은 진행 상황은 사라집니다.', [
+    { label: '처음으로', cb: () => { showScreen('screen-title'); updateContinueButton(); } },
+    { label: '취소', cb: () => {} },
+  ]);
+}
+
+function confirmQuit() {
+  showChoice('게임을 종료할까요?', [
+    { label: '종료', cb: () => {
+      toast('창을 닫아도 좋습니다. 다음에 또 만나요!');
+      window.close();
+    } },
+    { label: '취소', cb: () => {} },
+  ]);
+}
+
+function openSettingsMenu() {
+  showChoice('설정', [
+    { label: '저장하기', cb: () => openSaveBox() },
+    { label: '불러오기', cb: () => openSaveBox() },
+    { label: '처음으로', cb: () => confirmGoTitle() },
+    { label: '게임종료', cb: () => confirmQuit() },
+  ]);
+}
+
+document.getElementById('btn-continue').onclick = () => {
+  const snap = findMostRecentSave();
+  if (snap) applySaveSnapshot(snap);
+};
+updateContinueButton();
+
 document.querySelectorAll('#bottom-menu button').forEach((btn) => {
   btn.onclick = () => {
     if (btn.dataset.menu === 'generals') { openRosterPanel(); return; }
     if (btn.dataset.menu === 'bag') { openBagBox(); return; }
-    if (btn.dataset.menu === 'settings') { openSaveBox(); return; }
+    if (btn.dataset.menu === 'settings') { openSettingsMenu(); return; }
     toast('준비 중인 기능입니다.');
   };
 });

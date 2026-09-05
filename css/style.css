@@ -61,6 +61,10 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   padding:14px 34px; cursor:pointer; box-shadow:0 6px 18px rgba(138,95,31,0.35);
 }
 .big-btn:hover{ background:var(--accent-strong); }
+.title-actions{ display:flex; flex-direction:column; align-items:center; gap:12px; }
+.big-btn.outline{ background:transparent; color:var(--ink); border:1px solid var(--accent); box-shadow:none; }
+.big-btn.outline:hover{ background:rgba(138,95,31,0.08); }
+#btn-continue.hidden{ display:none; }
 
 /* 챕터 선택 / 세력 설명 */
 #screen-chapter, #screen-factions{ align-items:center; justify-content:center; background:var(--paper); overflow-y:auto; }
