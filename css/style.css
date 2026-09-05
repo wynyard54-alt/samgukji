@@ -428,7 +428,8 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #worldmap-title{ font-family:"Song Myung",serif; font-size:18px; margin-bottom:12px; }
 #worldmap-frame{ position:relative; display:inline-block; max-width:100%; line-height:0; }
 #worldmap-img{ display:block; width:auto; height:auto; max-width:100%; max-height:78vh; border-radius:6px; }
-.wm-marker{ position:absolute; transform:translate(-50%,-50%); }
+.wm-marker{ position:absolute; transform:translate(-50%,-50%); cursor:pointer; }
+.wm-marker::before{ content:''; position:absolute; inset:-7px; }
 .wm-marker.city{
   width:9px; height:9px; background:var(--wm-color);
   box-shadow:0 0 0 1.5px #2b2016, 0 0 0 3.5px var(--wm-color);
@@ -452,6 +453,32 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 @media (orientation:portrait) and (max-width:1024px){
   #worldmap-box{ width:min(1100px,86vh); max-height:min(92vw,760px); padding:12px; }
   #worldmap-img{ max-height:min(70vw,600px); }
+}
+
+/* 대지도 - 성 정보 카드 */
+#citycard-box{
+  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:min(300px,88vw);
+  background:var(--panel); border:1px solid var(--panel-border);
+  border-radius:12px; padding:18px; box-shadow:0 12px 30px rgba(43,38,32,.4); z-index:60;
+}
+#citycard-box.hidden{ display:none; }
+#citycard-close{
+  position:absolute; top:12px; right:14px; width:28px; height:28px; border-radius:50%;
+  border:1px solid var(--panel-border); background:#fff8ea; color:var(--ink);
+  font-size:14px; line-height:1; cursor:pointer;
+}
+#citycard-close:hover{ background:var(--accent); color:#fff8ea; }
+#citycard-title{ font-family:"Song Myung",serif; font-size:18px; margin-bottom:12px; padding-right:24px; }
+.citycard-row{
+  display:flex; justify-content:space-between; align-items:center; gap:10px;
+  padding:6px 0; border-bottom:1px solid var(--panel-border); font-size:13px;
+}
+.citycard-row:last-child{ border-bottom:none; }
+.citycard-label{ color:var(--ink-soft); }
+.citycard-faction{
+  font-weight:700; padding:2px 8px; border-radius:10px;
+  background:var(--wm-color,#8a8478); border:1px solid rgba(43,38,32,.3);
 }
 
 /* 설정 */

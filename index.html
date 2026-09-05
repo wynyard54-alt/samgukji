@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>어린이 삼국지 — 챕터1: 도원결의</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="css/style.css?v=20260904-44">
+<link rel="stylesheet" href="css/style.css?v=20260904-45">
 </head>
 <body>
 
@@ -278,6 +278,17 @@
   </div>
 </div>
 
+<!-- 대지도 - 성 정보 카드 -->
+<div id="citycard-box" class="hidden">
+  <button id="citycard-close" aria-label="닫기">✕</button>
+  <div id="citycard-title"></div>
+  <div class="citycard-row"><span class="citycard-label">세력</span><span id="citycard-faction" class="citycard-faction"></span></div>
+  <div class="citycard-row"><span class="citycard-label">배치 장수</span><span>미정</span></div>
+  <div class="citycard-row"><span class="citycard-label">병력</span><span id="citycard-troops"></span></div>
+  <div class="citycard-row"><span class="citycard-label">방어력</span><span id="citycard-defense"></span></div>
+  <div class="citycard-row"><span class="citycard-label">월간 쌀 생산량</span><span id="citycard-rice"></span></div>
+</div>
+
 <!-- 저장/불러오기 -->
 <div id="save-box" class="hidden">
   <button id="save-close" aria-label="닫기">✕</button>
@@ -329,18 +340,18 @@
 
 <div id="center-alert" class="hidden"></div>
 
-<script src="js/data/roster.js?v=20260904-44"></script>
-<script src="js/data/skills.js?v=20260904-44"></script>
-<script src="js/data/maps.js?v=20260904-44"></script>
-<script src="js/data/worldmap.js?v=20260904-44"></script>
-<script src="js/data/story.js?v=20260904-44"></script>
-<script src="js/engine/state.js?v=20260904-44"></script>
-<script src="js/engine/battle-events.js?v=20260904-44"></script>
-<script src="js/engine/dialogue.js?v=20260904-44"></script>
-<script src="js/engine/battle.js?v=20260904-44"></script>
-<script src="js/engine/battle-vfx.js?v=20260904-44"></script>
-<script src="js/engine/field-assets.js?v=20260904-44"></script>
-<script src="js/engine/mapview.js?v=20260904-44"></script>
-<script src="js/main.js?v=20260904-44"></script>
+<script src="js/data/roster.js?v=20260904-45"></script>
+<script src="js/data/skills.js?v=20260904-45"></script>
+<script src="js/data/maps.js?v=20260904-45"></script>
+<script src="js/data/worldmap.js?v=20260904-45"></script>
+<script src="js/data/story.js?v=20260904-45"></script>
+<script src="js/engine/state.js?v=20260904-45"></script>
+<script src="js/engine/battle-events.js?v=20260904-45"></script>
+<script src="js/engine/dialogue.js?v=20260904-45"></script>
+<script src="js/engine/battle.js?v=20260904-45"></script>
+<script src="js/engine/battle-vfx.js?v=20260904-45"></script>
+<script src="js/engine/field-assets.js?v=20260904-45"></script>
+<script src="js/engine/mapview.js?v=20260904-45"></script>
+<script src="js/main.js?v=20260904-45"></script>
 </body>
 </html>

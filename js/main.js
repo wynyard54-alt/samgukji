@@ -1716,6 +1716,7 @@ function renderWorldMap() {
       flag.textContent = '🚩';
       el.appendChild(flag);
     }
+    el.onclick = () => openCityCard(loc, faction);
     wrap.appendChild(el);
   });
 }
@@ -1730,6 +1731,31 @@ function closeWorldMapBox() {
 }
 
 document.getElementById('worldmap-close').onclick = closeWorldMapBox;
+
+function contrastTextColor(hex) {
+  const r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.6 ? '#2b2620' : '#fff8ea';
+}
+
+function openCityCard(loc, faction) {
+  document.getElementById('citycard-title').textContent = loc.name;
+  const factionEl = document.getElementById('citycard-faction');
+  factionEl.textContent = WORLDMAP_FACTION_NAMES[faction] || faction;
+  const color = WORLDMAP_FACTION_COLORS[faction] || WORLDMAP_FACTION_COLORS.neutral;
+  factionEl.style.setProperty('--wm-color', color);
+  factionEl.style.color = contrastTextColor(color);
+  document.getElementById('citycard-troops').textContent = `${loc.troops.toLocaleString()}명`;
+  document.getElementById('citycard-defense').textContent = `${loc.defCur.toLocaleString()} / ${loc.defMax.toLocaleString()}`;
+  document.getElementById('citycard-rice').textContent = `${loc.rice.toLocaleString()}석`;
+  document.getElementById('citycard-box').classList.remove('hidden');
+}
+
+function closeCityCard() {
+  document.getElementById('citycard-box').classList.add('hidden');
+}
+
+document.getElementById('citycard-close').onclick = closeCityCard;
 
 function openSaveBox() {
   renderSaveBox();
