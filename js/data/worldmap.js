@@ -4,15 +4,18 @@
 // 반영한 것이다.
 
 const WORLDMAP_FACTION_COLORS = {
-  dongtak: '#b23a2e',      // 동탁 (빨강)
-  wonso: '#2f5fa8',        // 원소 (파랑)
-  wonsul: '#7a3fa0',       // 원술 (보라)
-  gongsonchan: '#4fa8c9',  // 공손찬 (하늘색)
-  jojo: '#2b2b2b',         // 조조 (검정)
-  songgyeon: '#2f8f4e',    // 손견/강동 (초록)
-  yupyo: '#d97b29',        // 유표 (주황)
-  yueon: '#8a5a2b',        // 유언 (갈색)
-  seoryang: '#9c9c8f',     // 마등·한수 서량 (회색)
+  dongtak: '#2b2b2b',      // 동탁 (검정)
+  wonso: '#e8c93a',        // 원소 (노랑)
+  wonsul: '#e0679b',       // 원술 (핑크)
+  gongsonchan: '#d97b29',  // 공손찬 (주황)
+  jojo: '#2f5fa8',         // 조조 (파랑)
+  songgyeon: '#b23a2e',    // 손견 (빨강)
+  yupyo: '#4fa8c9',        // 유표 (하늘색)
+  yueon: '#7a3fa0',        // 유언 (보라)
+  seoryang: '#8a5a2b',     // 마등·한수 서량 (갈색)
+  yubi: '#2f8f4e',         // 유비 (초록)
+  dogyeom: '#a3c93a',      // 도겸 (연두)
+  hanna: '#e0a83d',        // 한나라(세력 미정 임시) (노랑-주황)
   neutral: '#8a8478',      // 기타/미상 (짙은 회색)
 };
 
@@ -22,7 +25,7 @@ const WORLDMAP_LOCATIONS = [
   { id: 'jinyang', name: '진양', type: 'city', faction: 'wonso', x: 63.5, y: 17.5 },
   { id: 'gye', name: '계', type: 'city', faction: 'gongsonchan', x: 72.5, y: 12 },
   { id: 'takhyeon', name: '서평', type: 'fort', faction: 'seoryang', x: 26.2, y: 17.5 },
-  { id: 'jungsan', name: '중산', type: 'fort', faction: 'wonso', x: 68, y: 12.9 },
+  { id: 'jungsan', name: '중산', type: 'fort', faction: 'wonso', x: 69.4, y: 12.9 },
   { id: 'muwi', name: '무위', type: 'fort', faction: 'seoryang', x: 28.3, y: 8.7 },
   { id: 'jangan', name: '장안', type: 'city', faction: 'dongtak', x: 45.6, y: 35.9 },
   { id: 'geumseong', name: '금성', type: 'city', faction: 'seoryang', x: 32.8, y: 20.3 },
@@ -36,7 +39,7 @@ const WORLDMAP_LOCATIONS = [
   { id: 'bukhae', name: '북해', type: 'city', faction: 'wonso', x: 77.3, y: 27.6 },
   { id: 'eop', name: '업', type: 'city', faction: 'wonso', x: 66.3, y: 28.5 },
   { id: 'cheonsu', name: '천수', type: 'city', faction: 'seoryang', x: 35.9, y: 27.6 },
-  { id: 'hanae', name: '하내', type: 'fort', faction: 'jojo', x: 60.1, y: 25.8 },
+  { id: 'hanae', name: '하내', type: 'fort', faction: 'jojo', x: 60.1, y: 31.8 },
   { id: 'baengma', name: '백마', type: 'fort', faction: 'jojo', x: 66.3, y: 32.2 },
   { id: 'habi', name: '하비', type: 'city', faction: 'neutral', x: 73.2, y: 37.8 },
   { id: 'sopae', name: '소패', type: 'fort', faction: 'neutral', x: 69.8, y: 35.5 },
@@ -68,7 +71,7 @@ const WORLDMAP_LOCATIONS = [
   { id: 'gangju', name: '강주', type: 'city', faction: 'yueon', x: 38, y: 58.9 },
   { id: 'geonan', name: '건안', type: 'city', faction: 'songgyeon', x: 77.3, y: 63.5 },
   { id: 'mureung', name: '무릉', type: 'fort', faction: 'yupyo', x: 51.1, y: 60.3 },
-  { id: 'jeokbyeok', name: '적벽', type: 'fort', faction: 'songgyeon', x: 64.2, y: 55.7 },
+  { id: 'jeokbyeok', name: '적벽', type: 'port', faction: 'songgyeon', x: 64.2, y: 55.7 },
   { id: 'geomgak', name: '검각', type: 'fort', faction: 'yueon', x: 35.9, y: 46 },
   { id: 'yeongchang', name: '영창', type: 'city', faction: 'yupyo', x: 26.9, y: 68.1 },
   { id: 'yeongneung', name: '영릉', type: 'city', faction: 'yupyo', x: 53.9, y: 67.2 },
@@ -77,4 +80,6 @@ const WORLDMAP_LOCATIONS = [
   { id: 'jangsa', name: '장사', type: 'port', faction: 'yupyo', x: 59.4, y: 59.9 },
   { id: 'namhae', name: '남해', type: 'city', faction: 'yupyo', x: 65.6, y: 78.3 },
   { id: 'gyoji', name: '교지', type: 'city', faction: 'yupyo', x: 46.3, y: 87.5 },
+  { id: 'o', name: '오', type: 'city', faction: 'hanna', x: 83.2, y: 48.8 },
+  { id: 'bogyang', name: '복양', type: 'city', faction: 'hanna', x: 69.1, y: 30.4 },
 ];
