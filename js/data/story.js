@@ -119,8 +119,8 @@ const STORY = {
     { speaker: '원소', text: '흠, 이름 없는 의용군이라… 두고 보겠소.' },
   ],
   camp_songgyeon_battle: [
-    { speaker: '내레이션', text: '손견이 선봉을 자원해 사수관으로 나섰으나, 동탁의 맹장 화웅에게 크게 밀리고 있다는 전갈이 왔다.', scene: 'assets/illust/sasugwan_pledge.jpg' },
-    { speaker: '손견', text: '크윽… 이 화웅이란 놈, 보통내기가 아니구나!', scene: 'assets/illust/sasugwan_pledge.jpg' },
+    { speaker: '내레이션', text: '손견이 선봉을 자원해 사수관으로 나섰으나, 동탁의 맹장 화웅에게 크게 밀리고 있다는 전갈이 왔다.' },
+    { speaker: '손견', text: '크윽… 이 화웅이란 놈, 보통내기가 아니구나!' },
     { speaker: '원소', text: '손견 공이 밀릴 정도라니… 누가 나가 저 화웅을 처치하겠소?', scene: 'assets/illust/sasugwan_pledge.jpg' },
     { speaker: '내레이션', text: '원소 휘하의 장수 유섭이 자신 있게 나섰다.', scene: 'assets/illust/sasugwan_pledge.jpg' },
     { speaker: '유섭', text: '제가 나가 화웅의 목을 베어오겠습니다!', scene: 'assets/illust/sasugwan_pledge.jpg' },
