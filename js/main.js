@@ -151,7 +151,7 @@ function describeReward(r) {
 
 const LOCATION_NAMES = {
   takhyeon: '탁현 · 장터',
-  pyeongwon: '유주 · 어양',
+  pyeongwon: '계 · 어양',
   camp: '반동탁연합 진영',
   warmap: '호로관 전선',
 };
@@ -1697,16 +1697,25 @@ function renderSaveBox() {
 function renderWorldMap() {
   const wrap = document.getElementById('worldmap-markers');
   wrap.innerHTML = '';
+  const overrides = WORLDMAP_SCENE_FACTIONS[stage] || {};
+  const flagLocId = WORLDMAP_SCENE_FLAG[stage];
   WORLDMAP_LOCATIONS.forEach((loc) => {
     const el = document.createElement('div');
     el.className = `wm-marker ${loc.type}`;
     el.style.left = `${loc.x}%`;
     el.style.top = `${loc.y}%`;
-    el.style.setProperty('--wm-color', WORLDMAP_FACTION_COLORS[loc.faction] || WORLDMAP_FACTION_COLORS.neutral);
+    const faction = overrides[loc.id] || loc.faction;
+    el.style.setProperty('--wm-color', WORLDMAP_FACTION_COLORS[faction] || WORLDMAP_FACTION_COLORS.neutral);
     const label = document.createElement('div');
     label.className = 'wm-label';
     label.textContent = loc.name;
     el.appendChild(label);
+    if (loc.id === flagLocId) {
+      const flag = document.createElement('div');
+      flag.className = 'wm-flag';
+      flag.textContent = '🚩';
+      el.appendChild(flag);
+    }
     wrap.appendChild(el);
   });
 }

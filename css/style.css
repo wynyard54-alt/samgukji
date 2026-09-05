@@ -445,6 +445,10 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   background:rgba(31,27,22,.82); color:#f5e8c8; font-size:9px; font-weight:700;
   padding:2px 5px; border-radius:3px; white-space:nowrap; pointer-events:none;
 }
+.wm-flag{
+  position:absolute; left:100%; bottom:100%; margin-left:1px; margin-bottom:1px;
+  font-size:11px; line-height:1; pointer-events:none;
+}
 @media (orientation:portrait) and (max-width:1024px){
   #worldmap-box{ width:min(1100px,86vh); max-height:min(92vw,760px); padding:12px; }
   #worldmap-img{ max-height:min(70vw,600px); }

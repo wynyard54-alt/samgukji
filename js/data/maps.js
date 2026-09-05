@@ -251,7 +251,7 @@ if (false) (function () {
   ]) grid[y][x] = v;
 
   MAPS.pyeongwon = {
-    name:'유주 · 어양', width:w, height:h, tiles:grid,
+    name:'계 · 어양', width:w, height:h, tiles:grid,
     backgroundKey:'pyeongwon_city_overview',
     playerStart:{ x:18, y:17 },
     camera:{ viewportW:800, viewportH:480 },
