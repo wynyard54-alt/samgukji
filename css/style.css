@@ -411,6 +411,45 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   #army-box{ width:min(420px,80vh); max-height:min(86vw,520px); padding:16px; }
 }
 
+/* 대지도 */
+#worldmap-box{
+  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:min(1100px,96vw); max-height:92vh; overflow:auto; text-align:center;
+  background:var(--panel); border:1px solid var(--panel-border);
+  border-radius:12px; padding:18px; box-shadow:0 12px 30px rgba(43,38,32,.35); z-index:59;
+}
+#worldmap-box.hidden{ display:none; }
+#worldmap-close{
+  position:absolute; top:12px; right:14px; width:28px; height:28px; border-radius:50%;
+  border:1px solid var(--panel-border); background:#fff8ea; color:var(--ink);
+  font-size:14px; line-height:1; cursor:pointer; z-index:1;
+}
+#worldmap-close:hover{ background:var(--accent); color:#fff8ea; }
+#worldmap-title{ font-family:"Song Myung",serif; font-size:18px; margin-bottom:12px; }
+#worldmap-frame{ position:relative; display:inline-block; max-width:100%; line-height:0; }
+#worldmap-img{ display:block; width:auto; height:auto; max-width:100%; max-height:78vh; border-radius:6px; }
+.wm-marker{ position:absolute; transform:translate(-50%,-50%); }
+.wm-marker.city{
+  width:9px; height:9px; background:var(--wm-color);
+  box-shadow:0 0 0 1.5px #2b2016, 0 0 0 3.5px var(--wm-color);
+}
+.wm-marker.fort{ width:9px; height:9px; background:var(--wm-color); border:1.5px solid #2b2016; }
+.wm-marker.port{
+  width:0; height:0; background:none;
+  border-left:5.5px solid transparent; border-right:5.5px solid transparent;
+  border-bottom:10px solid var(--wm-color);
+  filter:drop-shadow(0 -1px 0 #2b2016) drop-shadow(0 0 1px #2b2016);
+}
+.wm-label{
+  position:absolute; left:50%; bottom:100%; transform:translateX(-50%); margin-bottom:2px;
+  background:rgba(31,27,22,.82); color:#f5e8c8; font-size:9px; font-weight:700;
+  padding:2px 5px; border-radius:3px; white-space:nowrap; pointer-events:none;
+}
+@media (orientation:portrait) and (max-width:1024px){
+  #worldmap-box{ width:min(1100px,86vh); max-height:min(92vw,760px); padding:12px; }
+  #worldmap-img{ max-height:min(70vw,600px); }
+}
+
 /* 설정 */
 #settings-box{
   position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);

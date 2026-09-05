@@ -7,6 +7,7 @@
     'assets/illust/anhee_dokwoo.jpg',
     'assets/illust/sasugwan_pledge.jpg', 'assets/illust/sasugwan_victory.jpg',
     'assets/illust/hogwan_yeopo_retreat.jpg',
+    'assets/illust/worldmap.jpg',
     'assets/ui/portrait_gwanwoo.png',
     'assets/battle/duel_gwanwoo.png', 'assets/battle/duel_hwaung.png', 'assets/battle/duel_yeopo.png',
   ];
@@ -1692,6 +1693,35 @@ function renderSaveBox() {
   });
 }
 
+// ---------------- 대지도 ----------------
+function renderWorldMap() {
+  const wrap = document.getElementById('worldmap-markers');
+  wrap.innerHTML = '';
+  WORLDMAP_LOCATIONS.forEach((loc) => {
+    const el = document.createElement('div');
+    el.className = `wm-marker ${loc.type}`;
+    el.style.left = `${loc.x}%`;
+    el.style.top = `${loc.y}%`;
+    el.style.setProperty('--wm-color', WORLDMAP_FACTION_COLORS[loc.faction] || WORLDMAP_FACTION_COLORS.neutral);
+    const label = document.createElement('div');
+    label.className = 'wm-label';
+    label.textContent = loc.name;
+    el.appendChild(label);
+    wrap.appendChild(el);
+  });
+}
+
+function openWorldMapBox() {
+  renderWorldMap();
+  document.getElementById('worldmap-box').classList.remove('hidden');
+}
+
+function closeWorldMapBox() {
+  document.getElementById('worldmap-box').classList.add('hidden');
+}
+
+document.getElementById('worldmap-close').onclick = closeWorldMapBox;
+
 function openSaveBox() {
   renderSaveBox();
   document.getElementById('save-box').classList.remove('hidden');
@@ -1775,6 +1805,7 @@ document.querySelectorAll('#bottom-menu button').forEach((btn) => {
     if (btn.dataset.menu === 'bag') { openBagBox(); return; }
     if (btn.dataset.menu === 'settings') { openSettingsMenu(); return; }
     if (btn.dataset.menu === 'log') { openLogBox(); return; }
+    if (btn.dataset.menu === 'map') { openWorldMapBox(); return; }
     toast('준비 중인 기능입니다.');
   };
 });
