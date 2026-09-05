@@ -849,6 +849,7 @@ function goTakhyeonFree() {
     onAmbientInteract: runAmbientEvent,
     onApSpent: updateHUD,
     onApBlocked,
+    onStep: renderMinimap,
   });
   updateHUD();
 }
@@ -864,6 +865,7 @@ function goPyeongwonFree() {
     onApSpent: updateHUD,
     onApBlocked,
     onAmbientInteract: runAmbientEvent,
+    onStep: renderMinimap,
   });
   updateHUD();
   if (!GameState.flags.dokwooEvent) {
@@ -911,6 +913,7 @@ function goCoalitionCamp() {
     onInteract: interactNPC,
     onApSpent: updateHUD,
     onApBlocked,
+    onStep: renderMinimap,
   });
   updateHUD();
   Dialogue.show(STORY.camp_arrive);
@@ -951,6 +954,7 @@ function goWarmap() {
     onInteract: interactNPC,
     onApSpent: updateHUD,
     onApBlocked,
+    onStep: renderMinimap,
   });
   updateHUD();
   Dialogue.show(STORY.warmap_intro);
@@ -1591,7 +1595,7 @@ function buildSaveSnapshot() {
 function resumeExploreStage(targetStage, playerPos) {
   stage = targetStage;
   showScreen('screen-explore');
-  const opts = { onInteract: interactNPC, onApSpent: updateHUD, onApBlocked };
+  const opts = { onInteract: interactNPC, onApSpent: updateHUD, onApBlocked, onStep: renderMinimap };
   if (targetStage === 'takhyeon_free') {
     MapView.load('takhyeon', { ...opts, spawnDeadlineAbsMonth: absMonth(DEADLINES.takhyeon, 12) + 1, onAmbientInteract: runAmbientEvent });
   } else if (targetStage === 'pyeongwon_free') {

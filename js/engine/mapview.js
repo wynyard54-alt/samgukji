@@ -22,6 +22,7 @@ const MapView = (function () {
   let onInteract = null;
   let onApBlocked = null;
   let onApSpent = null;
+  let onStep = null; // onApSpent와 달리 행동력 소모 여부와 무관하게 실제로 한 칸 움직일 때마다 불린다 (미니맵 등 즉각 갱신용)
   let onAmbientInteract = null;
   let spawnDeadlineAbs = null; // 랜덤 등장 장수가 마감 기한의 50% 안쪽에 나오도록 하는 절대 개월수 상한
   let liveNpcs = [];
@@ -112,6 +113,7 @@ const MapView = (function () {
     onInteract = (opts && opts.onInteract) || null;
     onApBlocked = (opts && opts.onApBlocked) || null;
     onApSpent = (opts && opts.onApSpent) || null;
+    onStep = (opts && opts.onStep) || null;
     onAmbientInteract = (opts && opts.onAmbientInteract) || null;
     spawnDeadlineAbs = (opts && opts.spawnDeadlineAbsMonth) || null;
     ambientEvents = [];
@@ -519,6 +521,7 @@ const MapView = (function () {
     player.x=nx; player.y=ny;
     updateCamera();
     render();
+    if (onStep) onStep();
     checkProximityDiscovery();
   }
 
