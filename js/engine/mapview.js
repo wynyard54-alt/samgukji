@@ -488,6 +488,15 @@ const MapView = (function () {
   let movementLocked = false;
   function lockMovement(v) { movementLocked = !!v; }
 
+  // 저장 불러오기 등으로 임의의 좌표에 플레이어를 옮겨 세운다 (걸어서 이동하는 게
+  // 아니므로 행동력 소모나 NPC 상호작용 판정 없이 위치와 카메라만 갱신한다).
+  function setPlayerPos(x, y) {
+    if (!map) return;
+    player.x = x; player.y = y;
+    updateCamera(true);
+    render();
+  }
+
   function tryMove(dx, dy) {
     if (!map || movementLocked) return;
     const nx=player.x+dx, ny=player.y+dy;
@@ -737,7 +746,7 @@ const MapView = (function () {
   });
 
   return {
-    load,render,removeNpc,addNpc,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,
+    load,render,removeNpc,addNpc,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,setPlayerPos,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},
     get playerPos(){return {x:player.x,y:player.y,dir:player.dir};},

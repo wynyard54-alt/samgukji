@@ -1530,10 +1530,180 @@ window.addEventListener('keydown', (ev) => {
   }
 });
 
+// ---------------- 저장/불러오기 ----------------
+// 마을/진영을 자유롭게 돌아다니는 지도 화면에서만 저장할 수 있다 - 전투나
+// 대사, 장순의 난 행군(군세 이동모드) 중에는 되돌릴 상태가 애매해 제외한다.
+const SAVE_KEY = 'samgukji_saves_v1';
+const SAVE_SLOT_COUNT = 10;
+const SAVE_RESUMABLE_STAGES = ['takhyeon_free', 'pyeongwon_free', 'camp', 'warmap'];
+const STAGE_MAP_ID = { takhyeon_free: 'takhyeon', pyeongwon_free: 'pyeongwon', camp: 'camp', warmap: 'warmap' };
+
+function loadSaveSlots() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(SAVE_KEY) || '[]');
+    const slots = new Array(SAVE_SLOT_COUNT).fill(null);
+    for (let i = 0; i < SAVE_SLOT_COUNT; i++) if (arr[i]) slots[i] = arr[i];
+    return slots;
+  } catch (e) {
+    return new Array(SAVE_SLOT_COUNT).fill(null);
+  }
+}
+
+function writeSaveSlots(slots) {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(slots));
+    return true;
+  } catch (e) {
+    toast('저장에 실패했습니다 (브라우저 저장공간 문제일 수 있어요).');
+    return false;
+  }
+}
+
+function canSaveNow() {
+  if (!SAVE_RESUMABLE_STAGES.includes(stage)) return false;
+  if (!document.getElementById('screen-explore').classList.contains('active')) return false;
+  if (Dialogue.isActive()) return false;
+  // 일기토 화면은 #screen-explore 위에 별도로 떠 있는 오버레이라 화면 전환
+  // 시스템(showScreen)을 거치지 않는다 - 전투 중인지는 직접 확인해야 한다.
+  if (!document.getElementById('battle-screen').classList.contains('hidden')) return false;
+  // 장순의 난 행군 중(군세 이동모드)에는 지도 자체의 특수 상태(apMovement)가
+  // 저장 데이터에 담기지 않으므로 제외한다.
+  if (stage === 'pyeongwon_free' && MAPS.pyeongwon.apMovement && !!GameState.army) return false;
+  return true;
+}
+
+function buildSaveSnapshot() {
+  const mapId = STAGE_MAP_ID[stage];
+  const pos = MapView.playerPos;
+  return {
+    savedAt: Date.now(),
+    label: `${GameState.dateLabel()} · ${GameState.heroData().name}`,
+    location: LOCATION_NAMES[mapId] || mapId,
+    stage,
+    playerPos: { x: pos.x, y: pos.y },
+    gameState: JSON.parse(JSON.stringify(GameState)),
+  };
+}
+
+// go_____Free류 진입 함수를 그대로 쓰면 첫 도착 안내 대사나 행동력 재보급 같은
+// 1회성 연출/부수효과가 다시 발동해버려서, 저장 불러오기 전용으로 지도만 조용히
+// 다시 그려주는 경로를 따로 둔다.
+function resumeExploreStage(targetStage, playerPos) {
+  stage = targetStage;
+  showScreen('screen-explore');
+  const opts = { onInteract: interactNPC, onApSpent: updateHUD, onApBlocked };
+  if (targetStage === 'takhyeon_free') {
+    MapView.load('takhyeon', { ...opts, spawnDeadlineAbsMonth: absMonth(DEADLINES.takhyeon, 12) + 1, onAmbientInteract: runAmbientEvent });
+  } else if (targetStage === 'pyeongwon_free') {
+    MapView.load('pyeongwon', { ...opts, spawnDeadlineAbsMonth: pyeongwonDeadlineAbsMonth(), onAmbientInteract: runAmbientEvent });
+  } else if (targetStage === 'camp') {
+    MapView.load('camp', opts);
+  } else if (targetStage === 'warmap') {
+    MapView.load('warmap', opts);
+  }
+  if (playerPos) MapView.setPlayerPos(playerPos.x, playerPos.y);
+  updateHUD();
+}
+
+function applySaveSnapshot(snap) {
+  Object.keys(snap.gameState).forEach((k) => { GameState[k] = snap.gameState[k]; });
+  resumeExploreStage(snap.stage, snap.playerPos);
+  closeSaveBox();
+  toast('불러오기 완료.');
+}
+
+function saveToSlot(index) {
+  if (!canSaveNow()) {
+    toast('마을이나 진영을 자유롭게 돌아다닐 때만 저장할 수 있습니다.');
+    return;
+  }
+  const slots = loadSaveSlots();
+  const doSave = () => {
+    slots[index] = buildSaveSnapshot();
+    if (writeSaveSlots(slots)) { toast(`${index + 1}번 칸에 저장했습니다.`); renderSaveBox(); }
+  };
+  if (slots[index]) {
+    showChoice(`${index + 1}번 칸에 이미 저장된 기록이 있습니다. 덮어쓸까요?`, [
+      { label: '덮어쓰기', cb: doSave },
+      { label: '취소', cb: () => {} },
+    ]);
+  } else {
+    doSave();
+  }
+}
+
+function loadFromSlot(index) {
+  const slots = loadSaveSlots();
+  const snap = slots[index];
+  if (!snap) return;
+  showChoice(`${index + 1}번 칸의 기록을 불러올까요? 지금 진행 상황은 저장해두지 않으면 사라집니다.`, [
+    { label: '불러오기', cb: () => applySaveSnapshot(snap) },
+    { label: '취소', cb: () => {} },
+  ]);
+}
+
+function deleteSlot(index) {
+  const slots = loadSaveSlots();
+  if (!slots[index]) return;
+  showChoice(`${index + 1}번 칸의 저장 기록을 삭제할까요?`, [
+    { label: '삭제', cb: () => { slots[index] = null; writeSaveSlots(slots); renderSaveBox(); toast('삭제했습니다.'); } },
+    { label: '취소', cb: () => {} },
+  ]);
+}
+
+function renderSaveBox() {
+  const slots = loadSaveSlots();
+  const wrap = document.getElementById('save-slots');
+  wrap.innerHTML = '';
+  slots.forEach((snap, i) => {
+    const row = document.createElement('div');
+    row.className = 'save-slot';
+    const info = document.createElement('div');
+    info.className = 'save-slot-info';
+    if (snap) {
+      const d = new Date(snap.savedAt);
+      const timeLabel = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      info.innerHTML = `<div class="save-slot-label">${i + 1}. ${snap.label}</div><div class="save-slot-sub">${snap.location} · ${timeLabel} 저장</div>`;
+    } else {
+      info.innerHTML = `<div class="save-slot-empty">${i + 1}. 비어있음</div>`;
+    }
+    row.appendChild(info);
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = '저장';
+    saveBtn.onclick = () => saveToSlot(i);
+    row.appendChild(saveBtn);
+    if (snap) {
+      const loadBtn = document.createElement('button');
+      loadBtn.textContent = '불러오기';
+      loadBtn.className = 'secondary';
+      loadBtn.onclick = () => loadFromSlot(i);
+      row.appendChild(loadBtn);
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '삭제';
+      delBtn.className = 'danger';
+      delBtn.onclick = () => deleteSlot(i);
+      row.appendChild(delBtn);
+    }
+    wrap.appendChild(row);
+  });
+}
+
+function openSaveBox() {
+  renderSaveBox();
+  document.getElementById('save-box').classList.remove('hidden');
+}
+
+function closeSaveBox() {
+  document.getElementById('save-box').classList.add('hidden');
+}
+
+document.getElementById('save-close').onclick = closeSaveBox;
+
 document.querySelectorAll('#bottom-menu button').forEach((btn) => {
   btn.onclick = () => {
     if (btn.dataset.menu === 'generals') { openRosterPanel(); return; }
     if (btn.dataset.menu === 'bag') { openBagBox(); return; }
+    if (btn.dataset.menu === 'settings') { openSaveBox(); return; }
     toast('준비 중인 기능입니다.');
   };
 });

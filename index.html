@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>어린이 삼국지 — 챕터1: 도원결의</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="css/style.css?v=20260904-29">
+<link rel="stylesheet" href="css/style.css?v=20260904-30">
 </head>
 <body>
 
@@ -254,6 +254,14 @@
   <button id="army-confirm" class="big-btn">출정 준비 완료</button>
 </div>
 
+<!-- 저장/불러오기 -->
+<div id="save-box" class="hidden">
+  <button id="save-close" aria-label="닫기">✕</button>
+  <div id="save-title">저장 / 불러오기</div>
+  <p id="save-desc">마을이나 진영을 자유롭게 돌아다닐 때만 저장할 수 있습니다. (최대 10칸)</p>
+  <div id="save-slots"></div>
+</div>
+
 <!-- 일기토 배틀 화면 -->
 <div id="battle-screen" class="hidden">
   <div class="battle-side" id="battle-side-e">
@@ -290,17 +298,17 @@
 
 <div id="center-alert" class="hidden"></div>
 
-<script src="js/data/roster.js?v=20260904-29"></script>
-<script src="js/data/skills.js?v=20260904-29"></script>
-<script src="js/data/maps.js?v=20260904-29"></script>
-<script src="js/data/story.js?v=20260904-29"></script>
-<script src="js/engine/state.js?v=20260904-29"></script>
-<script src="js/engine/battle-events.js?v=20260904-29"></script>
-<script src="js/engine/dialogue.js?v=20260904-29"></script>
-<script src="js/engine/battle.js?v=20260904-29"></script>
-<script src="js/engine/battle-vfx.js?v=20260904-29"></script>
-<script src="js/engine/field-assets.js?v=20260904-29"></script>
-<script src="js/engine/mapview.js?v=20260904-29"></script>
-<script src="js/main.js?v=20260904-29"></script>
+<script src="js/data/roster.js?v=20260904-30"></script>
+<script src="js/data/skills.js?v=20260904-30"></script>
+<script src="js/data/maps.js?v=20260904-30"></script>
+<script src="js/data/story.js?v=20260904-30"></script>
+<script src="js/engine/state.js?v=20260904-30"></script>
+<script src="js/engine/battle-events.js?v=20260904-30"></script>
+<script src="js/engine/dialogue.js?v=20260904-30"></script>
+<script src="js/engine/battle.js?v=20260904-30"></script>
+<script src="js/engine/battle-vfx.js?v=20260904-30"></script>
+<script src="js/engine/field-assets.js?v=20260904-30"></script>
+<script src="js/engine/mapview.js?v=20260904-30"></script>
+<script src="js/main.js?v=20260904-30"></script>
 </body>
 </html>
