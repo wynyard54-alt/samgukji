@@ -1727,6 +1727,62 @@ function renderWorldMap() {
     el.onclick = () => openCityCard(loc, faction);
     wrap.appendChild(el);
   });
+  renderWorldMapLegend();
+}
+
+function tierLegendRows(thresholds, colors, unit) {
+  const rows = [];
+  for (let i = 0; i < colors.length; i++) {
+    let label;
+    if (i === 0) label = `${thresholds[0].toLocaleString()}${unit} 이하`;
+    else if (i === colors.length - 1) label = `${thresholds[i - 1].toLocaleString()}${unit} 초과`;
+    else label = `${(thresholds[i - 1] + 1).toLocaleString()}~${thresholds[i].toLocaleString()}${unit}`;
+    rows.push({ color: colors[i], label });
+  }
+  return rows;
+}
+
+function renderWorldMapLegend() {
+  const wrap = document.getElementById('worldmap-legend');
+  wrap.innerHTML = '';
+  let title;
+  let rows;
+  if (worldMapMode === 'troops') {
+    title = '병력';
+    rows = tierLegendRows(WORLDMAP_TROOPS_THRESHOLDS, WORLDMAP_TROOPS_COLORS, '명');
+  } else if (worldMapMode === 'rice') {
+    title = '월간 쌀 생산량';
+    rows = tierLegendRows(WORLDMAP_RICE_THRESHOLDS, WORLDMAP_RICE_COLORS, '석');
+  } else {
+    title = '세력';
+    const overrides = WORLDMAP_SCENE_FACTIONS[stage] || {};
+    const seen = [];
+    WORLDMAP_LOCATIONS.forEach((loc) => {
+      const f = overrides[loc.id] || loc.faction;
+      if (!seen.includes(f)) seen.push(f);
+    });
+    rows = seen.map((f) => ({
+      color: WORLDMAP_FACTION_COLORS[f] || WORLDMAP_FACTION_COLORS.neutral,
+      label: WORLDMAP_FACTION_NAMES[f] || f,
+    }));
+  }
+  const titleEl = document.createElement('div');
+  titleEl.className = 'wm-legend-title';
+  titleEl.textContent = title;
+  wrap.appendChild(titleEl);
+  rows.forEach((r) => {
+    const row = document.createElement('div');
+    row.className = 'wm-legend-row';
+    const sw = document.createElement('div');
+    sw.className = 'wm-legend-swatch';
+    sw.style.background = r.color;
+    const lbl = document.createElement('span');
+    lbl.className = 'wm-legend-label';
+    lbl.textContent = r.label;
+    row.appendChild(sw);
+    row.appendChild(lbl);
+    wrap.appendChild(row);
+  });
 }
 
 function setWorldMapMode(mode) {
