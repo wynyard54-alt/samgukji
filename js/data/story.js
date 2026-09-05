@@ -167,7 +167,7 @@ const STORY = {
   ],
   warmap_yeopo_flee: [
     { speaker: '여포', text: '흥, 오늘은 이만하지. 다음에 또 보자!' },
-    { speaker: '내레이션', text: '여포는 방천화극을 거두고 관 안으로 사라졌다.' },
+    { speaker: '내레이션', text: '여포는 방천화극을 거두고 관 안으로 사라졌다.', holdMs: 3500 },
   ],
   warmap_clear: [
     { speaker: '내레이션', text: '호로관의 동탁군이 완전히 무너졌다. 제후 연합군은 여세를 몰아 장안으로 향하는 길목, 함곡관으로 진군했다.' },
