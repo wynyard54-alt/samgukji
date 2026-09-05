@@ -1733,8 +1733,7 @@ function confirmQuit() {
 
 function openSettingsMenu() {
   showChoice('설정', [
-    { label: '저장하기', cb: () => openSaveBox() },
-    { label: '불러오기', cb: () => openSaveBox() },
+    { label: '저장/불러오기', cb: () => openSaveBox() },
     { label: '처음으로', cb: () => confirmGoTitle() },
     { label: '게임종료', cb: () => confirmQuit() },
   ]);
