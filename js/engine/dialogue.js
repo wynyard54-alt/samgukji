@@ -17,7 +17,7 @@ const Dialogue = (function () {
 
   // 기록(로그) 버튼에서 다시 볼 수 있도록, 실제로 화면에 표시된 대사를 순서대로 남겨둔다.
   const history = [];
-  const HISTORY_MAX = 300;
+  const HISTORY_MAX = 50;
   function recordHistory(line) {
     history.push({ speaker: line.speaker, text: line.text });
     if (history.length > HISTORY_MAX) history.shift();
