@@ -446,6 +446,31 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   #save-box{ width:min(440px,80vh); max-height:min(86vw,520px); padding:16px; }
 }
 
+/* 대화 기록 */
+#log-box{
+  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:min(460px,92vw); max-height:80vh; overflow-y:auto;
+  background:var(--panel); border:1px solid var(--panel-border);
+  border-radius:12px; padding:20px; box-shadow:0 12px 30px rgba(43,38,32,0.35); z-index:60;
+}
+#log-box.hidden{ display:none; }
+#log-close{
+  position:absolute; top:12px; right:14px; width:28px; height:28px; border-radius:50%;
+  border:1px solid var(--panel-border); background:#fff8ea; color:var(--ink);
+  font-size:14px; line-height:1; cursor:pointer;
+}
+#log-close:hover{ background:var(--accent); color:#fff8ea; }
+#log-title{ font-family:"Song Myung",serif; font-size:18px; margin-bottom:14px; padding-right:24px; }
+#log-list{ display:flex; flex-direction:column; gap:8px; }
+.log-entry{ padding:8px 10px; background:#fff8ea; border:1px solid var(--panel-border); border-radius:8px; }
+.log-speaker{ font-size:12px; font-weight:700; color:var(--accent-strong); margin-bottom:2px; }
+.log-speaker.narration{ color:var(--ink-soft); font-style:italic; font-weight:600; }
+.log-text{ font-size:13px; line-height:1.5; }
+.log-empty{ font-size:13px; color:var(--ink-soft); text-align:center; padding:20px 0; }
+@media (orientation:portrait) and (max-width:1024px){
+  #log-box{ width:min(460px,80vh); max-height:min(86vw,520px); padding:16px; }
+}
+
 /* 배틀 화면 */
 #battle-screen{
   position:fixed; inset:0; background:linear-gradient(180deg,#e8ddc0,#c9b98d);

@@ -1726,11 +1726,46 @@ function openSettingsMenu() {
 
 document.getElementById('btn-continue').onclick = () => openSaveBox();
 
+// ---------------- 대화 기록 ----------------
+// 휙 지나가버린 NPC 대사나 어르신의 이야기 등을 다시 볼 수 있게, 실제로 화면에
+// 표시된 대사를 Dialogue 모듈이 순서대로 쌓아두고(js/engine/dialogue.js) 여기서
+// 그대로 보여준다.
+function renderLogBox() {
+  const wrap = document.getElementById('log-list');
+  wrap.innerHTML = '';
+  const history = Dialogue.getHistory();
+  if (!history.length) {
+    wrap.innerHTML = '<div class="log-empty">아직 나눈 대화가 없습니다.</div>';
+    return;
+  }
+  history.forEach((line) => {
+    const row = document.createElement('div');
+    row.className = 'log-entry';
+    const narration = line.speaker === '내레이션';
+    row.innerHTML = `<div class="log-speaker${narration ? ' narration' : ''}">${line.speaker}</div><div class="log-text">${line.text}</div>`;
+    wrap.appendChild(row);
+  });
+}
+
+function openLogBox() {
+  renderLogBox();
+  document.getElementById('log-box').classList.remove('hidden');
+  const wrap = document.getElementById('log-list');
+  wrap.scrollTop = wrap.scrollHeight; // 가장 최근 대사가 바로 보이게 아래로 스크롤
+}
+
+function closeLogBox() {
+  document.getElementById('log-box').classList.add('hidden');
+}
+
+document.getElementById('log-close').onclick = closeLogBox;
+
 document.querySelectorAll('#bottom-menu button').forEach((btn) => {
   btn.onclick = () => {
     if (btn.dataset.menu === 'generals') { openRosterPanel(); return; }
     if (btn.dataset.menu === 'bag') { openBagBox(); return; }
     if (btn.dataset.menu === 'settings') { openSettingsMenu(); return; }
+    if (btn.dataset.menu === 'log') { openLogBox(); return; }
     toast('준비 중인 기능입니다.');
   };
 });
