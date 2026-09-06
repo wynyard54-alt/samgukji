@@ -475,6 +475,22 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   #worldmap-legend{ flex:none; width:100%; max-height:none; margin-top:8px; }
   .wm-legend-row{ display:inline-flex; margin-right:12px; }
 }
+/* 휴대폰 화면에서는 성/요새/항구 마커가 지도에 비해 너무 커 보여서
+   따로 확 줄인다 (실기기별로 지도 실제 렌더 크기가 달라질 수 있어,
+   지도 크기 계산과 무관하게 마커 자체 크기를 줄이는 쪽을 택했다). */
+@media (max-width:680px){
+  .wm-marker::before{ inset:-5px; }
+  .wm-marker.city{
+    width:5px; height:5px;
+    box-shadow:0 0 0 1px #2b2016, 0 0 0 2.2px var(--wm-color);
+  }
+  .wm-marker.fort{ width:5px; height:5px; border-width:1px; }
+  .wm-marker.port{
+    border-left-width:3.2px; border-right-width:3.2px; border-bottom-width:5.8px;
+  }
+  .wm-label{ font-size:6.5px; padding:1.2px 3px; margin-bottom:1px; }
+  .wm-flag{ font-size:8px; }
+}
 
 /* 대지도 - 성 정보 카드 */
 #citycard-box{
