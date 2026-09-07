@@ -197,7 +197,7 @@ function getObjectives() {
     if (gs.flags.act2) list.push(`반동탁연합 참전 준비하기 (${DEADLINES.pyeongwon}년까지)`);
   } else if (stage === 'seoju_free') {
     const metCount = ['michuk', 'mibang', 'jingyu'].filter((id) => !!gs.npcStatus[id]).length;
-    if (metCount < 3) list.push(`서주의 유력 인사들과 인사하며 새로운 인재 등용 (${metCount}/3)`);
+    if (metCount < 3) list.push(`서주의 유력 인사들과 인사 나누기 (${metCount}/3)`);
   } else if (stage === 'habi_camp') {
     const step = gs.flags.habiStep || 0;
     if (step === 0) list.push('유비를 찾아가자');
@@ -377,6 +377,13 @@ function interactNPC(id, context) {
   const rd = ROSTER[id];
   if (!rd) return;
   const st = GameState.npcStatus[id];
+  // 미축·미방은 도겸이 죽으면서 별도 등용 절차 없이 자동으로 유비를 섬기게
+  // 되므로(checkDeadlines의 dogyeom_death 처리), 하비성 관청에서는 등용
+  // 여부와 무관하게 그냥 인사만 나눈다.
+  if ((id === 'michuk' || id === 'mibang') && stage === 'habi_camp') {
+    Dialogue.show([{ speaker: rd.name, text: rd.intro }]);
+    return;
+  }
   if (st === 'recruited' && (stage === 'takhyeon_free' || stage === 'pyeongwon_free')) { interactRecruitedGeneral(id); return; }
   if (st === 'recruited' || st === 'resolved' || st === 'dead' || st === 'fled') return;
 
@@ -399,10 +406,10 @@ function interactNPC(id, context) {
   if (id === 'jangsun') { openWarCommandMenu('jangsun'); return; }
 
   if (rd.kind === 'flavor') {
-    // 진규는 등용 대상이 아니라 별도 상태 추적이 없지만, 서주 인사 (0/3)
-    // 임무에는 포함되므로 첫 만남을 기록해둔다.
-    if (id === 'jingyu' && !GameState.npcStatus['jingyu']) {
-      GameState.npcStatus['jingyu'] = 'met';
+    // 진규·미축·미방은 등용 대상이 아니라 별도 상태 추적이 없지만, 서주 인사
+    // (0/3) 임무에는 포함되므로 첫 만남을 기록해둔다.
+    if (['jingyu', 'michuk', 'mibang'].includes(id) && !GameState.npcStatus[id]) {
+      GameState.npcStatus[id] = 'met';
       updateHUD();
     }
     // 조조·원소는 진영(사수관 전투 전)과 호로관 전선(화웅을 이미 처치한 뒤) 두 맵에
@@ -870,8 +877,11 @@ function checkDeadlines() {
       MapView.removeNpc('dogyeom');
       MapView.lockMovement(false);
       gs.addFame(40);
+      // 도겸의 옛 신하였던 미축·미방은 유언에 따라 별도의 등용 절차 없이
+      // 그대로 유비를 섬기게 된다.
+      ['michuk', 'mibang'].forEach((id) => { if (!gs.recruited.includes(id)) gs.recruit(id, 0); });
       updateHUD();
-      toast('유비가 서주목의 자리를 이어받았다.');
+      toast('유비가 서주목의 자리를 이어받았다. 미축과 미방도 유비를 섬기게 되었다.');
     });
     return true;
   }

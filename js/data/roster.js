@@ -167,11 +167,14 @@ const ROSTER = {
   ijeon_seoju: { id:'ijeon_seoju', name:'이전군', kind:'enemy', forced:null, affiliation:'조조군', troop:3000,
     stats:{atk:61, def:59, spd:51, int:62, cha:63},
     intro:'…이 많은 백성까지 해할 필요가 있을지 모르겠군.', sprite:SPRITE_COALITION },
-  // 조조군이 물러난 뒤 서주 자유탐방 중 만나는 서주 사람들.
-  michuk: { id:'michuk', name:'미축', kind:'recruit', forced:null, affiliation:'서주',
+  // 조조군이 물러난 뒤 서주 자유탐방 중 만나는 서주 사람들. 도겸의 옛 신하이므로
+  // 도겸이 죽고 유비가 서주목이 되는 순간 자연스럽게 유비를 섬기게 된다(main.js
+  // checkDeadlines의 dogyeom_death 처리에서 자동으로 등용 처리) - 다른 장수들처럼
+  // 친밀도를 쌓아 별도로 등용을 제안하는 대상이 아니라서 kind는 flavor로 둔다.
+  michuk: { id:'michuk', name:'미축', kind:'flavor', affiliation:'서주',
     stats:{atk:20, def:24, spd:22, int:76, cha:82},
     intro:'서주의 미축이라 하오. 도겸 어른을 오래 모셔왔소만, 이제 유 사군께 힘을 보태고 싶소.' },
-  mibang: { id:'mibang', name:'미방', kind:'recruit', forced:null, affiliation:'서주',
+  mibang: { id:'mibang', name:'미방', kind:'flavor', affiliation:'서주',
     stats:{atk:34, def:36, spd:32, int:48, cha:40},
     intro:'형님을 따라왔소이다. 큰 도움은 못 되겠지만, 힘껏 돕겠소.' },
   jingyu: { id:'jingyu', name:'진규', kind:'flavor', affiliation:'서주',

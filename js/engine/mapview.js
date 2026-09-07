@@ -145,7 +145,8 @@ const MapView = (function () {
       const status = GameState.npcStatus[n.id];
       const fixedInTown =
         (id === 'takhyeon' && (n.id === 'yubi' || n.id === 'yuwongi')) ||
-        (id === 'pyeongwon' && n.id === 'yubi');
+        (id === 'pyeongwon' && n.id === 'yubi') ||
+        id === 'habi'; // 관청 안의 인물들은 등용/처치 상태와 무관하게 늘 그 자리에 있다
       if (status === 'dead' || status === 'fled') return false;
       if ((status === 'recruited' || status === 'resolved') && !fixedInTown && !n.residence) return false;
       if (n.randomSpawn && !GameState.npcSpawnPos[n.id]) return false; // 아직 등장 시점이 되지 않음

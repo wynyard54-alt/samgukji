@@ -389,9 +389,9 @@ if (false) (function () {
   rectFill(grid, 0, 0, 0, h - 1, 4);
   rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
   rectFill(grid, 11, h - 1, 13, h - 1, 0); // 남문 통로
-  rectFill(grid, 9, 1, 15, 5, 2);   // 유비 집무실
-  rectFill(grid, 1, 7, 7, 11, 2);   // 진규·진등의 방
-  rectFill(grid, 17, 7, 23, 11, 2); // 미축·미방의 방
+  rectFill(grid, 9, 1, 15, 5, 2);  // 유비 집무실
+  rectFill(grid, 1, 1, 7, 5, 2);   // 진규·진등의 방
+  rectFill(grid, 17, 1, 23, 5, 2); // 미축·미방의 방
 
   MAPS.habi = {
     name: '하비성 관청',
@@ -402,16 +402,19 @@ if (false) (function () {
     camera: { viewportW:800, viewportH:480 },
     decor: [
       { type:'mapLabel', x:12.0, y:0.5, label:'유비 집무실' },
-      { type:'mapLabel', x:4.0, y:6.5, label:'진규·진등의 방' },
-      { type:'mapLabel', x:20.0, y:6.5, label:'미축·미방의 방' },
+      { type:'mapLabel', x:4.0, y:0.5, label:'진규·진등의 방' },
+      { type:'mapLabel', x:20.0, y:0.5, label:'미축·미방의 방' },
     ],
+    // 세 건물의 정문 앞(y=6)에 모두 나란히 세워둔다 - 화면 하단좌측에는 항상
+    // 관우 능력치 패널(HUD)이 떠 있어, 예전처럼 y=12(화면 하단부)에 세워두면
+    // 왼쪽 건물(진규·진등) 인물이 그 패널에 가려 안 보이는 문제가 있었다.
     npcs: [
       { id:'yubi', x:12, y:6, label:'유비', fixed:true },
       { id:'jangbi', x:10, y:6, label:'장비', fixed:true },
-      { id:'jingyu', x:3, y:12, label:'진규', fixed:true },
-      { id:'jindeung', x:5, y:12, label:'진등', fixed:true },
-      { id:'michuk', x:19, y:12, label:'미축', fixed:true },
-      { id:'mibang', x:21, y:12, label:'미방', fixed:true },
+      { id:'jingyu', x:3, y:6, label:'진규', fixed:true },
+      { id:'jindeung', x:5, y:6, label:'진등', fixed:true },
+      { id:'michuk', x:19, y:6, label:'미축', fixed:true },
+      { id:'mibang', x:21, y:6, label:'미방', fixed:true },
     ],
   };
 })();
