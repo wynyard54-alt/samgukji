@@ -900,6 +900,15 @@ const SEOJU_JOJO_ARMY_IDS = [
   'johong_seoju', 'akjin_seoju', 'ugeum_seoju', 'ijeon_seoju',
 ];
 const SEOJU_FREEROAM_NPC_IDS = ['michuk', 'mibang', 'jingyu'];
+// 이 지도는 챕터1(어양)의 것을 그대로 재사용한 것뿐, 이야기상 서주다 - 어양
+// 소속 인물(유비 포함)이 그대로 보이면 헷갈리므로 전부 지도에서 제거한다.
+// 유비는 나중에 실제 서주 지도가 만들어지면 성 안쪽에 배치할 예정이라, 그때까지는
+// 등장시키지 않는다.
+const SEOJU_EXCLUDE_CH1_NPC_IDS = [
+  'yubi', 'gongsonchan', 'yuwoo', 'gwanhae', 'jangsun',
+  'jeonhae', 'gwanjeong', 'eomgang', 'jowoon', 'jeonju',
+  'songgeon', 'jeonye', 'yeomyu', 'jangpae', 'taesaja', 'yuyo', 'choeyeom',
+];
 // 자유탐방 시작 후 이만큼(개월) 지나면 도겸이 사망하고 유비가 서주를 잇는다.
 const SEOJU_DOGYEOM_DEATH_MONTHS = 6;
 
@@ -915,6 +924,7 @@ function goSeojuFree() {
       onAmbientInteract: runAmbientEvent,
       onStep: renderMinimap,
     });
+    SEOJU_EXCLUDE_CH1_NPC_IDS.forEach((id) => MapView.removeNpc(id));
     MapView.setPlayerPos(17, 13);
     MapView.lockMovement(true);
     updateHUD();
