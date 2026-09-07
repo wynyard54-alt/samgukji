@@ -194,6 +194,9 @@ function getObjectives() {
       list.push('장순의 반란군 토벌하기');
     }
     if (gs.flags.act2) list.push(`반동탁연합 참전 준비하기 (${DEADLINES.pyeongwon}년까지)`);
+  } else if (stage === 'seoju_free') {
+    const metCount = ['michuk', 'mibang', 'jingyu'].filter((id) => !!gs.npcStatus[id]).length;
+    if (metCount < 3) list.push(`서주의 유력 인사들과 인사하며 새로운 인재 등용 (${metCount}/3)`);
   } else if (stage === 'camp') {
     list.push('제후들과 인사하고 손견을 도와 화웅과 맞서기');
   } else if (stage === 'warmap') {
@@ -379,6 +382,12 @@ function interactNPC(id, context) {
   if (id === 'jangsun') { openWarCommandMenu('jangsun'); return; }
 
   if (rd.kind === 'flavor') {
+    // 진규는 등용 대상이 아니라 별도 상태 추적이 없지만, 서주 인사 (0/3)
+    // 임무에는 포함되므로 첫 만남을 기록해둔다.
+    if (id === 'jingyu' && !GameState.npcStatus['jingyu']) {
+      GameState.npcStatus['jingyu'] = 'met';
+      updateHUD();
+    }
     // 조조·원소는 진영(사수관 전투 전)과 호로관 전선(화웅을 이미 처치한 뒤) 두 맵에
     // 걸쳐 등장하는데, intro 한 줄만으로는 호로관 시점에도 사수관 이전 상황을
     // 말하는 것처럼 어색하게 읽힌다. 호로관에서는 그 이후를 반영한 대사로 바꾼다.
@@ -505,6 +514,7 @@ function visitScholar(id, context) {
     Dialogue.show(firstLines, () => {
       toast(`${rd.name}의 거처를 알게 되었다. 이제 지도에서 방문(행동력3)할 수 있다.`);
       MapView.render();
+      updateHUD();
     });
     return;
   }
@@ -925,42 +935,32 @@ function goSeojuFree() {
       onStep: renderMinimap,
     });
     SEOJU_EXCLUDE_CH1_NPC_IDS.forEach((id) => MapView.removeNpc(id));
-    MapView.setPlayerPos(17, 13);
+    // 맵 오른쪽 아래(성문에서 떨어진 개활지)에서 시작해, 카메라가 조조 진영
+    // 쪽으로 올라가며 비춰주는 첫 대사와 자연스럽게 이어지도록 한다.
+    MapView.setPlayerPos(29, 22);
     MapView.lockMovement(true);
     updateHUD();
-    Dialogue.show(STORY.seoju_wall_standoff, () => {
-      // 대사를 다 읽자마자 곧바로 조조가 물러가버리면 정작 성벽 밖 군세를 구경할
-      // 틈이 없다는 피드백을 반영했다 - 플레이어를 직접 내보내는 대신, 카메라를
-      // 성벽 밖 조조 진영으로 잠깐 옮겨 군세가 술렁이는 모습을 보여준 뒤에야
-      // "그날 진영이 소란스러워졌다"는 대사로 이어간다.
-      MapView.panCameraTo(24, 19, 700);
-      // 대치 중인 군세는 자유롭게 돌아다니기보다 대열을 유지한 채 한두 칸
-      // 정도만 자세를 바꾸는 편이 실제 진영다워 보인다 (radius:1).
-      MapView.startNpcStir(SEOJU_JOJO_ARMY_IDS, { radius: 1, intervalMs: 900 });
-      setTimeout(() => {
-        // 연의에서는 그냥 대치만 하다 물러나지 않는다 - 장비가 우금과 짧게
-        // 겨루고, 그 뒤 삼형제가 성 안으로 들어가 유비가 조조에게 회군을
-        // 청하는 서신을 쓴다. 조조는 그 서신을 명분 삼아, 실제로는 복양
-        // 소식 때문에 물러난다.
-        Dialogue.show(STORY.seoju_jangbi_skirmish, () => {
-          MapView.stopNpcStir();
-          MapView.clearCameraFocus();
-          Dialogue.show(STORY.seoju_city_entry, () => {
-            Dialogue.show(STORY.seoju_yubi_letter, () => {
-              Dialogue.show(STORY.puyang_report_retreat, () => {
-                SEOJU_JOJO_ARMY_IDS.forEach((id) => MapView.removeNpc(id));
-                Dialogue.show(STORY.dogyeom_disband, () => {
-                  MapView.lockMovement(false);
-                  GameState.flags.seojuFreeRoamStartAbsMonth = absMonth(GameState.year, GameState.month);
-                  GameState.flags.seojuFreeRoam = true;
-                  SEOJU_FREEROAM_NPC_IDS.forEach((id) => MapView.addNpc(id));
-                  toast('서주 성내를 둘러보자.');
-                });
-              });
-            });
+    MapView.panCameraTo(24, 19, 700);
+    // 대치 중인 군세는 자유롭게 돌아다니기보다 대열을 유지한 채 한두 칸
+    // 정도만 자세를 바꾸는 편이 실제 진영다워 보인다 (radius:1).
+    MapView.startNpcStir(SEOJU_JOJO_ARMY_IDS, { radius: 1, intervalMs: 900 });
+    // seoju_wall_standoff_intro는 holdMs로 3초 뒤 자동 진행되므로, 그동안
+    // 카메라가 조조 군세를 비춰주는 컷신이 끝나면 곧바로 본 대사로 넘어간다.
+    Dialogue.show(STORY.seoju_wall_standoff_intro, () => {
+      MapView.stopNpcStir();
+      MapView.clearCameraFocus();
+      Dialogue.show(STORY.seoju_wall_standoff, () => {
+        Dialogue.show(STORY.puyang_report_retreat, () => {
+          SEOJU_JOJO_ARMY_IDS.forEach((id) => MapView.removeNpc(id));
+          Dialogue.show(STORY.dogyeom_disband, () => {
+            MapView.lockMovement(false);
+            GameState.flags.seojuFreeRoamStartAbsMonth = absMonth(GameState.year, GameState.month);
+            GameState.flags.seojuFreeRoam = true;
+            SEOJU_FREEROAM_NPC_IDS.forEach((id) => MapView.addNpc(id));
+            toast('서주 성내를 둘러보자.');
           });
         });
-      }, 2600);
+      });
     });
   });
 }

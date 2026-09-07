@@ -193,81 +193,61 @@ const STORY = {
   ],
 
   // ---- 챕터2 (관우) : 서주 - 삼양서주 [장면1] ----
-  // 도겸의 원군 요청. 삽화가 화면을 가리는 동안 자연스럽게 담현(서주) 지도로
-  // 넘어가므로, 이어지는 seoju_wall_standoff에는 별도 화면전환 연출이 없어도 된다.
+  // 정사와 연의가 갈리는 지점부터는 이후 쭉 연의를 기준으로 삼는다.
+  // 삽화가 화면을 가리는 동안 자연스럽게 담현(서주) 지도로 넘어가므로,
+  // 이어지는 seoju_wall_standoff_intro에는 별도 화면전환 연출이 없어도 된다.
   seoju_urgent_call: [
-    { speaker: '내레이션', text: '평원현에 다급한 파발이 도착했다.', scene: 'assets/illust/seoju_urgent.jpg' },
-    { speaker: '전령', text: '유비 장군께 아룁니다! 서주자사 도겸 어른의 서신이옵니다!', scene: 'assets/illust/seoju_urgent.jpg' },
+    { speaker: '내레이션', text: '미축은 황건적으로부터 북해태수 공융을 도우러 온 유비를 만난다.', scene: 'assets/illust/seoju_urgent.jpg' },
+    { speaker: '미축', text: '유비 장군님… 제발 서주를 도와주십시오!', scene: 'assets/illust/seoju_urgent.jpg' },
     { speaker: '유비', text: '(서신을 펼쳐 읽는다) …조조가 부친의 원수를 갚는다며 서주를 침공했다는구나.', scene: 'assets/illust/seoju_urgent.jpg' },
-    { speaker: '유비', text: '도겸 어른께서 원군을 청하셨네. 아우들, 서주로 가세!', scene: 'assets/illust/seoju_urgent.jpg' },
-    { speaker: '관우', text: '알겠습니다, 형님. 당장 채비하겠습니다.', scene: 'assets/illust/seoju_urgent.jpg' },
+    { speaker: '유비', text: '도겸 어른께서 오해를 받고 계시다니, 제가 도와드리겠습니다.', scene: 'assets/illust/seoju_urgent.jpg' },
+    { speaker: '미축', text: '…조조와 적이 되는 것을 마다 않고 우리 서주를 도와주신다니!', scene: 'assets/illust/seoju_urgent.jpg' },
   ],
 
+  // 도착과 동시에 카메라가 조조 군세 쪽으로 올라가며 3초간 비춰준다
+  // (holdMs로 자동 진행 - main.js에서 이 대사와 함께 panCameraTo를 건다).
+  seoju_wall_standoff_intro: [
+    { speaker: '내레이션', text: '서주 담현에 다다른 유비 삼형제는 이미 서주를 둘러싼 조조 군세를 바라봤다.', holdMs: 3000 },
+  ],
+
+  // 연의에서는 대치만 하다 끝나지 않는다 - 성미 급한 장비가 우금과 붙어
+  // 가볍게 물리치고, 그 자리에서 바로 유비가 서신을 보내기로 한다.
   seoju_wall_standoff: [
-    { speaker: '내레이션', text: '서주 담현에 다다른 유비 삼형제는 곧장 성벽 위로 올랐다.' },
     { speaker: '관우', text: '저것이 조조의 군세입니까…! 듣던 것보다 훨씬 많군요.' },
-    { speaker: '장비', text: '치, 숫자만 많으면 다냐! 한번 붙어보자고!' },
-    { speaker: '도겸', text: '와주셔서 참으로 고맙소, 유 사군. 이 늙은 몸으로는 도저히 감당이 안 되는구려.' },
-    { speaker: '유비', text: '병력이 많지 않으나, 힘닿는 데까지 돕겠습니다.' },
-    { speaker: '도겸', text: '…부디 성벽만이라도 지켜주시오. 며칠만 버티면 원소 어른께도 원군을 청해두었소.' },
+    { speaker: '장비', text: '치, 숫자만 많으면 다냐! 한번 붙어보자고! 이몸이 나가신다!' },
+    { speaker: '내레이션', text: '조조군에서 우금이 나섰지만 장비의 적수는 되지 못했다.' },
+    { speaker: '도겸', text: '힘든 길을 와 주셨군요. 참으로 고맙소, 이 늙은 몸으로는 도저히 감당이 안 되는구려.' },
+    { speaker: '유비', text: '인사올립니다, 도겸님. 우선 조조에게 편지를 보내 싸움을 멈추자고 설득해 보겠습니다.' },
+    { speaker: '도겸', text: '그렇게만 된다면 더 바랄 게 없습니다.' },
+    { speaker: '도겸', text: '…유비는 참 영웅이다. 저런 사람이 서주를 맡아준다면 걱정이 없을 텐데…' },
   ],
 
-  // 연의에서는 대치만 하다 끝나지 않는다 - 성미 급한 장비가 조조 진영에
-  // 나가 우금과 짧게 겨루고, 그 뒤에야 삼형제가 성 안으로 들어간다.
-  seoju_jangbi_skirmish: [
-    { speaker: '내레이션', text: '며칠째 대치가 이어지자, 성미 급한 장비가 참지 못하고 나섰다.' },
-    { speaker: '장비', text: '저놈들 기세가 어느 정도인지 내 한번 찔러보고 오겠수!' },
-    { speaker: '관우', text: '아우, 무리하지 말게. 살펴만 보고 오게.' },
-    { speaker: '내레이션', text: '장비가 장팔사모를 꼬나쥐고 말을 몰아 조조 진영 앞으로 나섰다.' },
-    { speaker: '장비', text: '이 안에 나설 자 없느냐! 연주의 겁쟁이들아!' },
-    { speaker: '우금', text: '…흥, 어디서 굴러먹던 필부가 함부로 주둥이를 놀리느냐!' },
-    { speaker: '내레이션', text: '우금이 창을 들고 나서 장비와 맞붙었다. 그러나 몇 합 겨루지도 못하고, 우금은 장비의 기세에 눌려 진영으로 물러나고 말았다.' },
-    { speaker: '장비', text: '하하! 별거 아니구먼!' },
-    { speaker: '내레이션', text: '조조 진영은 함부로 성문을 넘어 반격하지 않았다. 장비도 더는 뒤쫓지 않고 돌아왔다.' },
-  ],
-
-  seoju_city_entry: [
-    { speaker: '도겸', text: '장군의 아우가 참으로 용맹하구려! 자, 어서 성 안으로 드시지요.' },
-    { speaker: '유비', text: '감사합니다, 어른. 허나 이대로 대치만 이어가서는 근본적인 해결이 되지 않을 것입니다.' },
-    { speaker: '내레이션', text: '유비 삼형제는 도겸을 따라 성 안으로 들어갔다.' },
-  ],
-
-  seoju_yubi_letter: [
-    { speaker: '유비', text: '도겸 어른, 제게 한 가지 생각이 있습니다. 조조에게 서신을 보내보는 것이 어떻겠습니까?' },
-    { speaker: '도겸', text: '서신이라니…? 그가 순순히 물러날 성싶소?' },
-    { speaker: '유비', text: '대의로 설득해보고자 합니다. 밑져야 본전 아니겠습니까.' },
-    { speaker: '내레이션', text: '유비는 손수 붓을 들어, 조조에게 대의를 들어 회군을 청하는 서신을 썼다.' },
-    { speaker: '전령', text: '분부대로 조조 진영에 전하고 오겠습니다.' },
-  ],
-
-  // 연의 원문 그대로: 조조는 편지를 읽고 크게 노해 사자를 베려 하지만, 곽가가
-  // 말려 사자를 후히 대접해 방심시키자고 진언한다. 그 직후 연주 급보가
-  // 날아들자, 곽가는 다시 "이 기회에 유비에게 인심이나 쓰는 셈 치고
-  // 물러나자"고 권해 조조가 그 말을 따른다 - 편지는 명분일 뿐, 실제로
-  // 물러나는 이유는 어디까지나 연주(복양)를 잃을 위기 때문이다.
+  // 연의 원문 그대로: 조조는 편지를 읽고 크게 노하지만, 곽가가 저들을
+  // 방심케 한 뒤 치자고 진언한다. 그 직후 연주 급보가 날아들자, 곽가는
+  // 다시 "이 기회에 유비에게 인심이나 쓰는 셈 치고 물러나자"고 권해
+  // 조조가 그 말을 따른다 - 편지는 명분일 뿐, 실제로 물러나는 이유는
+  // 어디까지나 연주(복양)를 잃을 위기 때문이다.
   puyang_report_retreat: [
     { speaker: '내레이션', text: '전령이 서신을 조조에게 전했다.' },
     { speaker: '조조(중군)', text: '…뭐라? 이 유비란 자가 감히 나를 훈계하려 드는구나!' },
-    { speaker: '조조(중군)', text: '괘씸한 놈, 여봐라! 이 사자의 목을 베어라!' },
-    { speaker: '곽가', text: '주공, 잠시 노여움을 거두십시오. 사자를 벤다면 우리만 옹졸해 보일 뿐입니다.' },
-    { speaker: '곽가', text: '차라리 후하게 대접해 저들을 방심케 한 뒤, 그 틈을 타 성을 치는 것이 상책입니다.' },
-    { speaker: '조조(중군)', text: '…그도 그렇군. 사자를 후히 대접하고, 답서는 천천히 쓰겠다 전하라.' },
+    { speaker: '곽가', text: '주공, 잠시 노여움을 거두십시오. 차라리 저들을 방심케 한 뒤, 그 틈을 타 성을 치는 것이 상책입니다.' },
     { speaker: '전령', text: '주공! 급보입니다! 연주의 복양에서 장막과 진궁이 여포를 끌어들여 성을 빼앗았다 하옵니다!' },
     { speaker: '조조(중군)', text: '…뭐라? 여포가? 연주를 잃으면 내 돌아갈 곳이 없어진다!' },
     { speaker: '곽가', text: '주공, 오히려 잘 되었습니다. 이 기회에 유비에게 인심이나 쓰는 셈 치고, 군을 물려 연주부터 되찾으시지요.' },
     { speaker: '조조(중군)', text: '…좋다, 그리하자. 전군, 회군한다! 서주는…다음에 다시 온다!' },
     { speaker: '내레이션', text: '조조의 대군이 썰물처럼 물러가기 시작했다.' },
-    { speaker: '관우', text: '물러갑니다! 서주가…살았습니다!' },
+    { speaker: '미축', text: '물러갑니다! 서주가…살았습니다!' },
   ],
 
   dogyeom_disband: [
-    { speaker: '내레이션', text: '조조군이 완전히 물러가자, 도겸은 성문을 열고 유비 삼형제를 맞았다.' },
+    { speaker: '내레이션', text: '조조군이 완전히 물러가자, 도겸은 유비에게 서주를 맡기려 했다.' },
     { speaker: '도겸', text: '유 사군 덕분에 서주가 살았소. 이 은혜, 어찌 갚아야 할지 모르겠구려.' },
     { speaker: '유비', text: '당치 않습니다. 마땅히 해야 할 일을 했을 뿐입니다.' },
     { speaker: '도겸', text: '…실은 진작부터 생각해온 일이오. 이 서주, 그대가 맡아주지 않겠소?' },
-    { speaker: '유비', text: '어찌 그런 말씀을! 도겸 어른께서 엄연히 계시는데, 제가 어찌 넘본단 말입니까.' },
-    { speaker: '도겸', text: '…허허, 역시 사양하시는구려. 그대의 그런 마음이 더욱 미덥소. 이 이야기는 훗날 다시 하십시다.' },
-    { speaker: '내레이션', text: '유비는 도겸의 청을 정중히 사양했으나, 서주와의 인연은 이렇게 시작되었다.' },
+    { speaker: '유비', text: '그건 안 됩니다. 제가 서주를 차지하면, 전 흑심을 품고 서주에 온 사람이 되어 버립니다.' },
+    { speaker: '도겸', text: '정 그렇다면 이 늙은이의 마지막 소원이라도 들어주시오.' },
+    { speaker: '도겸', text: '서주 가까운 곳에 소패라는 지역이 있습니다. 그곳에 머물며 간간이 서주를 살펴주십시오.' },
+    { speaker: '내레이션', text: '유비 일행은 도겸의 청을 정중히 사양하고, 소패에 머물게 되었다.' },
   ],
 
   // 자유탐방이 일정 기간 지나면 발동되는 도겸의 죽음과 유비의 서주 계승.
@@ -276,16 +256,14 @@ const STORY = {
     { speaker: '내레이션', text: '서주에 자리를 잡은 지 얼마 지나지 않아, 도겸이 자리보전하고 눕고 말았다.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
     { speaker: '전령', text: '유 사군! 도겸 어르신께서 위중하시다 합니다! 어서 처소로 와주십시오!', scene: 'assets/illust/dogyeom_deathbed.jpg' },
     { speaker: '내레이션', text: '유비 삼형제가 서둘러 도겸의 처소로 향했다.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '유비', text: '어찌 이런 일이! 괜찮으십니까?', scene: 'assets/illust/dogyeom_deathbed.jpg' },
     { speaker: '도겸', text: '…어서 오셨구려, 유 사군. 이 늙은 몸이 이제 다한 모양이오.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
-    { speaker: '유비', text: '어른, 그런 말씀 마십시오! 어의를 불러오겠습니다!', scene: 'assets/illust/dogyeom_deathbed.jpg' },
-    { speaker: '도겸', text: '…허허, 이젠 의원도 소용없소. 그보다…', scene: 'assets/illust/dogyeom_deathbed.jpg' },
-    { speaker: '도겸', text: '전에 청했던 그 이야기, 다시 한 번 청하려 하오. 이 서주, 그대가 맡아주시오.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
-    { speaker: '미축', text: '사군, 도겸 어른의 뜻이 정녕 그러하십니다. 이제는 받아들이심이 옳을 듯합니다.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
-    { speaker: '관우', text: '형님, 도겸 어른의 마지막 청입니다. 부디 헤아려 주십시오.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
-    { speaker: '장비', text: '형님! 여기서까지 사양하면 도겸 어른 눈도 못 감으시겠수!', scene: 'assets/illust/dogyeom_deathbed.jpg' },
-    { speaker: '유비', text: '…알겠습니다. 어른의 뜻, 이 유비가 받들겠습니다.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
-    { speaker: '도겸', text: '…고맙소… 참으로… 고맙소…', scene: 'assets/illust/dogyeom_deathbed.jpg' },
-    { speaker: '내레이션', text: '그 말을 끝으로, 도겸은 편안히 눈을 감았다.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
-    { speaker: '내레이션', text: '서주 백성들은 새로운 주인, 유비를 맞이하게 되었다.' },
+    { speaker: '도겸', text: '마지막으로 장군께 부탁이 있습니다. 부디 서주를 맡아주세요.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '유비', text: '두 아드님도 계신데 어찌 제게…', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '도겸', text: '모두들 듣거라… 내 아들들은 재주가 모자라 서주를 다스릴 수 없다.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '도겸', text: '유 장군만이 서주를 맡을 분이니, 모두 유 장군을 따르거라. 내 마지막 유언이다.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '내레이션', text: '그 말을 끝으로, 도겸은 눈을 감았다.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '미축', text: '유 장군, 도겸 어른의 뜻일 뿐 아니라 서주 백만 백성이 원하고 있습니다. 부디 헤아려 주십시오.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '내레이션', text: '결국 유비는 오랜 고민 끝에 서주를 다스리게 되었다.' },
   ],
 };
