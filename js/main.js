@@ -1215,6 +1215,17 @@ document.querySelectorAll('#screen-chapter .pick-card[data-ready="false"]').forE
   btn.onclick = () => toast('준비 중인 챕터입니다.');
 });
 
+// 챕터2 정식 진입(세력 소개/장수 선택 등)은 아직 미완성이라, 관우 스토리 장면1만
+// 바로 확인해볼 수 있는 임시 미리보기 버튼이다. 정식 챕터2가 만들어지면 제거한다.
+document.getElementById('chapter-card-2-preview').onclick = () => {
+  GameState.reset('gwanwoo');
+  GameState.npcStatus['deungmu'] = 'resolved';
+  GameState.flags.act1 = true;
+  MAPS.pyeongwon.apMovement = false;
+  showScreen('screen-explore');
+  goSeojuFree();
+};
+
 document.getElementById('btn-faction-back').onclick = () => showScreen('screen-chapter');
 document.getElementById('btn-faction-next').onclick = () => showScreen('screen-select');
 
