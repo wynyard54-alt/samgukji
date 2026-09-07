@@ -180,6 +180,22 @@ const ROSTER = {
   // 모아주는 실제 상호작용(행동력 소모 + 병력 획득)을 담당한다.
   jindeung: { id:'jindeung', name:'진등', kind:'flavor', affiliation:'서주',
     intro:'광릉태수 진등이라 하오. 병력을 모으는 일이라면 제게 맡겨주십시오.', sprite:SPRITE_ELDER },
+
+  // ---- 챕터2 (관우) : 회남 - 원술 정벌 [장면3] ----
+  // 기령만 실제 전투 대상(kind:'enemy')이고, 나머지는 서사 전용이다 -
+  // 교유는 유비군이 격파하는 것으로 자동 처리되고, 원술·뇌박·진란은
+  // 성에 틀어박혀 이번 장면에서는 싸우지 않는다.
+  giryeong: { id:'giryeong', name:'기령', kind:'enemy', forced:null, affiliation:'원술군', troop:5000,
+    stats:{atk:80, def:65, spd:60, int:45, cha:50},
+    intro:'…네놈이 관우로구나! 이 기령의 삼첨도를 받아보아라!', sprite:SPRITE_COALITION },
+  gyoyu: { id:'gyoyu', name:'교유', kind:'flavor', affiliation:'원술군', troop:4000,
+    intro:'유비 그자가 감히 우리 주공을 노린단 말이냐!', sprite:SPRITE_COALITION },
+  wonsul: { id:'wonsul', name:'원술', kind:'flavor', affiliation:'원술군', troop:8000,
+    intro:'…흥, 유비 따위가 감히 이 원술의 땅을 넘본단 말이냐. 성문을 굳게 걸어라!', sprite:SPRITE_COALITION },
+  noebak: { id:'noebak', name:'뇌박', kind:'flavor', affiliation:'원술군', troop:3000,
+    intro:'주공의 명이다, 성벽만 지키면 된다.', sprite:SPRITE_COALITION },
+  jinran: { id:'jinran', name:'진란', kind:'flavor', affiliation:'원술군', troop:3000,
+    intro:'섣불리 나가 싸울 필요 없다. 버티기만 하면 이긴다.', sprite:SPRITE_COALITION },
 };
 
 // 책사형(지력형) vs 무력형 판정 — 등용 경로가 갈리는 기준

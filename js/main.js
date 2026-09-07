@@ -206,7 +206,8 @@ function getObjectives() {
   } else if (stage === 'camp') {
     list.push('제후들과 인사하고 손견을 도와 화웅과 맞서기');
   } else if (stage === 'warmap') {
-    list.push('호로관의 적 군세를 모두 격파하기');
+    if (MapView.currentMapId === 'hoenam') list.push('기령의 군세를 격파하라');
+    else list.push('호로관의 적 군세를 모두 격파하기');
   } else {
     list.push('전투에 집중하자!');
   }
@@ -1056,7 +1057,7 @@ function handleHabiYubi() {
     Dialogue.show(STORY.habi_council, () => {
       GameState.flags.habiStep = 3;
       updateHUD();
-      toast('원술 토벌을 위해 출정했다. (다음 장면에서 계속)');
+      openArmyBox(goHoenamBattle);
     });
     return;
   }
@@ -1175,7 +1176,42 @@ function checkWarmapClear() {
     GameState.addFame(30); // 메인퀘스트: 호로관 평정
     updateHUD();
     offerCapturedRecruits(() => Dialogue.show(STORY.warmap_clear, goHamgokgwan));
+    return;
   }
+  checkHoenamClear();
+}
+
+// ---------------- 챕터2 (관우) : 회남 벌판 [장면3, 원술 정벌] ----------------
+function goHoenamBattle() {
+  stage = 'warmap';
+  GameState.ap = effectiveApMax();
+  showScreen('screen-explore');
+  MapView.load('hoenam', {
+    onInteract: interactNPC,
+    onApSpent: updateHUD,
+    onApBlocked,
+    onStep: renderMinimap,
+  });
+  updateHUD();
+  Dialogue.show(STORY.hoenam_intro);
+}
+
+// 기령(관우가 실제로 격파)이 쓰러지면 유비군의 교유전 승리도 함께 처리하고,
+// 원술은 잔여 세력과 성에 틀어박힌다. 곧이어 장비가 하비 함락 소식을 갖고
+// 도착하며 원술 정벌이 중단된다 - 챕터2의 결말이다.
+function checkHoenamClear() {
+  if (MapView.currentMapId !== 'hoenam' || GameState.flags.hoenamCleared) return;
+  const giryeongDone = ['resolved', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus['giryeong']);
+  if (!giryeongDone) return;
+  GameState.flags.hoenamCleared = true;
+  MapView.removeNpc('gyoyu');
+  MapView.lockMovement(true);
+  Dialogue.show(STORY.hoenam_giryeong_win, () => {
+    Dialogue.show(STORY.hoenam_jangbi_arrives, () => {
+      MapView.lockMovement(false);
+      toast('원술 정벌이 중단되었다. (다음 장면에서 계속)');
+    });
+  });
 }
 
 // ---------------- 유주 어양 : 장순의 난 (군세전투 튜토리얼) ----------------

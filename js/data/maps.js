@@ -466,3 +466,39 @@ if (false) (function () {
     ],
   };
 })();
+
+// ---------------- 챕터2 (관우) : 회남 벌판 [장면3, 원술 정벌] ----------------
+// 탁현/호로관과 같은 40x28 크기의 탁 트인 벌판. 실제 회남 배경이 없어
+// 우선 호로관 전선 그림을 임시로 재사용한다. 플레이어는 왼쪽 출정로에서
+// 시작해 오른쪽으로 진격한다 - 위/아래 두 갈래에 기령(관우가 직접 격파)과
+// 교유(유비군이 격파하는 것으로 자동 처리)가 있고, 더 오른쪽에는 원술과
+// 잔여 두 부대가 성에 틀어박혀 있다(이번 장면에서는 전투 없이 장식용).
+(function () {
+  const w = 40, h = 28;
+  const grid = makeGrid(w, h, 0);
+  rectFill(grid, 0, 0, w - 1, 0, 4);
+  rectFill(grid, 0, h - 1, w - 1, h - 1, 4);
+  rectFill(grid, 0, 0, 0, h - 1, 4);
+  rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
+
+  MAPS.hoenam = {
+    name: '회남 벌판',
+    width: w, height: h,
+    tiles: grid,
+    backgroundKey: 'warmap_overview',
+    apMovement: true,
+    playerStart: { x:4, y:14 },
+    camera: { viewportW:800, viewportH:480 },
+    decor: [
+      { type:'mapLabel', x:4, y:12.0, label:'출정로' },
+      { type:'mapLabel', x:31, y:14, label:'원술 진영 (농성 중)' },
+    ],
+    npcs: [
+      { id:'giryeong', x:16, y:9, label:'기령 군세', fixed:true },
+      { id:'gyoyu', x:16, y:19, label:'교유 군세', fixed:true },
+      { id:'wonsul', x:31, y:14, label:'원술 군세', fixed:true },
+      { id:'noebak', x:29, y:9, label:'뇌박 군세', fixed:true },
+      { id:'jinran', x:29, y:19, label:'진란 군세', fixed:true },
+    ],
+  };
+})();
