@@ -61,8 +61,14 @@ const MapView = (function () {
       // 남겼는데, 그게 세로 모바일(특히 웹뷰로 감싼 APK)에서 화면 위아래에
       // 큰 여백이 남는 원인이었다 - 비율 맞추기를 포기하고 가로/세로 각각
       // 꽉 채운다.
-      const availW = window.innerHeight * 0.995;
-      const availH = Math.max(200, window.innerWidth - 30);
+      // body에 준 안전영역 패딩(css/style.css의 회전 규칙 참고 - 안드로이드
+      // 내비게이션 바 위에 버튼이 겹쳐 눌리지 않도록 둔 여백)만큼도 실제
+      // 가용 공간에서 빼야 화면 밖으로 밀려나거나 다시 겹치지 않는다.
+      const bodyStyle = getComputedStyle(document.body);
+      const padX = (parseFloat(bodyStyle.paddingLeft) || 0) + (parseFloat(bodyStyle.paddingRight) || 0);
+      const padY = (parseFloat(bodyStyle.paddingTop) || 0) + (parseFloat(bodyStyle.paddingBottom) || 0);
+      const availW = window.innerHeight * 0.995 - padX;
+      const availH = Math.max(200, window.innerWidth - 30 - padY);
       const w = Math.min(baseW * 1.6, availW);
       const h = Math.min(baseH * 1.6, availH);
       return { w: Math.round(w), h: Math.round(h) };
