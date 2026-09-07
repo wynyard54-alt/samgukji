@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>어린이 삼국지 — 챕터1: 도원결의</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="css/style.css?v=20260904-58">
+<link rel="stylesheet" href="css/style.css?v=20260904-59">
 </head>
 <body>
 
@@ -30,6 +30,28 @@
   window.addEventListener('resize', fixMobileRotationSize);
   window.addEventListener('orientationchange', function () { setTimeout(fixMobileRotationSize, 60); });
   window.addEventListener('load', function () { setTimeout(fixMobileRotationSize, 60); });
+})();
+</script>
+
+<!-- CSS의 overscroll-behavior:none만으로는 막히지 않는 구버전 안드로이드
+     웹뷰(APK)가 있어, 스크롤 가능한 패널(가방/장수록/미니맵 등) 안이 아닌
+     곳에서의 드래그는 touchmove 기본 동작을 직접 막아 당겨서 새로고침을
+     방지한다. -->
+<script>
+(function () {
+  function isInsideScrollable(el) {
+    while (el && el !== document.body) {
+      var style = window.getComputedStyle(el);
+      if (/(auto|scroll)/.test(style.overflowY) && el.scrollHeight > el.clientHeight) return true;
+      el = el.parentElement;
+    }
+    return false;
+  }
+  document.addEventListener('touchmove', function (ev) {
+    if (ev.touches.length > 1) return;
+    if (isInsideScrollable(ev.target)) return;
+    ev.preventDefault();
+  }, { passive: false });
 })();
 </script>
 
@@ -393,18 +415,18 @@
 
 <div id="center-alert" class="hidden"></div>
 
-<script src="js/data/roster.js?v=20260904-58"></script>
-<script src="js/data/skills.js?v=20260904-58"></script>
-<script src="js/data/maps.js?v=20260904-58"></script>
-<script src="js/data/worldmap.js?v=20260904-58"></script>
-<script src="js/data/story.js?v=20260904-58"></script>
-<script src="js/engine/state.js?v=20260904-58"></script>
-<script src="js/engine/battle-events.js?v=20260904-58"></script>
-<script src="js/engine/dialogue.js?v=20260904-58"></script>
-<script src="js/engine/battle.js?v=20260904-58"></script>
-<script src="js/engine/battle-vfx.js?v=20260904-58"></script>
-<script src="js/engine/field-assets.js?v=20260904-58"></script>
-<script src="js/engine/mapview.js?v=20260904-58"></script>
-<script src="js/main.js?v=20260904-58"></script>
+<script src="js/data/roster.js?v=20260904-59"></script>
+<script src="js/data/skills.js?v=20260904-59"></script>
+<script src="js/data/maps.js?v=20260904-59"></script>
+<script src="js/data/worldmap.js?v=20260904-59"></script>
+<script src="js/data/story.js?v=20260904-59"></script>
+<script src="js/engine/state.js?v=20260904-59"></script>
+<script src="js/engine/battle-events.js?v=20260904-59"></script>
+<script src="js/engine/dialogue.js?v=20260904-59"></script>
+<script src="js/engine/battle.js?v=20260904-59"></script>
+<script src="js/engine/battle-vfx.js?v=20260904-59"></script>
+<script src="js/engine/field-assets.js?v=20260904-59"></script>
+<script src="js/engine/mapview.js?v=20260904-59"></script>
+<script src="js/main.js?v=20260904-59"></script>
 </body>
 </html>

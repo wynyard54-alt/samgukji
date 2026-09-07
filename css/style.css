@@ -5,7 +5,10 @@
   --good:#3f7a4a; --bad:#a5432f;
 }
 *{ box-sizing:border-box; }
-html,body{ height:100%; margin:0; }
+/* 모바일에서 화면을 아래로 당기면 브라우저/웹뷰의 당겨서 새로고침 제스처가
+   발동해 게임이 초기화되는 문제가 있었다. overscroll-behavior로 이 제스처
+   자체를 막는다 (내부 패널의 overflow-y:auto 스크롤은 그대로 동작한다). */
+html,body{ height:100%; margin:0; overscroll-behavior:none; }
 body{
   background:var(--paper-deep); color:var(--ink);
   font-family:"Noto Sans KR",sans-serif;
