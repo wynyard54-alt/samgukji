@@ -5,9 +5,33 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>어린이 삼국지 — 챕터1: 도원결의</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="css/style.css?v=20260904-48">
+<link rel="stylesheet" href="css/style.css?v=20260904-49">
 </head>
 <body>
+
+<!-- 세로 모바일에서 body를 90도 돌려 가로 게임 화면으로 보여주는데, 이때
+     CSS의 100vh/100vw 값을 일부 안드로이드 웹뷰(APK로 감쌌을 때 등)가
+     실제 화면 크기와 다르게 계산해서 화면 절반이 빈 채로 남는 문제가
+     있었다. window.innerWidth/innerHeight로 직접 계산한 픽셀 값을
+     인라인 스타일로 강제해서 이 문제를 피한다. -->
+<script>
+(function () {
+  function fixMobileRotationSize() {
+    var isPortraitNarrow = window.matchMedia('(orientation:portrait) and (max-width:1024px)').matches;
+    if (isPortraitNarrow) {
+      document.body.style.width = window.innerHeight + 'px';
+      document.body.style.height = window.innerWidth + 'px';
+    } else {
+      document.body.style.width = '';
+      document.body.style.height = '';
+    }
+  }
+  fixMobileRotationSize();
+  window.addEventListener('resize', fixMobileRotationSize);
+  window.addEventListener('orientationchange', function () { setTimeout(fixMobileRotationSize, 60); });
+  window.addEventListener('load', function () { setTimeout(fixMobileRotationSize, 60); });
+})();
+</script>
 
 <div id="preload-screen">
   <div id="preload-title">어린이 삼국지</div>
@@ -348,18 +372,18 @@
 
 <div id="center-alert" class="hidden"></div>
 
-<script src="js/data/roster.js?v=20260904-48"></script>
-<script src="js/data/skills.js?v=20260904-48"></script>
-<script src="js/data/maps.js?v=20260904-48"></script>
-<script src="js/data/worldmap.js?v=20260904-48"></script>
-<script src="js/data/story.js?v=20260904-48"></script>
-<script src="js/engine/state.js?v=20260904-48"></script>
-<script src="js/engine/battle-events.js?v=20260904-48"></script>
-<script src="js/engine/dialogue.js?v=20260904-48"></script>
-<script src="js/engine/battle.js?v=20260904-48"></script>
-<script src="js/engine/battle-vfx.js?v=20260904-48"></script>
-<script src="js/engine/field-assets.js?v=20260904-48"></script>
-<script src="js/engine/mapview.js?v=20260904-48"></script>
-<script src="js/main.js?v=20260904-48"></script>
+<script src="js/data/roster.js?v=20260904-49"></script>
+<script src="js/data/skills.js?v=20260904-49"></script>
+<script src="js/data/maps.js?v=20260904-49"></script>
+<script src="js/data/worldmap.js?v=20260904-49"></script>
+<script src="js/data/story.js?v=20260904-49"></script>
+<script src="js/engine/state.js?v=20260904-49"></script>
+<script src="js/engine/battle-events.js?v=20260904-49"></script>
+<script src="js/engine/dialogue.js?v=20260904-49"></script>
+<script src="js/engine/battle.js?v=20260904-49"></script>
+<script src="js/engine/battle-vfx.js?v=20260904-49"></script>
+<script src="js/engine/field-assets.js?v=20260904-49"></script>
+<script src="js/engine/mapview.js?v=20260904-49"></script>
+<script src="js/main.js?v=20260904-49"></script>
 </body>
 </html>
