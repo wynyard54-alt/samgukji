@@ -405,10 +405,29 @@ function interactNPC(id, context) {
 
   if (id === 'jangsun') { openWarCommandMenu('jangsun'); return; }
 
+  // 도겸이 손건을 추천하는 서브퀘스트(연의 12회) - 인재 등록 기간 중 첫 대화에서만
+  // 한 번 나온다. 이후에는 일반 flavor 대사로 자연스럽게 넘어간다.
+  if (id === 'dogyeom' && stage === 'seoju_free' && !GameState.flags.dogyeomDied && !GameState.flags.songgeonRecommended) {
+    GameState.flags.songgeonRecommended = true;
+    Dialogue.show([
+      { speaker: '도겸', text: '북해 사람 손건, 자는 공우인데, 이 사람을 종사로 삼을 만하오.' },
+      { speaker: '도겸', text: '시장 근처에서 죽간에 소문을 옮겨 적고 있다 하니, 한번 찾아가 보시게.' },
+    ], () => {
+      MapView.addNpc('songgeon');
+      toast('도겸이 손건을 추천했다. 시장 근처를 둘러보자.');
+    });
+    return;
+  }
+
   if (rd.kind === 'flavor') {
     // 진규·미축·미방은 등용 대상이 아니라 별도 상태 추적이 없지만, 서주 인사
-    // (0/3) 임무에는 포함되므로 첫 만남을 기록해둔다.
-    if (['jingyu', 'michuk', 'mibang'].includes(id) && !GameState.npcStatus[id]) {
+    // (0/3) 임무에는 포함되므로 첫 만남을 기록해둔다. 세 사람을 모두 만나면
+    // (인재 등용 완료) 도겸이 서주를 넘기는 장면으로 이어진다.
+    const seojuGreetIds = ['jingyu', 'michuk', 'mibang'];
+    const isFirstMeet = seojuGreetIds.includes(id) && !GameState.npcStatus[id];
+    const completesGreetQuest = isFirstMeet &&
+      seojuGreetIds.filter((x) => x !== id && !!GameState.npcStatus[x]).length === seojuGreetIds.length - 1;
+    if (isFirstMeet) {
       GameState.npcStatus[id] = 'met';
       updateHUD();
     }
@@ -424,7 +443,9 @@ function interactNPC(id, context) {
       gongsonchan: '백규요. 장순 그 역적이 이 근방에서 날뛴다기에, 옛 동문 유현덕을 도우러 병력을 좀 보탰소.',
     };
     const text = (stage === 'warmap' && warmapIntro[id]) || (stage === 'pyeongwon_free' && pyeongwonIntro[id]) || rd.intro;
-    Dialogue.show([{ speaker: rd.name, text }]);
+    Dialogue.show([{ speaker: rd.name, text }], () => {
+      if (completesGreetQuest) checkDeadlines();
+    });
     return;
   }
 
@@ -869,8 +890,7 @@ function checkDeadlines() {
     return true;
   }
   if (stage === 'seoju_free' && !gs.flags.dogyeomDied
-      && gs.flags.seojuFreeRoamStartAbsMonth != null
-      && absMonth(gs.year, gs.month) >= gs.flags.seojuFreeRoamStartAbsMonth + SEOJU_DOGYEOM_DEATH_MONTHS) {
+      && ['michuk', 'mibang', 'jingyu'].every((id) => !!gs.npcStatus[id])) {
     gs.flags.dogyeomDied = true;
     MapView.lockMovement(true);
     Dialogue.show(STORY.dogyeom_death, () => {
@@ -959,9 +979,6 @@ const SEOJU_EXCLUDE_CH1_NPC_IDS = [
   'jeonhae', 'gwanjeong', 'eomgang', 'jowoon', 'jeonju',
   'songgeon', 'jeonye', 'yeomyu', 'jangpae', 'taesaja', 'yuyo', 'choeyeom',
 ];
-// 자유탐방 시작 후 이만큼(개월) 지나면 도겸이 사망하고 유비가 서주를 잇는다.
-const SEOJU_DOGYEOM_DEATH_MONTHS = 6;
-
 function goSeojuFree() {
   Dialogue.show(STORY.seoju_urgent_call, () => {
     stage = 'seoju_free';
@@ -999,7 +1016,6 @@ function goSeojuFree() {
             SEOJU_JOJO_ARMY_IDS.forEach((id) => MapView.removeNpc(id));
             Dialogue.show(STORY.dogyeom_disband, () => {
               MapView.lockMovement(false);
-              GameState.flags.seojuFreeRoamStartAbsMonth = absMonth(GameState.year, GameState.month);
               GameState.flags.seojuFreeRoam = true;
               SEOJU_FREEROAM_NPC_IDS.forEach((id) => MapView.addNpc(id));
               toast('서주 성내를 둘러보자.');
