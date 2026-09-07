@@ -201,7 +201,7 @@ function getObjectives() {
   } else if (stage === 'habi_camp') {
     const step = gs.flags.habiStep || 0;
     if (step === 0) list.push('유비를 찾아가자');
-    else if (step === 1) list.push(`병사를 모집하여 세력을 키워라 (${gs.resources.troop}/${HABI_RECRUIT_GOAL})`);
+    else if (step === 1) list.push(`진등을 찾아가 병사를 모집하며 세력을 키워라 (${gs.resources.troop}/${HABI_RECRUIT_GOAL})`);
     else if (step === 2) list.push('유비를 찾아가 회의에 참석하자');
   } else if (stage === 'camp') {
     list.push('제후들과 인사하고 손견을 도와 화웅과 맞서기');
@@ -384,6 +384,7 @@ function interactNPC(id, context) {
     return;
   }
   if (id === 'yubi' && stage === 'habi_camp') { handleHabiYubi(); return; }
+  if (id === 'jindeung' && stage === 'habi_camp') { handleJindeungRecruit(); return; }
   if (id === 'yubi') { handleYubi(); return; }
 
   if (id === 'songyeon' && stage === 'camp') {
@@ -972,20 +973,26 @@ function goSeojuFree() {
     // 대치 중인 군세는 자유롭게 돌아다니기보다 대열을 유지한 채 한두 칸
     // 정도만 자세를 바꾸는 편이 실제 진영다워 보인다 (radius:1).
     MapView.startNpcStir(SEOJU_JOJO_ARMY_IDS, { radius: 1, intervalMs: 900 });
-    // seoju_wall_standoff_intro는 holdMs로 3초 뒤 자동 진행되므로, 그동안
-    // 카메라가 조조 군세를 비춰주는 컷신이 끝나면 곧바로 본 대사로 넘어간다.
+    // seoju_wall_standoff_intro는 holdMs로 3초 뒤 자동 진행되고, 이어지는
+    // seoju_wall_standoff(장비-우금 접전)까지는 계속 조조 진영을 비춰준다 -
+    // "저것이 조조의 군세다" 같은 대사가 나오는 동안은 그걸 보고 있어야
+    // 자연스럽다. 우금이 패퇴한 다음에야 성 안으로 들어가는 것이므로,
+    // 그 시점에 플레이어를 성문(도겸 곁)으로 옮기고 카메라도 되돌린다.
     Dialogue.show(STORY.seoju_wall_standoff_intro, () => {
-      MapView.stopNpcStir();
-      MapView.clearCameraFocus();
       Dialogue.show(STORY.seoju_wall_standoff, () => {
-        Dialogue.show(STORY.puyang_report_retreat, () => {
-          SEOJU_JOJO_ARMY_IDS.forEach((id) => MapView.removeNpc(id));
-          Dialogue.show(STORY.dogyeom_disband, () => {
-            MapView.lockMovement(false);
-            GameState.flags.seojuFreeRoamStartAbsMonth = absMonth(GameState.year, GameState.month);
-            GameState.flags.seojuFreeRoam = true;
-            SEOJU_FREEROAM_NPC_IDS.forEach((id) => MapView.addNpc(id));
-            toast('서주 성내를 둘러보자.');
+        MapView.stopNpcStir();
+        MapView.setPlayerPos(18, 14);
+        MapView.clearCameraFocus();
+        Dialogue.show(STORY.seoju_wall_standoff_city, () => {
+          Dialogue.show(STORY.puyang_report_retreat, () => {
+            SEOJU_JOJO_ARMY_IDS.forEach((id) => MapView.removeNpc(id));
+            Dialogue.show(STORY.dogyeom_disband, () => {
+              MapView.lockMovement(false);
+              GameState.flags.seojuFreeRoamStartAbsMonth = absMonth(GameState.year, GameState.month);
+              GameState.flags.seojuFreeRoam = true;
+              SEOJU_FREEROAM_NPC_IDS.forEach((id) => MapView.addNpc(id));
+              toast('서주 성내를 둘러보자.');
+            });
           });
         });
       });
@@ -1024,7 +1031,7 @@ function handleHabiYubi() {
             Dialogue.show(STORY.habi_yeopo_result, () => {
               GameState.flags.habiStep = 1;
               updateHUD();
-              toast('병사를 모집하여 세력을 키우자.');
+              toast('진등을 찾아가 병사를 모집하며 세력을 키우자.');
             });
           });
         } },
@@ -1033,7 +1040,7 @@ function handleHabiYubi() {
             Dialogue.show(STORY.habi_yeopo_result, () => {
               GameState.flags.habiStep = 1;
               updateHUD();
-              toast('병사를 모집하여 세력을 키우자.');
+              toast('진등을 찾아가 병사를 모집하며 세력을 키우자.');
             });
           });
         } },
@@ -1042,7 +1049,7 @@ function handleHabiYubi() {
     return;
   }
   if (step === 1) {
-    Dialogue.show([{ speaker: '유비', text: `아직 병사가 부족하네 (${GameState.resources.troop}/${HABI_RECRUIT_GOAL}). 자네도 힘써주게.` }]);
+    Dialogue.show([{ speaker: '유비', text: `아직 병사가 부족하네 (${GameState.resources.troop}/${HABI_RECRUIT_GOAL}). 진등을 찾아가 병사를 모아주게.` }]);
     return;
   }
   if (step === 2) {
@@ -1054,6 +1061,25 @@ function handleHabiYubi() {
     return;
   }
   Dialogue.show([{ speaker: '유비', text: '원술 토벌 준비를 서둘러야겠네.' }]);
+}
+
+// 진등에게 직접 찾아가 병사를 모집한다 - 행동력을 써서 병력을 조금씩
+// 늘리는, 자동 증가가 아닌 실제 플레이어 행동으로 채우는 미션이다.
+function handleJindeungRecruit() {
+  const step = GameState.flags.habiStep || 0;
+  if (step !== 1) {
+    Dialogue.show([{ speaker: '진등', text: '이 진등, 힘닿는 데까지 병력을 모아보겠습니다.' }]);
+    return;
+  }
+  if (GameState.resources.troop >= HABI_RECRUIT_GOAL) {
+    Dialogue.show([{ speaker: '진등', text: '충분한 병력을 모았습니다. 이제 유비님을 찾아가 출정을 준비하시지요.' }]);
+    return;
+  }
+  if (!spend(2)) return;
+  const gained = 300 + Math.floor(Math.random() * 300);
+  GameState.addResource({ troop: gained });
+  updateHUD();
+  Dialogue.show([{ speaker: '진등', text: `근방 장정들을 더 모아왔습니다. 병사 ${gained}명을 더 모았습니다. (${GameState.resources.troop}/${HABI_RECRUIT_GOAL})` }]);
 }
 
 // 반동탁연합 출정(군세 편성) 직전 시점의 GameState를 남겨둔다 - 진행 버튼과
@@ -2405,11 +2431,6 @@ document.getElementById('btn-nextmonth').onclick = () => {
   }
   const income = scholarGoldIncome();
   if (income > 0) GameState.addResource({ gold: income });
-  // 하비성 관청(챕터2 장면2) - 병사 모집 미션이 진행 중이면 매달 자동으로
-  // 조금씩 병력이 늘어난다 (별도 모병 NPC 없이 시간 경과로 세력이 커지는 것을 표현).
-  if (stage === 'habi_camp' && GameState.flags.habiStep === 1 && GameState.resources.troop < HABI_RECRUIT_GOAL) {
-    GameState.addResource({ troop: 500 + Math.floor(Math.random() * 200) });
-  }
   updateHUD();
   if (checkDeadlines()) return;
 

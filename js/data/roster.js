@@ -176,6 +176,10 @@ const ROSTER = {
     intro:'형님을 따라왔소이다. 큰 도움은 못 되겠지만, 힘껏 돕겠소.' },
   jingyu: { id:'jingyu', name:'진규', kind:'flavor', affiliation:'서주',
     intro:'하비상 진규요. 그대의 그릇이 어떤지, 이렇게 직접 보러 왔소.', sprite:SPRITE_ELDER },
+  // 진규의 아들. 챕터2 장면2(하비성 관청)에서 원술 정벌에 필요한 병력을
+  // 모아주는 실제 상호작용(행동력 소모 + 병력 획득)을 담당한다.
+  jindeung: { id:'jindeung', name:'진등', kind:'flavor', affiliation:'서주',
+    intro:'광릉태수 진등이라 하오. 병력을 모으는 일이라면 제게 맡겨주십시오.', sprite:SPRITE_ELDER },
 };
 
 // 책사형(지력형) vs 무력형 판정 — 등용 경로가 갈리는 기준

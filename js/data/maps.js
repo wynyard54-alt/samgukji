@@ -378,6 +378,9 @@ if (false) (function () {
 // 실제 하비 관청 배경이 만들어지기 전까지 반동탁연합 진영 그림을 그대로
 // 재사용한다 - 이 씬은 실외 진영이 아니라 관청 뜰이라는 설정이지만,
 // 새 배경을 그리기 전까지는 이미 검증된 이 배경을 임시로 쓴다.
+// 방 세 개(유비 집무실 / 진규·진등의 방 / 미축·미방의 방)로 나눠, 플레이어가
+// 직접 돌아다니며 인물을 찾아가게 한다 - 특히 진등에게는 병사를 모집하는
+// 실제 상호작용(행동력 소모 + 병력 획득)이 걸려 있다.
 (function () {
   const w = 24, h = 16;
   const grid = makeGrid(w, h, 0);
@@ -386,7 +389,9 @@ if (false) (function () {
   rectFill(grid, 0, 0, 0, h - 1, 4);
   rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
   rectFill(grid, 11, h - 1, 13, h - 1, 0); // 남문 통로
-  rectFill(grid, 9, 1, 15, 5, 2); // 관청 건물 자리
+  rectFill(grid, 9, 1, 15, 5, 2);   // 유비 집무실
+  rectFill(grid, 1, 7, 7, 11, 2);   // 진규·진등의 방
+  rectFill(grid, 17, 7, 23, 11, 2); // 미축·미방의 방
 
   MAPS.habi = {
     name: '하비성 관청',
@@ -396,12 +401,17 @@ if (false) (function () {
     playerStart: { x:12, y:14 },
     camera: { viewportW:800, viewportH:480 },
     decor: [
-      { type:'mapLabel', x:12.0, y:0.5, label:'하비성 관청' },
+      { type:'mapLabel', x:12.0, y:0.5, label:'유비 집무실' },
+      { type:'mapLabel', x:4.0, y:6.5, label:'진규·진등의 방' },
+      { type:'mapLabel', x:20.0, y:6.5, label:'미축·미방의 방' },
     ],
     npcs: [
-      { id:'yubi', x:12, y:8, label:'유비', fixed:true },
-      { id:'jangbi', x:9, y:9, label:'장비', fixed:true },
-      { id:'michuk', x:15, y:9, label:'미축', fixed:true },
+      { id:'yubi', x:12, y:6, label:'유비', fixed:true },
+      { id:'jangbi', x:10, y:6, label:'장비', fixed:true },
+      { id:'jingyu', x:3, y:12, label:'진규', fixed:true },
+      { id:'jindeung', x:5, y:12, label:'진등', fixed:true },
+      { id:'michuk', x:19, y:12, label:'미축', fixed:true },
+      { id:'mibang', x:21, y:12, label:'미방', fixed:true },
     ],
   };
 })();
