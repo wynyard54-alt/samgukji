@@ -1795,8 +1795,32 @@ document.querySelectorAll('.wm-mode-btn').forEach((btn) => {
   btn.onclick = () => setWorldMapMode(btn.dataset.mode);
 });
 
+// 세로 모바일(웹뷰 포함)에서는 CSS의 vh/vw 값이 실기기에서 실제 화면 크기와
+// 다르게 계산되는 경우가 있어(explore-viewport와 같은 문제), 여기서도
+// window.innerWidth/innerHeight로 직접 계산한 픽셀 값을 강제 적용한다.
+function applyWorldMapMobileSize() {
+  const box = document.getElementById('worldmap-box');
+  const img = document.getElementById('worldmap-img');
+  const isRotated = window.innerWidth > 0 && window.innerHeight > 0 &&
+    window.innerWidth < window.innerHeight && window.innerWidth <= 1024;
+  if (isRotated) {
+    box.style.width = Math.min(1100, Math.round(window.innerHeight * 0.86)) + 'px';
+    box.style.maxHeight = Math.min(760, Math.round(window.innerWidth * 0.92)) + 'px';
+    img.style.maxHeight = Math.min(600, Math.round(window.innerWidth * 0.70)) + 'px';
+  } else {
+    box.style.width = '';
+    box.style.maxHeight = '';
+    img.style.maxHeight = '';
+  }
+}
+
+window.addEventListener('resize', () => {
+  if (!document.getElementById('worldmap-box').classList.contains('hidden')) applyWorldMapMobileSize();
+});
+
 function openWorldMapBox() {
   setWorldMapMode('faction');
+  applyWorldMapMobileSize();
   document.getElementById('worldmap-box').classList.remove('hidden');
 }
 
