@@ -875,6 +875,45 @@ function goPyeongwonFree() {
   }
 }
 
+// ---------------- 챕터2 (관우) : 서주 - 삼양서주 [장면1] ----------------
+// 실제 서주(담현) 지도가 만들어지기 전까지는 챕터1의 계·어양(평원현) 지도를
+// 임시로 재사용한다 - 조조군 8부대/도겸은 storyGate:'seojuArrived'로만 지도에
+// 등장하므로 챕터1 쪽 흐름에는 영향이 없다. 원군요청 삽화(seoju_urgent_call)가
+// 화면을 가리는 동안 지도가 뒤에서 새로 로드되므로, 이어지는 성벽 대화까지는
+// 별도 화면전환 연출 없이 자연스럽게 이어진다.
+const SEOJU_JOJO_ARMY_IDS = [
+  'jojo_jungong', 'habudon_seoju', 'habuyeon_seoju', 'join_seoju',
+  'johong_seoju', 'akjin_seoju', 'ugeum_seoju', 'ijeon_seoju',
+];
+
+function goSeojuFree() {
+  Dialogue.show(STORY.seoju_urgent_call, () => {
+    stage = 'seoju_free';
+    showScreen('screen-explore');
+    GameState.flags.seojuArrived = true;
+    MapView.load('pyeongwon', {
+      onInteract: interactNPC,
+      onApSpent: updateHUD,
+      onApBlocked,
+      onAmbientInteract: runAmbientEvent,
+      onStep: renderMinimap,
+    });
+    MapView.setPlayerPos(17, 13);
+    MapView.lockMovement(true);
+    updateHUD();
+    Dialogue.show(STORY.seoju_wall_standoff, () => {
+      Dialogue.show(STORY.puyang_report_retreat, () => {
+        SEOJU_JOJO_ARMY_IDS.forEach((id) => MapView.removeNpc(id));
+        Dialogue.show(STORY.dogyeom_disband, () => {
+          MapView.lockMovement(false);
+          GameState.flags.seojuFreeRoamStartAbsMonth = absMonth(GameState.year, GameState.month);
+          toast('서주 성내를 둘러보자.');
+        });
+      });
+    });
+  });
+}
+
 // 반동탁연합 출정(군세 편성) 직전 시점의 GameState를 남겨둔다 - 진행 버튼과
 // 마감일 강제 이벤트, 두 출정 경로 모두에서 army-box를 열기 직전에 호출한다.
 function captureCoalitionDepartCheckpoint() {

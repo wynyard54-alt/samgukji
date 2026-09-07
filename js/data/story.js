@@ -191,4 +191,43 @@ const STORY = {
     { speaker: '내레이션', text: '— 챕터1 클리어 —', holdMs: 2400 },
     { speaker: '내레이션', text: '챕터2는 아직 준비 중입니다.' },
   ],
+
+  // ---- 챕터2 (관우) : 서주 - 삼양서주 [장면1] ----
+  // 도겸의 원군 요청. 삽화가 화면을 가리는 동안 자연스럽게 담현(서주) 지도로
+  // 넘어가므로, 이어지는 seoju_wall_standoff에는 별도 화면전환 연출이 없어도 된다.
+  seoju_urgent_call: [
+    { speaker: '내레이션', text: '평원현에 다급한 파발이 도착했다.', scene: 'assets/illust/seoju_urgent.jpg' },
+    { speaker: '전령', text: '유비 장군께 아룁니다! 서주자사 도겸 어른의 서신이옵니다!', scene: 'assets/illust/seoju_urgent.jpg' },
+    { speaker: '유비', text: '(서신을 펼쳐 읽는다) …조조가 부친의 원수를 갚는다며 서주를 침공했다는구나.', scene: 'assets/illust/seoju_urgent.jpg' },
+    { speaker: '유비', text: '도겸 어른께서 원군을 청하셨네. 아우들, 서주로 가세!', scene: 'assets/illust/seoju_urgent.jpg' },
+    { speaker: '관우', text: '알겠습니다, 형님. 당장 채비하겠습니다.', scene: 'assets/illust/seoju_urgent.jpg' },
+  ],
+
+  seoju_wall_standoff: [
+    { speaker: '내레이션', text: '서주 담현에 다다른 유비 삼형제는 곧장 성벽 위로 올랐다.' },
+    { speaker: '관우', text: '저것이 조조의 군세입니까…! 듣던 것보다 훨씬 많군요.' },
+    { speaker: '장비', text: '치, 숫자만 많으면 다냐! 한번 붙어보자고!' },
+    { speaker: '도겸', text: '와주셔서 참으로 고맙소, 유 사군. 이 늙은 몸으로는 도저히 감당이 안 되는구려.' },
+    { speaker: '유비', text: '병력이 많지 않으나, 힘닿는 데까지 돕겠습니다.' },
+    { speaker: '도겸', text: '…부디 성벽만이라도 지켜주시오. 며칠만 버티면 원소 어른께도 원군을 청해두었소.' },
+  ],
+
+  puyang_report_retreat: [
+    { speaker: '내레이션', text: '팽팽한 대치가 며칠째 이어지던 어느 날, 조조 진영이 갑자기 소란스러워졌다.' },
+    { speaker: '전령', text: '주공! 급보입니다! 연주의 복양에서 장막과 진궁이 여포를 끌어들여 성을 빼앗았다 하옵니다!' },
+    { speaker: '조조(중군)', text: '…뭐라? 여포가? 감히 내 뒤를 치다니!' },
+    { speaker: '조조(중군)', text: '전군, 회군한다! 서주는…다음에 다시 온다!' },
+    { speaker: '내레이션', text: '조조의 대군이 썰물처럼 물러가기 시작했다.' },
+    { speaker: '관우', text: '물러갑니다! 서주가…살았습니다!' },
+  ],
+
+  dogyeom_disband: [
+    { speaker: '내레이션', text: '조조군이 완전히 물러가자, 도겸은 성문을 열고 유비 삼형제를 맞았다.' },
+    { speaker: '도겸', text: '유 사군 덕분에 서주가 살았소. 이 은혜, 어찌 갚아야 할지 모르겠구려.' },
+    { speaker: '유비', text: '당치 않습니다. 마땅히 해야 할 일을 했을 뿐입니다.' },
+    { speaker: '도겸', text: '…실은 진작부터 생각해온 일이오. 이 서주, 그대가 맡아주지 않겠소?' },
+    { speaker: '유비', text: '어찌 그런 말씀을! 도겸 어른께서 엄연히 계시는데, 제가 어찌 넘본단 말입니까.' },
+    { speaker: '도겸', text: '…허허, 역시 사양하시는구려. 그대의 그런 마음이 더욱 미덥소. 이 이야기는 훗날 다시 하십시다.' },
+    { speaker: '내레이션', text: '유비는 도겸의 청을 정중히 사양했으나, 서주와의 인연은 이렇게 시작되었다.' },
+  ],
 };

@@ -132,6 +132,28 @@ const ROSTER = {
     stats:{atk:68, def:48, spd:47, int:35, cha:27}, intro:'동탁 어른은 가셨지만, 우리까지 무너질 성싶으냐!', sprite:SPRITE_DONGTAK },
   gwaksa: { id:'gwaksa', name:'곽사', kind:'enemy', forced:'escape', affiliation:'동탁군',
     stats:{atk:57, def:46, spd:48, int:34, cha:26}, intro:'훗날 반드시 돌아오리라!', sprite:SPRITE_DONGTAK },
+
+  // ---- 챕터2 (관우) : 서주 - 삼양서주 ----
+  dogyeom: { id:'dogyeom', name:'도겸', kind:'flavor', affiliation:'서주',
+    intro:'서주자사 도겸이오. 노쇠한 이 몸으로는 더 이상 이 땅을 지키기 어려울 듯하오.', sprite:SPRITE_ELDER },
+  // 실제 전투 없이 성벽 밖에 진을 친 모습만 보여주는 서사 전용 인물들 - 조조가
+  // 복양 급보를 듣고 물러나면 지도에서 모두 제거된다.
+  jojo_jungong: { id:'jojo_jungong', name:'조조(중군)', kind:'flavor', affiliation:'조조군', troop:5000,
+    intro:'…아버지의 원한, 이 서주 땅에서 반드시 갚고야 말겠다.', sprite:SPRITE_COALITION },
+  habudon_seoju: { id:'habudon_seoju', name:'하후돈군', kind:'flavor', affiliation:'조조군', troop:5000,
+    intro:'주공의 명이다. 성문이 열릴 때까지 한 발짝도 물러서지 마라!', sprite:SPRITE_COALITION },
+  habuyeon_seoju: { id:'habuyeon_seoju', name:'하후연군', kind:'flavor', affiliation:'조조군', troop:5000,
+    intro:'…버텨봐야 며칠이나 가겠느냐.', sprite:SPRITE_COALITION },
+  join_seoju: { id:'join_seoju', name:'조인군', kind:'flavor', affiliation:'조조군', troop:5000,
+    intro:'성벽이 제법 단단하군. 허나 오래는 못 갈 것이다.', sprite:SPRITE_COALITION },
+  johong_seoju: { id:'johong_seoju', name:'조홍군', kind:'flavor', affiliation:'조조군', troop:5000,
+    intro:'…형님의 원수, 내가 반드시 갚아드리겠소.', sprite:SPRITE_COALITION },
+  akjin_seoju: { id:'akjin_seoju', name:'악진군', kind:'flavor', affiliation:'조조군', troop:5000,
+    intro:'명만 내리시면 언제든 성벽을 넘겠습니다.', sprite:SPRITE_COALITION },
+  ugeum_seoju: { id:'ugeum_seoju', name:'우금군', kind:'flavor', affiliation:'조조군', troop:5000,
+    intro:'군기가 흐트러지지 않도록 단속하고 있습니다.', sprite:SPRITE_COALITION },
+  ijeon_seoju: { id:'ijeon_seoju', name:'이전군', kind:'flavor', affiliation:'조조군', troop:5000,
+    intro:'…이 많은 백성까지 해할 필요가 있을지 모르겠군.', sprite:SPRITE_COALITION },
 };
 
 // 책사형(지력형) vs 무력형 판정 — 등용 경로가 갈리는 기준

@@ -266,6 +266,8 @@ if (false) (function () {
       { type:'mapLabel', x:26.0, y:20.4, label:'유비 세력 막사' },
       { type:'mapLabel', x:5.5, y:24.8, label:'어양 들판' },
       { type:'mapLabel', x:34.0, y:26.0, label:'장순 반란군 진지', storyGate:'jangsunAppeared' },
+      // 챕터2(관우) 서주 임시 재사용 - 실제 서주 지도가 만들어지면 교체된다.
+      { type:'mapLabel', x:24.0, y:19.0, label:'조조 공략군 진영', storyGate:'seojuArrived' },
     ],
     areaLabels:[
       { x:18.5, y:13.4, text:'남문대로' },
@@ -302,6 +304,16 @@ if (false) (function () {
       { id:'yuwoo', x:25, y:13, label:'유우', fixed:true },
       { id:'jangsun', x:31, y:26, label:'장순(반란군)', fixed:true, storyGate:'jangsunAppeared' },
       { id:'gwanhae', x:6, y:22, label:'관해(황건적 잔당)' },
+      // 챕터2(관우) 서주 임시 재사용 - 실제 서주 지도가 만들어지면 이 블록 전체를 옮긴다.
+      { id:'dogyeom', x:17, y:13, label:'도겸', fixed:true, storyGate:'seojuArrived' },
+      { id:'jojo_jungong', x:24, y:18, label:'조조(중군)', fixed:true, storyGate:'seojuArrived' },
+      { id:'habudon_seoju', x:21, y:17, label:'하후돈군', fixed:true, storyGate:'seojuArrived' },
+      { id:'habuyeon_seoju', x:27, y:17, label:'하후연군', fixed:true, storyGate:'seojuArrived' },
+      { id:'join_seoju', x:21, y:20, label:'조인군', fixed:true, storyGate:'seojuArrived' },
+      { id:'johong_seoju', x:27, y:20, label:'조홍군', fixed:true, storyGate:'seojuArrived' },
+      { id:'akjin_seoju', x:24, y:21, label:'악진군', fixed:true, storyGate:'seojuArrived' },
+      { id:'ugeum_seoju', x:30, y:19, label:'우금군', fixed:true, storyGate:'seojuArrived' },
+      { id:'ijeon_seoju', x:20, y:19, label:'이전군', fixed:true, storyGate:'seojuArrived' },
     ],
     ambient:[
       ['merchant',13,5,'ash',2],['farmer',20,5,'earth',2],['woman',27,5,'ash',2],
