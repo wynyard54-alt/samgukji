@@ -924,7 +924,9 @@ function goSeojuFree() {
       // 성벽 밖 조조 진영으로 잠깐 옮겨 군세가 술렁이는 모습을 보여준 뒤에야
       // "그날 진영이 소란스러워졌다"는 대사로 이어간다.
       MapView.panCameraTo(24, 19, 700);
-      MapView.startNpcStir(SEOJU_JOJO_ARMY_IDS, { radius: 3, intervalMs: 450 });
+      // 대치 중인 군세는 자유롭게 돌아다니기보다 대열을 유지한 채 한두 칸
+      // 정도만 자세를 바꾸는 편이 실제 진영다워 보인다 (radius:1).
+      MapView.startNpcStir(SEOJU_JOJO_ARMY_IDS, { radius: 1, intervalMs: 900 });
       setTimeout(() => {
         Dialogue.show(STORY.puyang_report_retreat, () => {
           MapView.stopNpcStir();

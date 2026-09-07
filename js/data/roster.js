@@ -136,23 +136,36 @@ const ROSTER = {
   // ---- 챕터2 (관우) : 서주 - 삼양서주 ----
   dogyeom: { id:'dogyeom', name:'도겸', kind:'flavor', affiliation:'서주',
     intro:'서주자사 도겸이오. 노쇠한 이 몸으로는 더 이상 이 땅을 지키기 어려울 듯하오.', sprite:SPRITE_ELDER },
-  // 실제 전투 없이 성벽 밖에 진을 친 모습만 보여주는 서사 전용 인물들 - 조조가
-  // 복양 급보를 듣고 물러나면 지도에서 모두 제거된다.
-  jojo_jungong: { id:'jojo_jungong', name:'조조(중군)', kind:'flavor', affiliation:'조조군', troop:5000,
+  // 성벽 밖에 진을 친 조조군 8개 부대 - 실제 전투 없이 등장했다 복양 급보를
+  // 듣고 물러나면 지도에서 모두 제거되지만, kind:'enemy'와 실제 스탯을 갖춘
+  // 진짜 군세로 만들어 두어야 훗날(하비성전투 등)에도 그대로 재사용할 수 있다.
+  // 순욱/정욱 등 조조의 핵심 책사들은 이 시점 연주(뒷마당)를 지키고 있었고,
+  // 그 사이 진궁이 여포를 끌어들여 복양을 빼앗는 것이 바로 이 장면 다음에
+  // 벌어지는 사건이므로(챕터2 핵심 반전), 이들을 서주 진중에 등장시키지
+  // 않는다 - 대신 조조 본인의 지력을 높게 잡아 지휘부의 지력을 담당하게 했다.
+  jojo_jungong: { id:'jojo_jungong', name:'조조(중군)', kind:'enemy', forced:null, affiliation:'조조군', troop:5000,
+    stats:{atk:74, def:68, spd:62, int:88, cha:85},
     intro:'…아버지의 원한, 이 서주 땅에서 반드시 갚고야 말겠다.', sprite:SPRITE_COALITION },
-  habudon_seoju: { id:'habudon_seoju', name:'하후돈군', kind:'flavor', affiliation:'조조군', troop:5000,
+  habudon_seoju: { id:'habudon_seoju', name:'하후돈군', kind:'enemy', forced:null, affiliation:'조조군', troop:5000,
+    stats:{atk:82, def:68, spd:56, int:42, cha:62},
     intro:'주공의 명이다. 성문이 열릴 때까지 한 발짝도 물러서지 마라!', sprite:SPRITE_COALITION },
-  habuyeon_seoju: { id:'habuyeon_seoju', name:'하후연군', kind:'flavor', affiliation:'조조군', troop:5000,
+  habuyeon_seoju: { id:'habuyeon_seoju', name:'하후연군', kind:'enemy', forced:null, affiliation:'조조군', troop:5000,
+    stats:{atk:79, def:60, spd:78, int:44, cha:53},
     intro:'…버텨봐야 며칠이나 가겠느냐.', sprite:SPRITE_COALITION },
-  join_seoju: { id:'join_seoju', name:'조인군', kind:'flavor', affiliation:'조조군', troop:5000,
+  join_seoju: { id:'join_seoju', name:'조인군', kind:'enemy', forced:null, affiliation:'조조군', troop:5000,
+    stats:{atk:73, def:84, spd:52, int:52, cha:58},
     intro:'성벽이 제법 단단하군. 허나 오래는 못 갈 것이다.', sprite:SPRITE_COALITION },
-  johong_seoju: { id:'johong_seoju', name:'조홍군', kind:'flavor', affiliation:'조조군', troop:5000,
+  johong_seoju: { id:'johong_seoju', name:'조홍군', kind:'enemy', forced:null, affiliation:'조조군', troop:3000,
+    stats:{atk:68, def:64, spd:54, int:38, cha:50},
     intro:'…형님의 원수, 내가 반드시 갚아드리겠소.', sprite:SPRITE_COALITION },
-  akjin_seoju: { id:'akjin_seoju', name:'악진군', kind:'flavor', affiliation:'조조군', troop:5000,
+  akjin_seoju: { id:'akjin_seoju', name:'악진군', kind:'enemy', forced:null, affiliation:'조조군', troop:3000,
+    stats:{atk:77, def:59, spd:64, int:40, cha:42},
     intro:'명만 내리시면 언제든 성벽을 넘겠습니다.', sprite:SPRITE_COALITION },
-  ugeum_seoju: { id:'ugeum_seoju', name:'우금군', kind:'flavor', affiliation:'조조군', troop:5000,
+  ugeum_seoju: { id:'ugeum_seoju', name:'우금군', kind:'enemy', forced:null, affiliation:'조조군', troop:3000,
+    stats:{atk:67, def:72, spd:49, int:58, cha:47},
     intro:'군기가 흐트러지지 않도록 단속하고 있습니다.', sprite:SPRITE_COALITION },
-  ijeon_seoju: { id:'ijeon_seoju', name:'이전군', kind:'flavor', affiliation:'조조군', troop:5000,
+  ijeon_seoju: { id:'ijeon_seoju', name:'이전군', kind:'enemy', forced:null, affiliation:'조조군', troop:3000,
+    stats:{atk:61, def:59, spd:51, int:62, cha:63},
     intro:'…이 많은 백성까지 해할 필요가 있을지 모르겠군.', sprite:SPRITE_COALITION },
   // 조조군이 물러난 뒤 서주 자유탐방 중 만나는 서주 사람들.
   michuk: { id:'michuk', name:'미축', kind:'recruit', forced:null, affiliation:'서주',
