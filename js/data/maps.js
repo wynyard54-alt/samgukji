@@ -314,6 +314,10 @@ if (false) (function () {
       { id:'akjin_seoju', x:24, y:21, label:'악진군', fixed:true, storyGate:'seojuArrived' },
       { id:'ugeum_seoju', x:30, y:19, label:'우금군', fixed:true, storyGate:'seojuArrived' },
       { id:'ijeon_seoju', x:20, y:19, label:'이전군', fixed:true, storyGate:'seojuArrived' },
+      // 조조군 퇴각 후 자유탐방이 시작될 때 addNpc()로 등장시키는 서주 사람들.
+      { id:'michuk', x:29, y:20, label:'미축', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'mibang', x:29, y:21, label:'미방', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'jingyu', x:23, y:22, label:'진규', fixed:true, storyGate:'seojuFreeRoam' },
     ],
     ambient:[
       ['merchant',13,5,'ash',2],['farmer',20,5,'earth',2],['woman',27,5,'ash',2],

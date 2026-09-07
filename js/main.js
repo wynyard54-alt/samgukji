@@ -834,6 +834,20 @@ function checkDeadlines() {
     Dialogue.show(STORY.act2_forced, () => { captureCoalitionDepartCheckpoint(); openArmyBox(goCoalitionCamp); });
     return true;
   }
+  if (stage === 'seoju_free' && !gs.flags.dogyeomDied
+      && gs.flags.seojuFreeRoamStartAbsMonth != null
+      && absMonth(gs.year, gs.month) >= gs.flags.seojuFreeRoamStartAbsMonth + SEOJU_DOGYEOM_DEATH_MONTHS) {
+    gs.flags.dogyeomDied = true;
+    MapView.lockMovement(true);
+    Dialogue.show(STORY.dogyeom_death, () => {
+      MapView.removeNpc('dogyeom');
+      MapView.lockMovement(false);
+      gs.addFame(40);
+      updateHUD();
+      toast('유비가 서주목의 자리를 이어받았다.');
+    });
+    return true;
+  }
   return false;
 }
 
@@ -885,6 +899,9 @@ const SEOJU_JOJO_ARMY_IDS = [
   'jojo_jungong', 'habudon_seoju', 'habuyeon_seoju', 'join_seoju',
   'johong_seoju', 'akjin_seoju', 'ugeum_seoju', 'ijeon_seoju',
 ];
+const SEOJU_FREEROAM_NPC_IDS = ['michuk', 'mibang', 'jingyu'];
+// 자유탐방 시작 후 이만큼(개월) 지나면 도겸이 사망하고 유비가 서주를 잇는다.
+const SEOJU_DOGYEOM_DEATH_MONTHS = 6;
 
 function goSeojuFree() {
   Dialogue.show(STORY.seoju_urgent_call, () => {
@@ -907,6 +924,8 @@ function goSeojuFree() {
         Dialogue.show(STORY.dogyeom_disband, () => {
           MapView.lockMovement(false);
           GameState.flags.seojuFreeRoamStartAbsMonth = absMonth(GameState.year, GameState.month);
+          GameState.flags.seojuFreeRoam = true;
+          SEOJU_FREEROAM_NPC_IDS.forEach((id) => MapView.addNpc(id));
           toast('서주 성내를 둘러보자.');
         });
       });

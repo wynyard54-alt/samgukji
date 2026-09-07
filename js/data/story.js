@@ -230,4 +230,23 @@ const STORY = {
     { speaker: '도겸', text: '…허허, 역시 사양하시는구려. 그대의 그런 마음이 더욱 미덥소. 이 이야기는 훗날 다시 하십시다.' },
     { speaker: '내레이션', text: '유비는 도겸의 청을 정중히 사양했으나, 서주와의 인연은 이렇게 시작되었다.' },
   ],
+
+  // 자유탐방이 일정 기간 지나면 발동되는 도겸의 죽음과 유비의 서주 계승.
+  // 삽화 한 장이 계속 화면을 덮은 채로 이어지는 하나의 연속된 장면이다.
+  dogyeom_death: [
+    { speaker: '내레이션', text: '서주에 자리를 잡은 지 얼마 지나지 않아, 도겸이 자리보전하고 눕고 말았다.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '전령', text: '유 사군! 도겸 어르신께서 위중하시다 합니다! 어서 처소로 와주십시오!', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '내레이션', text: '유비 삼형제가 서둘러 도겸의 처소로 향했다.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '도겸', text: '…어서 오셨구려, 유 사군. 이 늙은 몸이 이제 다한 모양이오.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '유비', text: '어른, 그런 말씀 마십시오! 어의를 불러오겠습니다!', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '도겸', text: '…허허, 이젠 의원도 소용없소. 그보다…', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '도겸', text: '전에 청했던 그 이야기, 다시 한 번 청하려 하오. 이 서주, 그대가 맡아주시오.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '미축', text: '사군, 도겸 어른의 뜻이 정녕 그러하십니다. 이제는 받아들이심이 옳을 듯합니다.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '관우', text: '형님, 도겸 어른의 마지막 청입니다. 부디 헤아려 주십시오.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '장비', text: '형님! 여기서까지 사양하면 도겸 어른 눈도 못 감으시겠수!', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '유비', text: '…알겠습니다. 어른의 뜻, 이 유비가 받들겠습니다.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '도겸', text: '…고맙소… 참으로… 고맙소…', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '내레이션', text: '그 말을 끝으로, 도겸은 편안히 눈을 감았다.', scene: 'assets/illust/dogyeom_deathbed.jpg' },
+    { speaker: '내레이션', text: '서주 백성들은 새로운 주인, 유비를 맞이하게 되었다.' },
+  ],
 };

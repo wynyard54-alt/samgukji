@@ -154,6 +154,15 @@ const ROSTER = {
     intro:'군기가 흐트러지지 않도록 단속하고 있습니다.', sprite:SPRITE_COALITION },
   ijeon_seoju: { id:'ijeon_seoju', name:'이전군', kind:'flavor', affiliation:'조조군', troop:5000,
     intro:'…이 많은 백성까지 해할 필요가 있을지 모르겠군.', sprite:SPRITE_COALITION },
+  // 조조군이 물러난 뒤 서주 자유탐방 중 만나는 서주 사람들.
+  michuk: { id:'michuk', name:'미축', kind:'recruit', forced:null, affiliation:'서주',
+    stats:{atk:20, def:24, spd:22, int:76, cha:82},
+    intro:'서주의 미축이라 하오. 도겸 어른을 오래 모셔왔소만, 이제 유 사군께 힘을 보태고 싶소.' },
+  mibang: { id:'mibang', name:'미방', kind:'recruit', forced:null, affiliation:'서주',
+    stats:{atk:34, def:36, spd:32, int:48, cha:40},
+    intro:'형님을 따라왔소이다. 큰 도움은 못 되겠지만, 힘껏 돕겠소.' },
+  jingyu: { id:'jingyu', name:'진규', kind:'flavor', affiliation:'서주',
+    intro:'하비상 진규요. 그대의 그릇이 어떤지, 이렇게 직접 보러 왔소.', sprite:SPRITE_ELDER },
 };
 
 // 책사형(지력형) vs 무력형 판정 — 등용 경로가 갈리는 기준
