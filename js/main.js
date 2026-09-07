@@ -938,16 +938,26 @@ function goSeojuFree() {
       // 정도만 자세를 바꾸는 편이 실제 진영다워 보인다 (radius:1).
       MapView.startNpcStir(SEOJU_JOJO_ARMY_IDS, { radius: 1, intervalMs: 900 });
       setTimeout(() => {
-        Dialogue.show(STORY.puyang_report_retreat, () => {
+        // 연의에서는 그냥 대치만 하다 물러나지 않는다 - 장비가 우금과 짧게
+        // 겨루고, 그 뒤 삼형제가 성 안으로 들어가 유비가 조조에게 회군을
+        // 청하는 서신을 쓴다. 조조는 그 서신을 명분 삼아, 실제로는 복양
+        // 소식 때문에 물러난다.
+        Dialogue.show(STORY.seoju_jangbi_skirmish, () => {
           MapView.stopNpcStir();
-          SEOJU_JOJO_ARMY_IDS.forEach((id) => MapView.removeNpc(id));
           MapView.clearCameraFocus();
-          Dialogue.show(STORY.dogyeom_disband, () => {
-            MapView.lockMovement(false);
-            GameState.flags.seojuFreeRoamStartAbsMonth = absMonth(GameState.year, GameState.month);
-            GameState.flags.seojuFreeRoam = true;
-            SEOJU_FREEROAM_NPC_IDS.forEach((id) => MapView.addNpc(id));
-            toast('서주 성내를 둘러보자.');
+          Dialogue.show(STORY.seoju_city_entry, () => {
+            Dialogue.show(STORY.seoju_yubi_letter, () => {
+              Dialogue.show(STORY.puyang_report_retreat, () => {
+                SEOJU_JOJO_ARMY_IDS.forEach((id) => MapView.removeNpc(id));
+                Dialogue.show(STORY.dogyeom_disband, () => {
+                  MapView.lockMovement(false);
+                  GameState.flags.seojuFreeRoamStartAbsMonth = absMonth(GameState.year, GameState.month);
+                  GameState.flags.seojuFreeRoam = true;
+                  SEOJU_FREEROAM_NPC_IDS.forEach((id) => MapView.addNpc(id));
+                  toast('서주 성내를 둘러보자.');
+                });
+              });
+            });
           });
         });
       }, 2600);
