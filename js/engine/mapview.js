@@ -118,6 +118,12 @@ const MapView = (function () {
   });
 
   function load(id, opts) {
+    // 이전 지도에서 진행 중이던 컷신 연출(카메라 고정/군세 술렁임)이 있었다면
+    // 새 지도로 넘어갈 때 확실히 정리한다.
+    if (cameraPanTimer) { clearInterval(cameraPanTimer); cameraPanTimer = null; }
+    if (stirTimer) { clearInterval(stirTimer); stirTimer = null; }
+    stirHomes = null;
+    cameraFocus = null;
     mapId = id;
     map = MAPS[id];
     player = { x:map.playerStart.x, y:map.playerStart.y, dir:'down' };
@@ -185,14 +191,93 @@ const MapView = (function () {
     }, 720);
   }
 
+  // 컷신 중 잠시 카메라를 플레이어가 아닌 다른 지점(예: 성벽 밖 적 군세)에
+  // 고정해두고 싶을 때 쓰는 오버라이드. null이면 평소대로 플레이어를 따라간다.
+  let cameraFocus = null;
   function updateCamera(snap) {
-    const targetX = player.x*TILE + TILE/2 - camera.w/2;
-    const targetY = player.y*TILE + TILE/2 - camera.h/2;
+    const fx = cameraFocus ? cameraFocus.x : player.x;
+    const fy = cameraFocus ? cameraFocus.y : player.y;
+    const targetX = fx*TILE + TILE/2 - camera.w/2;
+    const targetY = fy*TILE + TILE/2 - camera.h/2;
     const maxX = Math.max(0, map.width*TILE - camera.w);
     const maxY = Math.max(0, map.height*TILE - camera.h);
     camera.x = clamp(targetX, 0, maxX);
     camera.y = clamp(targetY, 0, maxY);
     if (!snap) { camera.x = Math.round(camera.x); camera.y = Math.round(camera.y); }
+  }
+
+  // 카메라를 (x,y) 타일로 부드럽게 이동시켜 그 지점에 고정한다 - 대사 도중 화면
+  // 전환 없이 "성벽 밖 적진을 비춘다" 같은 연출에 쓴다. clearCameraFocus()를
+  // 부르기 전까지는 플레이어가 움직여도 카메라가 따라가지 않는다.
+  let cameraPanTimer = null;
+  function panCameraTo(x, y, durationMs) {
+    if (!map) return;
+    if (cameraPanTimer) { clearInterval(cameraPanTimer); cameraPanTimer = null; }
+    const startX = camera.x, startY = camera.y;
+    const maxX = Math.max(0, map.width*TILE - camera.w);
+    const maxY = Math.max(0, map.height*TILE - camera.h);
+    const endX = clamp(x*TILE + TILE/2 - camera.w/2, 0, maxX);
+    const endY = clamp(y*TILE + TILE/2 - camera.h/2, 0, maxY);
+    cameraFocus = { x, y };
+    const steps = Math.max(1, Math.round((durationMs || 600) / 40));
+    let i = 0;
+    cameraPanTimer = setInterval(() => {
+      i++;
+      const t = Math.min(1, i / steps);
+      camera.x = startX + (endX - startX) * t;
+      camera.y = startY + (endY - startY) * t;
+      render();
+      if (t >= 1) { clearInterval(cameraPanTimer); cameraPanTimer = null; }
+    }, 40);
+  }
+
+  function clearCameraFocus() {
+    cameraFocus = null;
+    if (cameraPanTimer) { clearInterval(cameraPanTimer); cameraPanTimer = null; }
+    if (map) { updateCamera(true); render(); }
+  }
+
+  // 성벽 밖에 늘어선 서사 전용 군세가 가만히 서있지만 않고 술렁이는 모습을
+  // 잠깐 보여주는 연출용 - 각자 원래 자리를 중심으로 radius 칸 안에서만
+  // 오간다. stopNpcStir()가 원래 자리로 되돌려놓고 멈춘다.
+  let stirTimer = null;
+  let stirHomes = null;
+  function startNpcStir(ids, opts) {
+    stopNpcStir();
+    const radius = (opts && opts.radius) || 3;
+    const intervalMs = (opts && opts.intervalMs) || 450;
+    stirHomes = {};
+    for (const id of ids) {
+      const n = liveNpcs.find((x) => x.id === id);
+      if (n) stirHomes[id] = { x: n.x, y: n.y };
+    }
+    stirTimer = setInterval(() => {
+      for (const id of ids) {
+        const n = liveNpcs.find((x) => x.id === id);
+        const home = stirHomes[id];
+        if (!n || !home) continue;
+        const dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+        const [dx,dy] = dirs[Math.floor(Math.random()*dirs.length)];
+        const nx = n.x+dx, ny = n.y+dy;
+        if (Math.abs(nx-home.x) > radius || Math.abs(ny-home.y) > radius) continue;
+        if (!isWalkable(nx,ny)) continue;
+        if (nx === player.x && ny === player.y) continue;
+        n.x = nx; n.y = ny;
+      }
+      render();
+    }, intervalMs);
+  }
+
+  function stopNpcStir() {
+    if (stirTimer) { clearInterval(stirTimer); stirTimer = null; }
+    if (stirHomes) {
+      for (const id in stirHomes) {
+        const n = liveNpcs.find((x) => x.id === id);
+        if (n) { n.x = stirHomes[id].x; n.y = stirHomes[id].y; }
+      }
+      stirHomes = null;
+    }
+    if (map) render();
   }
 
   function effectiveNpc(n) {
@@ -762,6 +847,7 @@ const MapView = (function () {
 
   return {
     load,render,removeNpc,addNpc,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,setPlayerPos,
+    panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},
     get playerPos(){return {x:player.x,y:player.y,dir:player.dir};},

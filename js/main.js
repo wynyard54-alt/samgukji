@@ -349,14 +349,6 @@ function updateHUD() {
     } else {
       progressBtn.classList.add('hidden');
     }
-  } else if (stage === 'seoju_free') {
-    if (gs.flags.seojuAwaitingPuyangNews) {
-      progressBtn.classList.remove('hidden');
-      progressBtn.textContent = '복양의 소식을 기다린다';
-      progressBtn.onclick = seojuContinueToPuyangNews;
-    } else {
-      progressBtn.classList.add('hidden');
-    }
   } else {
     progressBtn.classList.add('hidden');
   }
@@ -928,28 +920,25 @@ function goSeojuFree() {
     updateHUD();
     Dialogue.show(STORY.seoju_wall_standoff, () => {
       // 대사를 다 읽자마자 곧바로 조조가 물러가버리면 정작 성벽 밖 군세를 구경할
-      // 틈이 없다는 피드백을 반영해, 여기서 한 호흡 끊고 플레이어가 직접 성문
-      // 밖으로 나가 조조 군세를 둘러볼 수 있게 한 뒤 진행 버튼으로 이어간다.
-      MapView.lockMovement(false);
-      GameState.flags.seojuAwaitingPuyangNews = true;
-      updateHUD();
-      centerAlert('성문 밖으로 나가 조조의 군세를 살펴보자.');
-    });
-  });
-}
-
-function seojuContinueToPuyangNews() {
-  GameState.flags.seojuAwaitingPuyangNews = false;
-  MapView.lockMovement(true);
-  updateHUD();
-  Dialogue.show(STORY.puyang_report_retreat, () => {
-    SEOJU_JOJO_ARMY_IDS.forEach((id) => MapView.removeNpc(id));
-    Dialogue.show(STORY.dogyeom_disband, () => {
-      MapView.lockMovement(false);
-      GameState.flags.seojuFreeRoamStartAbsMonth = absMonth(GameState.year, GameState.month);
-      GameState.flags.seojuFreeRoam = true;
-      SEOJU_FREEROAM_NPC_IDS.forEach((id) => MapView.addNpc(id));
-      toast('서주 성내를 둘러보자.');
+      // 틈이 없다는 피드백을 반영했다 - 플레이어를 직접 내보내는 대신, 카메라를
+      // 성벽 밖 조조 진영으로 잠깐 옮겨 군세가 술렁이는 모습을 보여준 뒤에야
+      // "그날 진영이 소란스러워졌다"는 대사로 이어간다.
+      MapView.panCameraTo(24, 19, 700);
+      MapView.startNpcStir(SEOJU_JOJO_ARMY_IDS, { radius: 3, intervalMs: 450 });
+      setTimeout(() => {
+        Dialogue.show(STORY.puyang_report_retreat, () => {
+          MapView.stopNpcStir();
+          SEOJU_JOJO_ARMY_IDS.forEach((id) => MapView.removeNpc(id));
+          MapView.clearCameraFocus();
+          Dialogue.show(STORY.dogyeom_disband, () => {
+            MapView.lockMovement(false);
+            GameState.flags.seojuFreeRoamStartAbsMonth = absMonth(GameState.year, GameState.month);
+            GameState.flags.seojuFreeRoam = true;
+            SEOJU_FREEROAM_NPC_IDS.forEach((id) => MapView.addNpc(id));
+            toast('서주 성내를 둘러보자.');
+          });
+        });
+      }, 2600);
     });
   });
 }
