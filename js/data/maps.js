@@ -374,6 +374,38 @@ if (false) (function () {
   };
 })();
 
+// ---------------- 챕터2 (관우) : 하비성 관청 [장면2] ----------------
+// 실제 하비 관청 배경이 만들어지기 전까지 반동탁연합 진영 그림을 그대로
+// 재사용한다 - 이 씬은 실외 진영이 아니라 관청 뜰이라는 설정이지만,
+// 새 배경을 그리기 전까지는 이미 검증된 이 배경을 임시로 쓴다.
+(function () {
+  const w = 24, h = 16;
+  const grid = makeGrid(w, h, 0);
+  rectFill(grid, 0, 0, w - 1, 0, 4);
+  rectFill(grid, 0, h - 1, w - 1, h - 1, 4);
+  rectFill(grid, 0, 0, 0, h - 1, 4);
+  rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
+  rectFill(grid, 11, h - 1, 13, h - 1, 0); // 남문 통로
+  rectFill(grid, 9, 1, 15, 5, 2); // 관청 건물 자리
+
+  MAPS.habi = {
+    name: '하비성 관청',
+    width: w, height: h,
+    tiles: grid,
+    backgroundKey: 'camp_overview',
+    playerStart: { x:12, y:14 },
+    camera: { viewportW:800, viewportH:480 },
+    decor: [
+      { type:'mapLabel', x:12.0, y:0.5, label:'하비성 관청' },
+    ],
+    npcs: [
+      { id:'yubi', x:12, y:8, label:'유비', fixed:true },
+      { id:'jangbi', x:9, y:9, label:'장비', fixed:true },
+      { id:'michuk', x:15, y:9, label:'미축', fixed:true },
+    ],
+  };
+})();
+
 // ---------------- 호로관 전선 (사수관 이후 잔당 소탕 + 여포) ----------------
 (function () {
   const w = 40, h = 28;

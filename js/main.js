@@ -62,6 +62,7 @@ let coalitionDepartCheckpoint = null; // 반동탁연합 출정(군세 편성) �
 
 const DEADLINES = { takhyeon: 186, pyeongwon: 188 };
 const JANGSUN_TROOP_GOAL = 2000; // 유우가 요구하는 최소 모병 규모 (장순 3000명에 맞선 승산 확보용)
+const HABI_RECRUIT_GOAL = 5000; // 하비성 관청(챕터2 장면2)에서 원술 정벌 전 모아야 하는 병력
 const MIN_PYEONGWON_STAY_MONTHS = 12; // 탁현 체류가 길어져 늦게 도착해도 평원현에서 최소 이만큼은 머물게 보장
 function absMonth(year, month) { return year * 12 + month; } // 연/월을 단조증가하는 절대 개월수로 환산
 // 평원현 마감 절대 개월수: 원래 기한(188년말)과, 실제 도착일+최소 체류기간 중 더 늦은 쪽을 사용한다.
@@ -197,6 +198,11 @@ function getObjectives() {
   } else if (stage === 'seoju_free') {
     const metCount = ['michuk', 'mibang', 'jingyu'].filter((id) => !!gs.npcStatus[id]).length;
     if (metCount < 3) list.push(`서주의 유력 인사들과 인사하며 새로운 인재 등용 (${metCount}/3)`);
+  } else if (stage === 'habi_camp') {
+    const step = gs.flags.habiStep || 0;
+    if (step === 0) list.push('유비를 찾아가자');
+    else if (step === 1) list.push(`병사를 모집하여 세력을 키워라 (${gs.resources.troop}/${HABI_RECRUIT_GOAL})`);
+    else if (step === 2) list.push('유비를 찾아가 회의에 참석하자');
   } else if (stage === 'camp') {
     list.push('제후들과 인사하고 손견을 도와 화웅과 맞서기');
   } else if (stage === 'warmap') {
@@ -352,6 +358,14 @@ function updateHUD() {
     } else {
       progressBtn.classList.add('hidden');
     }
+  } else if (stage === 'seoju_free') {
+    if (gs.flags.dogyeomDied) {
+      progressBtn.classList.remove('hidden');
+      progressBtn.textContent = '하비성으로 이동';
+      progressBtn.onclick = goHabiCamp;
+    } else {
+      progressBtn.classList.add('hidden');
+    }
   } else {
     progressBtn.classList.add('hidden');
   }
@@ -369,6 +383,7 @@ function interactNPC(id, context) {
     Dialogue.show([{ speaker: '유비', text: '아우들, 반동탁연합에 합류했으니 이제부터가 진짜 시작일세. 마음 단단히 먹게.' }]);
     return;
   }
+  if (id === 'yubi' && stage === 'habi_camp') { handleHabiYubi(); return; }
   if (id === 'yubi') { handleYubi(); return; }
 
   if (id === 'songyeon' && stage === 'camp') {
@@ -858,6 +873,19 @@ function checkDeadlines() {
     });
     return true;
   }
+  if (stage === 'habi_camp' && gs.flags.habiStep === 1 && gs.resources.troop >= HABI_RECRUIT_GOAL) {
+    gs.flags.habiStep = 1.5; // 컷신 진행 중 - 완료 후 2로 넘어간다 (중복 발동 방지)
+    MapView.lockMovement(true);
+    Dialogue.show(STORY.habi_xuchang_intercept, () => {
+      Dialogue.show(STORY.habi_messenger_call, () => {
+        MapView.lockMovement(false);
+        gs.flags.habiStep = 2;
+        updateHUD();
+        centerAlert('유비를 찾아가 회의에 참석하자.');
+      });
+    });
+    return true;
+  }
   return false;
 }
 
@@ -963,6 +991,69 @@ function goSeojuFree() {
       });
     });
   });
+}
+
+// ---------------- 챕터2 (관우) : 하비성 관청 [장면2] ----------------
+// 실제 하비 관청 배경/지도가 만들어지기 전까지는 반동탁연합 진영 지도를
+// 임시로 재사용한다. habiStep으로 진행 단계를 추적한다:
+// 0=유비를 아직 못 만남, 1=여포 정착 후 병사 모집 중, 1.5=밀서 컷신 진행 중
+// (중복 발동 방지), 2=회의 대기, 3=원술 정벌 출정 완료.
+function goHabiCamp() {
+  stage = 'habi_camp';
+  showScreen('screen-explore');
+  MapView.load('habi', {
+    onInteract: interactNPC,
+    onApSpent: updateHUD,
+    onApBlocked,
+    onAmbientInteract: runAmbientEvent,
+    onStep: renderMinimap,
+  });
+  updateHUD();
+  Dialogue.show(STORY.habi_intro, () => {
+    centerAlert('유비를 찾아가자.');
+  });
+}
+
+function handleHabiYubi() {
+  const step = GameState.flags.habiStep || 0;
+  if (step === 0) {
+    Dialogue.show(STORY.habi_yeopo_debate, () => {
+      showChoice('여포를 서주에 받아들이는 것을 어떻게 생각하는가?', [
+        { label: '반대한다', cb: () => {
+          Dialogue.show([{ speaker: '관우', text: '여포는 자기 군주도 해하고 배신하는 믿을 수 없는 자입니다.' }], () => {
+            Dialogue.show(STORY.habi_yeopo_result, () => {
+              GameState.flags.habiStep = 1;
+              updateHUD();
+              toast('병사를 모집하여 세력을 키우자.');
+            });
+          });
+        } },
+        { label: '찬성한다', cb: () => {
+          Dialogue.show([{ speaker: '관우', text: '여포가 머문다면 조조도 쉽게 서주를 공격하진 못할 겁니다.' }], () => {
+            Dialogue.show(STORY.habi_yeopo_result, () => {
+              GameState.flags.habiStep = 1;
+              updateHUD();
+              toast('병사를 모집하여 세력을 키우자.');
+            });
+          });
+        } },
+      ]);
+    });
+    return;
+  }
+  if (step === 1) {
+    Dialogue.show([{ speaker: '유비', text: `아직 병사가 부족하네 (${GameState.resources.troop}/${HABI_RECRUIT_GOAL}). 자네도 힘써주게.` }]);
+    return;
+  }
+  if (step === 2) {
+    Dialogue.show(STORY.habi_council, () => {
+      GameState.flags.habiStep = 3;
+      updateHUD();
+      toast('원술 토벌을 위해 출정했다. (다음 장면에서 계속)');
+    });
+    return;
+  }
+  Dialogue.show([{ speaker: '유비', text: '원술 토벌 준비를 서둘러야겠네.' }]);
 }
 
 // 반동탁연합 출정(군세 편성) 직전 시점의 GameState를 남겨둔다 - 진행 버튼과
@@ -2314,6 +2405,11 @@ document.getElementById('btn-nextmonth').onclick = () => {
   }
   const income = scholarGoldIncome();
   if (income > 0) GameState.addResource({ gold: income });
+  // 하비성 관청(챕터2 장면2) - 병사 모집 미션이 진행 중이면 매달 자동으로
+  // 조금씩 병력이 늘어난다 (별도 모병 NPC 없이 시간 경과로 세력이 커지는 것을 표현).
+  if (stage === 'habi_camp' && GameState.flags.habiStep === 1 && GameState.resources.troop < HABI_RECRUIT_GOAL) {
+    GameState.addResource({ troop: 500 + Math.floor(Math.random() * 200) });
+  }
   updateHUD();
   if (checkDeadlines()) return;
 
