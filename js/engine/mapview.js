@@ -52,22 +52,28 @@ const MapView = (function () {
     const baseH = (map.camera && map.camera.viewportH) || Math.min(DEFAULT_VIEW_H, map.height * TILE);
     const isRotated = window.innerWidth > 0 && window.innerHeight > 0 &&
       window.innerWidth < window.innerHeight && window.innerWidth <= 1024;
-    const ratio = baseW / baseH;
-    let availW, availH, capW;
     if (isRotated) {
       // 회전된 상태의 가용 가로폭은 물리적 세로 길이, 가용 세로폭은 물리적 가로
-      // 길이에서 안내문구 한 줄 정도의 최소 공간만 뺀 값이다.
-      availW = window.innerHeight * 0.995;
-      availH = Math.max(200, window.innerWidth - 30);
-      capW = baseW; // 모바일에서는 지도 설계 해상도 이상으로 확대하지 않는다
-    } else {
-      // 데스크톱/일반 가로화면: 창 크기에 맞춰 최대한 채운다 - 예전에는 항상
-      // baseW(보통 800)로 고정되어 큰 창에서 여백이 크게 남았다.
-      availW = window.innerWidth * 0.98;
-      availH = Math.max(200, window.innerHeight - 40);
-      capW = MAX_DESKTOP_VIEW_W;
+      // 길이에서 안내문구 한 줄 정도의 최소 공간만 뺀 값이다. 타일 카메라는
+      // 정해진 그림이 아니라 격자를 그대로 보여주는 창이라 가로세로 비율을
+      // 지킬 필요가 없다(격자를 더 보여주거나 덜 보여줄 뿐 찌그러지지 않는다).
+      // 예전에는 baseW/baseH 비율을 억지로 지키려고 letterbox(빈 여백)를
+      // 남겼는데, 그게 세로 모바일(특히 웹뷰로 감싼 APK)에서 화면 위아래에
+      // 큰 여백이 남는 원인이었다 - 비율 맞추기를 포기하고 가로/세로 각각
+      // 꽉 채운다.
+      const availW = window.innerHeight * 0.995;
+      const availH = Math.max(200, window.innerWidth - 30);
+      const w = Math.min(baseW * 1.6, availW);
+      const h = Math.min(baseH * 1.6, availH);
+      return { w: Math.round(w), h: Math.round(h) };
     }
-    let w = Math.min(capW, availW);
+    // 데스크톱/일반 가로화면: 지도 설계 비율(letterbox)을 유지한 채 창 크기에
+    // 맞춘다 - 예전에는 항상 baseW(보통 800)로 고정되어 큰 창에서 여백이
+    // 크게 남았다.
+    const ratio = baseW / baseH;
+    const availW = window.innerWidth * 0.98;
+    const availH = Math.max(200, window.innerHeight - 40);
+    let w = Math.min(MAX_DESKTOP_VIEW_W, availW);
     let h = w / ratio;
     if (h > availH) { h = availH; w = h * ratio; }
     return { w: Math.round(w), h: Math.round(h) };
