@@ -190,8 +190,9 @@ const ROSTER = {
   mibang: { id:'mibang', name:'미방', kind:'flavor', affiliation:'서주',
     stats:{atk:34, def:36, spd:32, int:48, cha:40},
     intro:'형님을 따라왔소이다. 큰 도움은 못 되겠지만, 힘껏 돕겠소.' },
-  // 진규·진등 부자는 서주 자유탐방 중 찾아가면(친밀도 없이) 곧바로 등용된다 -
-  // 손건과 달리 이미 마음을 정한 상태라 미방과 같은 "찾아서 등용" 취급.
+  // 진규·진등 부자는 도겸의 신하라, 도겸이 살아있는 동안 곧바로 등용하면
+  // 모양새가 좋지 않다 - 서주 자유탐방 중에는 조표처럼 대화만 나누고,
+  // 실제 등용은 도겸의 죽음과 함께(main.js의 dogyeom_death 처리) 이뤄진다.
   jingyu: { id:'jingyu', name:'진규', kind:'flavor', affiliation:'서주',
     stats:{atk:22, def:26, spd:20, int:80, cha:78},
     intro:'하비상 진규요. 그대의 그릇이 어떤지, 이렇게 직접 보러 왔소.', sprite:SPRITE_ELDER },

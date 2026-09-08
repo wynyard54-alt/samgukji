@@ -401,16 +401,17 @@ function interactNPC(id, context) {
   const st = GameState.npcStatus[id];
   // 미축·미방·진규는 씬1에서 이미 등용되어 있을 수 있으므로, 하비 관청에서는
   // 등용 여부와 무관하게 그냥 인사만 나눈다(진등은 별도의 모병 상호작용이
-  // 있어 아래에서 따로 처리한다).
+  // 있어 아래에서 따로 처리한다). habi_camp 시점에는 도겸이 이미 죽어
+  // 넷 모두 실제로 등용된 뒤이므로 이 분기는 항상 유효하다.
   if ((id === 'michuk' || id === 'mibang' || id === 'jingyu') && stage === 'habi_camp') {
     Dialogue.show([{ speaker: rd.name, text: rd.intro }]);
     return;
   }
-  // 미방·진규·진등은 이미 마음을 정한 상태라, 손건과 달리 친밀도를 쌓을 필요
-  // 없이 서주에서 찾아가 인사만 나누면 곧바로 등용된다("찾아서 등용"). 미축은
-  // 도겸의 죽음과 함께 자동으로 합류하므로(checkDeadlines의 dogyeom_death
-  // 처리) 여기 포함하지 않지만, 세 사람을 모두 "만난" 시점(서주 인사 3/3)에
-  // 도겸이 서주를 넘기는 장면으로 이어지는 건 동일하다.
+  // 미방은 이미 마음을 정한 상태라, 손건과 달리 친밀도를 쌓을 필요 없이
+  // 서주에서 찾아가 인사만 나누면 곧바로 등용된다("찾아서 등용"). 미축·진규·
+  // 진등은 도겸의 옛 신하라 도겸 생전에 곧바로 등용하면 모양새가 좋지 않으니
+  // (아래 rd.kind==='flavor' 분기에서) 대화만 나누고, 실제 등용은 도겸의
+  // 죽음과 함께(checkDeadlines의 dogyeom_death 처리) 한꺼번에 이뤄진다.
   if (SEOJU_INSTANT_JOIN_IDS.includes(id) && stage === 'seoju_free') {
     if (GameState.recruited.includes(id)) {
       Dialogue.show([{ speaker: rd.name, text: rd.intro }]);
@@ -465,10 +466,10 @@ function interactNPC(id, context) {
   }
 
   if (rd.kind === 'flavor') {
-    // 미축·조표는 등용 대상이 아니라 별도 상태 추적이 없지만, 서주 인사 (0/3)
-    // 임무에는 포함되므로 첫 만남을 기록해둔다 - 미축의 실제 등용은 도겸
-    // 사망 시 자동으로 처리된다.
-    const isFirstMeet = (id === 'michuk' || id === 'jopyo') && !GameState.npcStatus[id];
+    // 미축·진규·조표는 이 시점엔 등용되지 않고 대화만 나누므로 별도 상태
+    // 추적이 없지만, 서주 인사 (0/3) 임무에는 포함되므로 첫 만남을 기록해둔다 -
+    // 미축·진규의 실제 등용은 도겸 사망 시 자동으로 처리된다.
+    const isFirstMeet = (id === 'michuk' || id === 'jopyo' || id === 'jingyu') && !GameState.npcStatus[id];
     const completesGreetQuest = isFirstMeet &&
       SEOJU_GREET_IDS.filter((x) => x !== id && !!GameState.npcStatus[x]).length === SEOJU_GREET_IDS.length - 1;
     if (isFirstMeet) {
@@ -1071,11 +1072,12 @@ function checkDeadlines() {
       MapView.removeNpc('dogyeom');
       MapView.lockMovement(false);
       gs.addFame(40);
-      // 도겸의 옛 신하였던 미축·미방은 유언에 따라 별도의 등용 절차 없이
-      // 그대로 유비를 섬기게 된다.
-      ['michuk', 'mibang'].forEach((id) => { if (!gs.recruited.includes(id)) gs.recruit(id, 0); });
+      // 도겸의 옛 신하였던 미축·미방·진규·진등은 유언에 따라 별도의 등용
+      // 절차 없이 그대로 유비를 섬기게 된다 (진규·진등은 도겸 생전에는
+      // 대화만 나누고, 이 시점에야 비로소 실제로 합류한다).
+      ['michuk', 'mibang', 'jingyu', 'jindeung'].forEach((id) => { if (!gs.recruited.includes(id)) gs.recruit(id, 0); });
       updateHUD();
-      toast('유비가 서주목의 자리를 이어받았다. 미축과 미방도 유비를 섬기게 되었다.');
+      toast('유비가 서주목의 자리를 이어받았다. 미축·미방·진규·진등도 유비를 섬기게 되었다.');
     });
     return true;
   }
@@ -1156,7 +1158,10 @@ const SEOJU_FREEROAM_NPC_IDS = ['michuk', 'mibang', 'jingyu', 'jindeung', 'songg
 // 시작 시점에 각자의 확률(ROSTER[id].chance)로 한 번만 등장 여부를 굴린다.
 const SEOJU_RARE_RECRUIT_IDS = ['jingun', 'seoseong'];
 // 손건과 달리 친밀도 없이 만나기만 하면 곧바로 등용되는 인물(가족·측근).
-const SEOJU_INSTANT_JOIN_IDS = ['mibang', 'jingyu', 'jindeung'];
+// 진규·진등은 도겸의 신하라, 도겸이 아직 살아있는 동안 유비 쪽으로
+// 넘어오면 모양새가 좋지 않다 - 조표처럼 대화만 나누고, 실제 등용은
+// 도겸의 죽음과 함께(다른 옛 신하들과 같은 시점에) 이뤄진다.
+const SEOJU_INSTANT_JOIN_IDS = ['mibang'];
 // "서주 인사 (0/3)" 임무 - 이 셋을 모두 만나면(등용 포함) 도겸이 서주를
 // 넘기는 장면으로 이어진다. 미방은 유력 인사로 보기엔 무게감이 떨어져
 // 조표로 바꿨다(미방은 여전히 SEOJU_INSTANT_JOIN_IDS로 찾아서 등용된다).
