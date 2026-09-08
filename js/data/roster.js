@@ -15,7 +15,8 @@ const SPRITE_ELDER = { key:'npc_elder', fw:96, fh:96, sx:.67, sy:.70 };
 
 const ROSTER = {
   yubi: { id:'yubi', name:'유비', role:'주군', kind:'ally-story', affiliation:'유비군',
-    desc:'무소속에서 의용군을 일으킨 인물. 플레이어는 조작하지 않음.',
+    desc:'무소속에서 의용군을 일으킨 인물. 지도 위에서 WASD로 조작하는 것은 항상 관우지만, 회남 벌판처럼 유비군을 따로 편성하는 장면에서는 이 능력치로 그 군세의 무력을 계산한다.',
+    stats:{atk:55, def:50, spd:45, int:55, cha:95},
     sprite:{ key:'hero_yubi', fw:362, fh:362, sx:.185, sy:.185 } },
 
   gwanwoo: { id:'gwanwoo', name:'관우', role:'PC', kind:'playable', affiliation:'유비군',
@@ -219,13 +220,15 @@ const ROSTER = {
     stats:{atk:56, def:50, spd:46, int:28, cha:30}, intro:'…소문으로만 듣던 그대들이군. 이 몸이 상대해주겠소.' },
 
   // ---- 챕터2 (관우) : 회남 - 원술 정벌 [장면3] ----
-  // 기령만 실제 전투 대상(kind:'enemy')이고, 나머지는 서사 전용이다 -
-  // 교유는 유비군이 격파하는 것으로 자동 처리되고, 원술·뇌박·진란은
-  // 성에 틀어박혀 이번 장면에서는 싸우지 않는다.
+  // 기령과 교유만 실제 전투 대상(kind:'enemy')이고, 나머지는 서사 전용이다.
+  // 기령은 관우군이, 교유는 유비군이 직접 맡는다(warArmy:'ally'가 있으면
+  // main.js의 openWarCommandMenu가 GameState.allyArmy를 써서 판정한다) -
+  // 원술·뇌박·진란은 성에 틀어박혀 이번 장면에서는 싸우지 않는다.
   giryeong: { id:'giryeong', name:'기령', kind:'enemy', forced:null, affiliation:'원술군', troop:5000,
     stats:{atk:80, def:65, spd:60, int:45, cha:50},
     intro:'…네놈이 관우로구나! 이 기령의 삼첨도를 받아보아라!', sprite:SPRITE_COALITION },
-  gyoyu: { id:'gyoyu', name:'교유', kind:'flavor', affiliation:'원술군', troop:4000,
+  gyoyu: { id:'gyoyu', name:'교유', kind:'enemy', forced:null, affiliation:'원술군', troop:4000, warArmy:'ally',
+    stats:{atk:60, def:55, spd:50, int:30, cha:35},
     intro:'유비 그자가 감히 우리 주공을 노린단 말이냐!', sprite:SPRITE_COALITION },
   wonsul: { id:'wonsul', name:'원술', kind:'flavor', affiliation:'원술군', troop:8000,
     intro:'…흥, 유비 따위가 감히 이 원술의 땅을 넘본단 말이냐. 성문을 굳게 걸어라!', sprite:SPRITE_COALITION },

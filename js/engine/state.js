@@ -12,7 +12,8 @@ const GameState = {
   npcSpawnPos: {}, // id -> 랜덤 등장 장수의 등장 좌표 {x,y} (한 번 정해지면 고정)
   pyeongwonEnterAbsMonth: null, // 평원현에 실제로 진입한 절대 개월수 (늦게 도착해도 최소 체류기간을 보장하기 위함)
   heroHp: null, // 자유 등용전 사이 이월되는 현재 체력 (null = 최대치)
-  army: null, // 반동탁연합 출정용 유비군 편성 {deputy, troop, rice}
+  army: null, // 플레이어가 직접 편성한 주력 군세 {commanderId, deputy, generals, troop, rice}
+  allyArmy: null, // 플레이어가 별도로 편성해 직접 지휘하는 두 번째 군세 (회남 벌판의 유비군 등) - 같은 구조
   trainingEv: 0, // 훈련 노력치 (100마다 스텟 1 상승)
   combatStatUps: 0, // 공/방/속 상승 누적 횟수 (skillThreshold 도달시 필살공격 습득)
   skillThreshold: 2 + Math.floor(Math.random() * 2), // 2 또는 3
@@ -36,6 +37,7 @@ const GameState = {
     this.pyeongwonEnterAbsMonth = null;
     this.heroHp = null;
     this.army = null;
+    this.allyArmy = null;
     this.trainingEv = 0;
     this.combatStatUps = 0;
     this.skillThreshold = 2 + Math.floor(Math.random() * 2);

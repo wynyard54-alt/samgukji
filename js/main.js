@@ -118,6 +118,15 @@ function showChoice(text, options) {
 
 function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
+// 이름 마지막 글자의 받침 유무에 따라 "이"/"가" 중 맞는 주격 조사를 고른다
+// (예: 관우 -> 가, 손권 -> 이) - 군세 편성창처럼 인물 이름을 문장에 끼워 넣는
+// 곳에서 쓴다.
+function subjectParticle(name) {
+  const code = name.charCodeAt(name.length - 1) - 0xac00;
+  if (code < 0 || code > 11171) return '가';
+  return code % 28 === 0 ? '가' : '이';
+}
+
 const WARMAP_AP_CAP = 8; // 기병 이동 등이 한 턴에 지나치게 멀리 가지 않도록 전쟁맵에서만 행동력 상한을 건다
 
 function effectiveApMax() {
@@ -737,8 +746,32 @@ function simulateArmyBattle(player, enemy) {
   return { winner, rounds, playerTroopsLeft:pT, enemyTroopsLeft:eT };
 }
 
+// 이 적을 어느 편의 군세가 상대하는지 정한다 - 기본은 플레이어가 직접
+// 편성한 군세(GameState.army, 지금까지는 늘 관우군)이고, ROSTER 항목에
+// warArmy:'ally'가 있으면 플레이어가 따로 편성한 동맹군(GameState.allyArmy,
+// 회남 벌판의 유비군)을 대신 쓴다 - 같은 세력(관우/유비)끼리는 플레이어가
+// 직접 지휘하되, 나중에 반동탁연합의 조조·원소나 하비전의 조조군처럼 진짜
+// 별개 세력이 돕는 경우가 생기면 여기에 warArmy:'ai:조조' 같은 새 갈래를
+// 추가해 AI가 알아서 판정하게 하면 된다.
+function resolveWarArmy(rd) {
+  if (rd.warArmy === 'ally') {
+    const army = GameState.allyArmy;
+    return army ? { army, commanderId: army.commanderId } : null;
+  }
+  return { army: GameState.army, commanderId: GameState.mainHero };
+}
+
+function warArmyGrade(ctx) {
+  return gradeFor(armyMuryeokValue(ROSTER[ctx.commanderId], ctx.army.generals), MURYEOK_GRADES);
+}
+
 function openWarCommandMenu(id) {
   const rd = ROSTER[id];
+  const ctx = resolveWarArmy(rd);
+  if (!ctx) {
+    toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`);
+    return;
+  }
   showChoice(`${rd.name} 군세와 마주쳤다. 어떻게 하시겠습니까?`, [
     { label: '일기토', cb: () => attemptDuelChallenge(id) },
     { label: '전투', cb: () => resolveArmyBattle(id) },
@@ -753,7 +786,8 @@ function openWarCommandMenu(id) {
 const STRATEGY_SUCCESS_CHANCE = { S: 80, A: 65, B: 50, C: 35, D: 20 };
 function attemptStrategy(id) {
   const rd = ROSTER[id];
-  const deputyId = GameState.army && GameState.army.deputy;
+  const ctx = resolveWarArmy(rd);
+  const deputyId = ctx && ctx.army.deputy;
   const deputy = deputyId ? ROSTER[deputyId] : null;
   if (!deputy) {
     toast('책략을 쓰려면 군세 편성에서 책사를 부장으로 등용해야 합니다.');
@@ -784,7 +818,8 @@ function attemptDuelChallenge(id) {
     });
     return;
   }
-  const challengerGrade = playerArmyGrade();
+  const ctx = resolveWarArmy(rd);
+  const challengerGrade = ctx ? warArmyGrade(ctx) : 'D';
   const defenderGrade = enemyArmyGrade(rd);
   const chance = duelAcceptChance(challengerGrade, defenderGrade);
   const roll = Math.random() * 100;
@@ -800,9 +835,10 @@ function attemptDuelChallenge(id) {
 
 function resolveArmyBattle(id, opts) {
   const rd = ROSTER[id];
-  const army = GameState.army;
+  const ctx = resolveWarArmy(rd);
+  const army = ctx ? ctx.army : null;
   const result = simulateArmyBattle(
-    { troops: army ? army.troop : 0, grade: playerArmyGrade(), morale: GameState.morale, onGate: false },
+    { troops: army ? army.troop : 0, grade: ctx ? warArmyGrade(ctx) : 'D', morale: GameState.morale, onGate: false },
     { troops: rd.troop || 1000, grade: enemyArmyGrade(rd), morale: (opts && opts.enemyMorale) || 100, onGate: npcOnGateTile(id) },
   );
   if (army) army.troop = result.playerTroopsLeft;
@@ -1159,7 +1195,19 @@ function handleHabiYubi() {
     Dialogue.show(STORY.habi_council, () => {
       GameState.flags.habiStep = 3;
       updateHUD();
-      openArmyBox(goHoenamBattle);
+      // 회남 벌판은 관우군(기령 담당)과 유비군(교유 담당)을 각각 편성해 따로
+      // 지휘한다 - 두 군세 모두 플레이어가 직접 짜므로, 같은 인물을 두 군세에
+      // 겹쳐 넣을 수 없도록 관우군에서 고른 부장/책사는 유비군 후보에서 뺀다.
+      openArmyBox(() => {
+        Dialogue.show([{ speaker: '유비', text: '나도 따로 한 부대를 이끌고 교유를 치겠네. 내 군세도 좀 꾸려주게.' }], () => {
+          openArmyBox(goHoenamBattle, {
+            commanderId: 'yubi',
+            field: 'allyArmy',
+            excludeIds: [GameState.army.deputy, ...GameState.army.generals].filter(Boolean),
+            desc: '교유를 상대할 유비군을 꾸리세요.',
+          });
+        });
+      });
     });
     return;
   }
@@ -1298,15 +1346,14 @@ function goHoenamBattle() {
   Dialogue.show(STORY.hoenam_intro);
 }
 
-// 기령(관우가 실제로 격파)이 쓰러지면 유비군의 교유전 승리도 함께 처리하고,
-// 원술은 잔여 세력과 성에 틀어박힌다. 곧이어 장비가 하비 함락 소식을 갖고
-// 도착하며 원술 정벌이 중단된다 - 챕터2의 결말이다.
+// 기령(관우군)과 교유(유비군)를 각각 실제로 격파해야 원술이 잔여 세력과
+// 성에 틀어박힌다. 곧이어 장비가 하비 함락 소식을 갖고 도착하며 원술 정벌이
+// 중단된다 - 챕터2의 결말이다.
 function checkHoenamClear() {
   if (MapView.currentMapId !== 'hoenam' || GameState.flags.hoenamCleared) return;
-  const giryeongDone = ['resolved', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus['giryeong']);
-  if (!giryeongDone) return;
+  const done = (id) => ['resolved', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]);
+  if (!done('giryeong') || !done('gyoyu')) return;
   GameState.flags.hoenamCleared = true;
-  MapView.removeNpc('gyoyu');
   MapView.lockMovement(true);
   Dialogue.show(STORY.hoenam_giryeong_win, () => {
     Dialogue.show(STORY.hoenam_jangbi_arrives, () => {
@@ -1717,6 +1764,9 @@ const ARMY_MAX_GENERALS = 3;
 
 let armySelectedGenerals = [];
 let armySteppers = {};
+// 지금 편성 중인 군세가 누구 것인지(관우군/유비군)와, 이미 다른 군세에
+// 배정되어 이 군세에는 중복으로 넣을 수 없는 인물 목록을 담아둔다.
+let armyComposingCtx = { commanderId: null, excludeIds: [] };
 
 function makeArmyStepper(valueElId, min, maxGetter, step) {
   const el = document.getElementById(valueElId);
@@ -1735,7 +1785,8 @@ function makeArmyStepper(valueElId, min, maxGetter, step) {
 function renderArmyGenerals() {
   const wrap = document.getElementById('army-generals-list');
   wrap.innerHTML = '';
-  const candidates = GameState.recruited.filter((id) => ROSTER[id] && !isScholarType(ROSTER[id]));
+  const candidates = GameState.recruited.filter((id) => ROSTER[id] && !isScholarType(ROSTER[id])
+    && !armyComposingCtx.excludeIds.includes(id));
   if (!candidates.length) {
     wrap.innerHTML = '<div class="army-empty-hint">등용한 무력형 장수가 없습니다.</div>';
     return;
@@ -1796,7 +1847,8 @@ function playerArmyGrade() { return gradeFor(playerArmyMuryeok(), MURYEOK_GRADES
 function updateArmyPower() {
   const deputyId = document.getElementById('army-deputy').value;
   const deputy = deputyId ? ROSTER[deputyId] : null;
-  const muryeok = armyMuryeokValue(GameState.heroData(), armySelectedGenerals);
+  const commanderRd = ROSTER[armyComposingCtx.commanderId] || GameState.heroData();
+  const muryeok = armyMuryeokValue(commanderRd, armySelectedGenerals);
   const jiryeok = deputy ? deputy.stats.int : 0;
   const el = document.getElementById('army-power');
   el.textContent = `군세 능력치 — 무력 ${gradeFor(muryeok, MURYEOK_GRADES)} · 지력 ${gradeFor(jiryeok, JIRYEOK_GRADES)}`;
@@ -1826,12 +1878,26 @@ function wireArmyStepperButtons() {
   });
 }
 
-function openArmyBox(onConfirm) {
+// opts: { commanderId(기본 관우), field('army' 기본 | 'allyArmy'), excludeIds(다른 군세에
+// 이미 배정되어 중복 선택할 수 없는 인물), desc(안내 문구) } - 회남 벌판처럼 관우군과
+// 유비군을 각각 편성해야 하는 장면에서는 이 창을 커맨더/대상 필드만 바꿔 두 번 연다.
+function openArmyBox(onConfirm, opts) {
+  opts = opts || {};
+  const commanderId = opts.commanderId || GameState.mainHero;
+  const targetField = opts.field || 'army';
+  const excludeIds = opts.excludeIds || [];
+  armyComposingCtx = { commanderId, excludeIds };
+  const commanderRd = ROSTER[commanderId];
+
+  document.getElementById('army-title').textContent = `${commanderRd.name}군 편성`;
+  document.getElementById('army-desc').textContent = opts.desc
+    || `${commanderRd.name}${subjectParticle(commanderRd.name)} 이끌 군세를 꾸리세요.`;
+
   const select = document.getElementById('army-deputy');
   select.innerHTML = '<option value="">없음</option>';
   GameState.recruited.forEach((id) => {
     const rd = ROSTER[id];
-    if (!rd || !isScholarType(rd)) return;
+    if (!rd || !isScholarType(rd) || excludeIds.includes(id)) return;
     const opt = document.createElement('option');
     opt.value = id;
     opt.textContent = `${rd.name} (지력 ${rd.stats.int})`;
@@ -1871,9 +1937,11 @@ function openArmyBox(onConfirm) {
     const deputy = select.value || null;
     GameState.resources.troop -= troop;
     GameState.resources.rice -= rice;
-    GameState.army = { deputy, generals: armySelectedGenerals.slice(), troop, rice };
-    GameState.morale = 100; // 출정시 사기 초기화
-    GameState.capturedCommanders = [];
+    GameState[targetField] = { commanderId, deputy, generals: armySelectedGenerals.slice(), troop, rice };
+    if (targetField === 'army') {
+      GameState.morale = 100; // 출정시 사기 초기화 (유비군 등 보조 군세는 별도 사기를 추적하지 않는다)
+      GameState.capturedCommanders = [];
+    }
     document.getElementById('army-box').classList.add('hidden');
     updateHUD();
     onConfirm();
