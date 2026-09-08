@@ -370,8 +370,8 @@ const SEOJU_AREA_LABELS = [
       // 우금이 패퇴한 뒤 성문 앞에서 도겸과 만나는 장면(seoju_wall_standoff_city) 전용
       // 인물 - 평소엔 등장하지 않다가(storyGate가 절대 참이 되지 않음) main.js에서
       // MapView.addNpc로 그 시점에만 성벽 위에 등장시킨다.
-      { id:'yubi', x:22, y:11, label:'유비', fixed:true, storyGate:'seojuGateTableau' },
-      { id:'dogyeom', x:24, y:11, label:'도겸', fixed:true, storyGate:'seojuGateTableau' },
+      { id:'yubi', x:22, y:12, label:'유비', fixed:true, storyGate:'seojuGateTableau' },
+      { id:'dogyeom', x:24, y:12, label:'도겸', fixed:true, storyGate:'seojuGateTableau' },
     ],
   };
 })();

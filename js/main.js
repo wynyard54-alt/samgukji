@@ -1035,7 +1035,7 @@ function goSeojuFree() {
         MapView.stopNpcStir();
         // 성문 앞이 아니라 성벽 위(문루 오른쪽, 일부러 두껍게 만든 성벽 구간)에서
         // 도겸을 만난다 - 유비/도겸도 함께 등장시켜 세 사람이 모여 있는 것처럼 보인다.
-        MapView.setPlayerPos(23, 11);
+        MapView.setPlayerPos(23, 12);
         MapView.addNpc('yubi');
         MapView.addNpc('dogyeom');
         MapView.clearCameraFocus();
