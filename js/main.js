@@ -867,13 +867,14 @@ function attemptDuelChallenge(id) {
 
 // [전투] 한 번 = 딱 한 교전. 속도가 빠른 쪽이 먼저 때리고, 그 한 방으로
 // 상대가 쓰러지면 반격 없이 그대로 끝난다. 공격이 이번 행동의 마지막
-// 액션이라 행동력을 1 소모하고, 양쪽 다 살아남으면 결과만 보여준 뒤
+// 액션이라 행동력을 3 소모하고, 양쪽 다 살아남으면 결과만 보여준 뒤
 // 멈춘다 - 계속하려면 다시 [전투]를 눌러야 한다.
+const ARMY_BATTLE_AP_COST = 3;
 function resolveArmyBattle(id) {
   const rd = ROSTER[id];
   const ctx = resolveWarArmy(rd);
   if (!ctx) { toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`); return; }
-  if (!spend(1)) return;
+  if (!spend(ARMY_BATTLE_AP_COST)) return;
   const army = ctx.army;
   const commanderName = ROSTER[ctx.commanderId].name;
   const showOnMap = rd.warArmy !== 'ally'; // 유비군은 지도에 별도 스프라이트가 없다
