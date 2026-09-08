@@ -201,7 +201,7 @@ const STORY = {
     { speaker: '미축', text: '유비 장군님… 제발 서주를 도와주십시오!', scene: 'assets/illust/seoju_urgent.jpg' },
     { speaker: '유비', text: '(서신을 펼쳐 읽는다) …조조가 부친의 원수를 갚는다며 서주를 침공했다는구나.', scene: 'assets/illust/seoju_urgent.jpg' },
     { speaker: '유비', text: '도겸 어른께서 오해를 받고 계시다니, 제가 도와드리겠습니다.', scene: 'assets/illust/seoju_urgent.jpg' },
-    { speaker: '미축', text: '…조조와 적이 되는 것을 마다 않고 우리 서주를 도와주신다니!', scene: 'assets/illust/seoju_urgent.jpg' },
+    { speaker: '미축', text: '‘조조와 적이 되는 것을 마다 않고 우리 서주를 도와주신다니!’', scene: 'assets/illust/seoju_urgent.jpg' },
   ],
 
   // 도착과 동시에 카메라가 조조 군세 쪽으로 올라가며 3초간 비춰준다
