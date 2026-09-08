@@ -720,7 +720,6 @@ function attemptPersuadeCaptured(id) {
 // 1 소모하고, 다음 [전투]를 누르기 전까지는 그대로 멈춰 있다.
 const GRADE_RANK = { S:1, A:2, B:3, C:4, D:5 };
 const GRADE_ATTACK_MOD = { S:0.10, A:0.05, B:0, C:-0.05, D:-0.10 };
-const GATE_TILES = { 2:true }; // 관문/요새 타일 - 방어측이 있으면 피해 -5%
 const ARMY_HIT_RATE = 0.20; // 교전 시작 시점 병력의 20%가 교전 1회당 고정 피해량이 된다
 
 // 방어측 군세 등급이 도전측보다 낮을수록 일기토 수락 확률이 낮아진다 (등급차 1당 -20%)

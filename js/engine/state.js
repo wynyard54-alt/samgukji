@@ -22,8 +22,7 @@ const GameState = {
   npcStatus: {}, // id -> 'met' | 'recruited' | 'fled' | 'dead' | 'resolved'
   friendship: {}, // id -> 0~100 (책사형 친밀도 게이지)
   npcVisible: {}, // id -> bool (for chance-based npcs)
-  flags: { act1: false, act2: false, sasugwan: false, horogwan: false, hamgokgwan: false },
-  currentMap: 'takhyeon',
+  flags: { act1: false, act2: false },
 
   reset(hero) {
     this.mainHero = hero;
@@ -47,8 +46,7 @@ const GameState = {
     this.npcStatus = {};
     this.friendship = {};
     this.npcVisible = {};
-    this.flags = { act1: false, act2: false, sasugwan: false, horogwan: false, hamgokgwan: false };
-    this.currentMap = 'takhyeon';
+    this.flags = { act1: false, act2: false };
   },
 
   heroData() { return ROSTER[this.mainHero]; },

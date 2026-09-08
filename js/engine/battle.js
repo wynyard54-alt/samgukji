@@ -72,9 +72,9 @@ const Battle = (function () {
     }
   }
 
+  // renderPortrait의 available 목록(초상화 이미지가 있는 인물)에 없는
+  // id에만 호출되므로, gwanwoo/jangbi 전용 팔레트를 따로 둘 필요가 없다.
   function colorFor(id) {
-    const palette = { gwanwoo: '#2f6d3f', jangbi: '#8a3b2a' };
-    if (palette[id]) return palette[id];
     let h = 0;
     for (const c of id) h = (h * 31 + c.charCodeAt(0)) % 360;
     return `hsl(${h},45%,38%)`;
