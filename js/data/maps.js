@@ -159,7 +159,6 @@ if (false) (function () {
       { type:'mapLabel', x:23.0, y:23.0, label:'유원기의 집' },
       { type:'mapLabel', x:31.0, y:18.2, label:'유비 세력 막사' },
       { type:'mapLabel', x:25.5, y:8.4, label:'민가', residenceId:'noshik' },
-      { type:'mapLabel', x:32.5, y:8.4, label:'민가', residenceId:'gongyung' },
       { type:'mapLabel', x:33.2, y:24.0, label:'황건적 은신처' },
     ],
     areaLabels:[
@@ -175,9 +174,6 @@ if (false) (function () {
       { id:'yuwongi', x:22, y:24, label:'유원기', fixed:true },
       { id:'sossang', x:12, y:16, label:'소쌍', fixed:true },
       { id:'jangsepyeong', x:14, y:17, label:'장세평', fixed:true },
-      { id:'gongyung', x:11, y:12, label:'', discoverable:true, fixed:true, discoveryRange:2,
-        discoveryText:'시장 좌판 옆에서 사람들의 언쟁을 조용히 듣던 선비가 문득 핵심을 찌르는 말을 던진다.',
-        residence:{ x:32, y:11, label:'공융이 머무는 집' } },
       { id:'ganong', x:18, y:12, label:'간옹', randomSpawn:true },
       { id:'muangug', x:22, y:8, label:'무안국' },
       { id:'deungmu', x:30, y:21, label:'등무(황건적 잔당)', fixed:true },

@@ -169,7 +169,7 @@ function getObjectives() {
     else if (!goseungDone) list.push('황건적 잔당 고승 처치하기');
     else if (!gs.flags.act1) list.push('유비에게 보고하기');
 
-    ['noshik', 'gongyung'].forEach((id) => {
+    ['noshik'].forEach((id) => {
       const rd = ROSTER[id];
       if (!rd) return;
       if (gs.npcVisible[id] === false) return;
@@ -2370,7 +2370,6 @@ function availableLoreLines() {
 // 달리, 다른 사람에게서 전해 들은 소문 형태라 근처에 가지 않아도 들을 수 있다.
 const RUMOR_HINTS = {
   noshik: '장터 근처에 학식이 깊어 보이는 노학자가 나타났다는 소문이오.',
-  gongyung: '비단전 쪽에서 언쟁을 딱 부러지게 정리해주는 선비를 봤다는 사람이 있소.',
   gwanjeong: '주막 근처에서 눈빛이 예사롭지 않은 나그네를 봤다는군.',
   jeonju: '마을 사람들이 어느 은둔 선비에게 자꾸 세상에 나오라 권하고 있다던데.',
   songgeon: '주막 앞에서 떠도는 소문을 죽간에 옮겨 적는 사람이 있다고 하오.',
