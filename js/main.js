@@ -167,7 +167,7 @@ const LOCATION_NAMES = {
   seoju_siege: '서주성 (대치)',
   seoju: '서주성',
   habi: '하비성 관청',
-  suchun: '수춘성',
+  hoenam: '회남 벌판',
 };
 
 function getObjectives() {
