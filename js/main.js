@@ -1017,9 +1017,11 @@ function goSeojuFree() {
     });
     MapView.lockMovement(true);
     updateHUD();
-    // 카메라가 조조 진영(반달 대형의 중앙, 조조 본인 위치) 쪽을 비춰주며
-    // 첫 대사와 자연스럽게 이어지도록 한다.
-    MapView.panCameraTo(15, 19, 700);
+    // 카메라가 조조 진영(반달 대형) 쪽을 비춰주며 첫 대사와 자연스럽게
+    // 이어지도록 한다 - 초승달 대형은 위쪽(우금 15)보다 아래쪽(조조/조인/조홍
+    // 20~22)에 병력이 더 몰려 있어, 중앙(19)보다 살짝 아래(20)를 비추면
+    // 좁은 모바일 화면에서도 병력이 더 많이 보인다.
+    MapView.panCameraTo(15, 20, 700);
     // 대치 중인 군세는 자유롭게 돌아다니기보다 대열을 유지한 채 한두 칸
     // 정도만 자세를 바꾸는 편이 실제 진영다워 보인다 (radius:1).
     MapView.startNpcStir(SEOJU_JOJO_ARMY_IDS, { radius: 1, intervalMs: 900 });
@@ -1031,11 +1033,15 @@ function goSeojuFree() {
     Dialogue.show(STORY.seoju_wall_standoff_intro, () => {
       Dialogue.show(STORY.seoju_wall_standoff, () => {
         MapView.stopNpcStir();
-        MapView.setPlayerPos(18, 14);
+        // 성문 앞이 아니라 성벽 위(문루 오른쪽, 일부러 두껍게 만든 성벽 구간)에서
+        // 도겸을 만난다 - 유비/도겸도 함께 등장시켜 세 사람이 모여 있는 것처럼 보인다.
+        MapView.setPlayerPos(23, 11);
+        MapView.addNpc('yubi');
+        MapView.addNpc('dogyeom');
         MapView.clearCameraFocus();
         Dialogue.show(STORY.seoju_wall_standoff_city, () => {
           // 편지를 받은 조조가 곽가와 상의하는 장면이므로, 다시 조조 진영을 비춰준다.
-          MapView.panCameraTo(15, 19, 700);
+          MapView.panCameraTo(15, 20, 700);
           Dialogue.show(STORY.puyang_report_retreat, () => {
             // 조조군이 물러가며 그림 자체가 바뀐다(성문 닫힘 -> 열림, 진영
             // 철거) - 같은 지도에서 NPC만 지우는 대신 지도를 통째로 갈아
