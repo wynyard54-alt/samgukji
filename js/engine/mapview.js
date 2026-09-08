@@ -536,6 +536,7 @@ const MapView = (function () {
         ? `${baseLabel} · 병${rd.troop} · 무${enemyArmyGrade(rd)} · 지${gradeFor(rd.stats.int, JIRYEOK_GRADES)}`
         : baseLabel;
       drawTag(x, worldY(n.y)-7, label, '#40372c');
+      drawDamageFloat(n.id, x, worldY(n.y)-22);
     } else if (hidden && Math.abs(n.x-player.x)+Math.abs(n.y-player.y)<=3) {
       ctx.fillStyle='rgba(45,40,34,.82)';ctx.beginPath();ctx.roundRect(x-13,worldY(n.y)-18,26,17,7);ctx.fill();
       ctx.fillStyle='#eadfca';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.fillText('…',x,worldY(n.y)-6);
@@ -563,6 +564,7 @@ const MapView = (function () {
       const deputy = army.deputy ? ROSTER[army.deputy] : null;
       const jiryeok = gradeFor(deputy ? deputy.stats.int : 0, JIRYEOK_GRADES);
       drawTag(x, y-64, `${ROSTER[id].name} · 병${army.troop} · 무${playerArmyGrade()} · 지${jiryeok}`, 'rgba(32,46,31,.82)');
+      drawDamageFloat(id, x, y-79);
     } else {
       ctx.fillStyle='rgba(32,46,31,.82)';ctx.beginPath();ctx.roundRect(x-19,y-75,38,16,7);ctx.fill();
       ctx.fillStyle='#e9dcae';ctx.font='bold 10px "Noto Sans KR",sans-serif';ctx.textAlign='center';ctx.fillText(ROSTER[id].name,x,y-64);
@@ -588,6 +590,43 @@ const MapView = (function () {
     const w=Math.max(50,ctx.measureText(text).width+14);
     ctx.fillStyle=bg||'rgba(46,40,32,.82)';ctx.fillRect(x-w/2,y-15,w,18);
     ctx.fillStyle='#f3e5c5';ctx.textAlign='center';ctx.fillText(text,x,y-2);
+  }
+
+  // 전투로 병력이 줄어들 때 [OO군세 · 병0000명 · 무S · 지B] 이름표 바로 위에
+  // "-320" 같은 숫자가 뿅 떠올랐다가 위로 흐르며 사라지는 연출. id별로 하나만
+  // 유지한다(턴제라 같은 대상에 두 피해가 겹칠 일이 거의 없어 단순하게 둔다).
+  const damageFloats = Object.create(null); // id -> { text, start }
+  const DAMAGE_FLOAT_MS = 900;
+  const DAMAGE_FLOAT_RISE = 26;
+  let damageFloatTimer = null;
+  function showDamageFloat(id, amount) {
+    if (!id || !amount) return;
+    damageFloats[id] = { text: `-${amount}`, start: performance.now() };
+    render();
+    if (!damageFloatTimer) {
+      damageFloatTimer = setInterval(() => {
+        const now = performance.now();
+        let any = false;
+        for (const key in damageFloats) {
+          if (now - damageFloats[key].start > DAMAGE_FLOAT_MS) delete damageFloats[key];
+          else any = true;
+        }
+        render();
+        if (!any) { clearInterval(damageFloatTimer); damageFloatTimer = null; }
+      }, 40);
+    }
+  }
+  function drawDamageFloat(id, x, tagTopY) {
+    const f = damageFloats[id];
+    if (!f) return;
+    const t = Math.min(1, (performance.now() - f.start) / DAMAGE_FLOAT_MS);
+    ctx.save();
+    ctx.globalAlpha = 1 - t;
+    ctx.fillStyle = '#ff5c4d';
+    ctx.font = 'bold 13px "Noto Sans KR",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, x, tagTopY - 4 - DAMAGE_FLOAT_RISE * t);
+    ctx.restore();
   }
 
   function drawLocationRibbon() {
@@ -861,7 +900,7 @@ const MapView = (function () {
 
   return {
     load,render,removeNpc,addNpc,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,setPlayerPos,
-    panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,
+    panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,showDamageFloat,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},
     get playerPos(){return {x:player.x,y:player.y,dir:player.dir};},

@@ -837,10 +837,16 @@ function resolveArmyBattle(id, opts) {
   const rd = ROSTER[id];
   const ctx = resolveWarArmy(rd);
   const army = ctx ? ctx.army : null;
+  const playerTroopBefore = army ? army.troop : 0;
+  const enemyTroopBefore = rd.troop || 1000;
   const result = simulateArmyBattle(
-    { troops: army ? army.troop : 0, grade: ctx ? warArmyGrade(ctx) : 'D', morale: GameState.morale, onGate: false },
-    { troops: rd.troop || 1000, grade: enemyArmyGrade(rd), morale: (opts && opts.enemyMorale) || 100, onGate: npcOnGateTile(id) },
+    { troops: playerTroopBefore, grade: ctx ? warArmyGrade(ctx) : 'D', morale: GameState.morale, onGate: false },
+    { troops: enemyTroopBefore, grade: enemyArmyGrade(rd), morale: (opts && opts.enemyMorale) || 100, onGate: npcOnGateTile(id) },
   );
+  // 이름표 위에 이번 교전에서 줄어든 병력을 "-320"처럼 잠깐 띄운다 - 유비군
+  // 전투는 지도에 별도 스프라이트가 없어 관우 쪽 표시는 생략한다.
+  MapView.showDamageFloat(id, enemyTroopBefore - result.enemyTroopsLeft);
+  if (rd.warArmy !== 'ally') MapView.showDamageFloat(GameState.mainHero, playerTroopBefore - result.playerTroopsLeft);
   if (army) army.troop = result.playerTroopsLeft;
   rd.troop = result.enemyTroopsLeft; // 적 군세 표기가 실시간으로 갱신되도록 손실을 그대로 반영
   updateHUD();
