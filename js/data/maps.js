@@ -466,47 +466,80 @@ const SEOJU_AREA_LABELS = [
 })();
 
 // ---------------- 챕터2 (관우) : 하비성 관청 [장면2] ----------------
-// 실제 하비 관청 배경이 만들어지기 전까지 반동탁연합 진영 그림을 그대로
-// 재사용한다 - 이 씬은 실외 진영이 아니라 관청 뜰이라는 설정이지만,
-// 새 배경을 그리기 전까지는 이미 검증된 이 배경을 임시로 쓴다.
-// 방 세 개(유비 집무실 / 진규·진등의 방 / 미축·미방의 방)로 나눠, 플레이어가
-// 직접 돌아다니며 인물을 찾아가게 한다 - 특히 진등에게는 병사를 모집하는
-// 실제 상호작용(행동력 소모 + 병력 획득)이 걸려 있다.
+// 실사용 하비 관청 실내 그림을 반영한다 - 가운데 대청(유비 집무실)을
+// 두 개의 굵은 기둥이 좌우 방(진규·진등의 방 / 미축·미방의 방)과 나누는
+// 구조라, 기둥은 막고 그 사이 복도(y=11~12, 최소 2칸)로만 세 공간이
+// 이어지게 했다. 남쪽 대문은 문 위 상인방(y=13)만 막고 문짝 사이
+// (x=11~17)는 그대로 열어 마당(y=14~19)과 연결한다.
 (function () {
-  const w = 24, h = 16;
+  const w = 30, h = 20;
   const grid = makeGrid(w, h, 0);
   rectFill(grid, 0, 0, w - 1, 0, 4);
   rectFill(grid, 0, h - 1, w - 1, h - 1, 4);
   rectFill(grid, 0, 0, 0, h - 1, 4);
   rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
-  rectFill(grid, 11, h - 1, 13, h - 1, 0); // 남문 통로
-  rectFill(grid, 9, 1, 15, 5, 2);  // 유비 집무실
-  rectFill(grid, 1, 1, 7, 5, 2);   // 진규·진등의 방
-  rectFill(grid, 17, 1, 23, 5, 2); // 미축·미방의 방
+  rectFill(grid, 9, 0, 9, 10, 2);   // 좌측 기둥 (진규·진등의 방 | 유비 집무실)
+  rectFill(grid, 20, 0, 20, 10, 2); // 우측 기둥 (유비 집무실 | 미축·미방의 방)
+  rectFill(grid, 1, 13, w - 2, 13, 4); // 대문 위 상인방
+  rectFill(grid, 11, 13, 17, 13, 0);  // 대문 통로
+  rectFill(grid, 10, 14, 10, h - 1, 2); // 대문 좌측 기둥
+  rectFill(grid, 18, 14, 18, h - 1, 2); // 대문 우측 기둥
 
   MAPS.habi = {
     name: '하비성 관청',
     width: w, height: h,
     tiles: grid,
-    backgroundKey: 'camp_overview',
-    playerStart: { x:12, y:14 },
+    backgroundKey: 'habi_gwannae_overview',
+    playerStart: { x:14, y:17 },
     camera: { viewportW:800, viewportH:480 },
     decor: [
-      { type:'mapLabel', x:12.0, y:0.5, label:'유비 집무실' },
-      { type:'mapLabel', x:4.0, y:0.5, label:'진규·진등의 방' },
-      { type:'mapLabel', x:20.0, y:0.5, label:'미축·미방의 방' },
+      { type:'mapLabel', x:14.5, y:0.5, label:'유비 집무실' },
+      { type:'mapLabel', x:4.5, y:0.5, label:'진규·진등의 방' },
+      { type:'mapLabel', x:24.5, y:0.5, label:'미축·미방의 방' },
     ],
-    // 세 건물의 정문 앞(y=6)에 모두 나란히 세워둔다 - 화면 하단좌측에는 항상
-    // 관우 능력치 패널(HUD)이 떠 있어, 예전처럼 y=12(화면 하단부)에 세워두면
-    // 왼쪽 건물(진규·진등) 인물이 그 패널에 가려 안 보이는 문제가 있었다.
     npcs: [
-      { id:'yubi', x:12, y:6, label:'유비', fixed:true },
-      { id:'jangbi', x:10, y:6, label:'장비', fixed:true },
-      { id:'jingyu', x:3, y:6, label:'진규', fixed:true },
-      { id:'jindeung', x:5, y:6, label:'진등', fixed:true },
-      { id:'michuk', x:19, y:6, label:'미축', fixed:true },
-      { id:'mibang', x:21, y:6, label:'미방', fixed:true },
+      { id:'yubi', x:15, y:7, label:'유비', fixed:true },
+      { id:'jangbi', x:13, y:7, label:'장비', fixed:true },
+      { id:'jingyu', x:6, y:7, label:'진규', fixed:true },
+      { id:'jindeung', x:4, y:7, label:'진등', fixed:true },
+      { id:'michuk', x:24, y:5, label:'미축', fixed:true },
+      { id:'mibang', x:26, y:5, label:'미방', fixed:true },
     ],
+  };
+})();
+
+// ---------------- 수춘성 (원술의 근거지) ----------------
+// 아직 어느 장면에서도 불러오지 않는다 - 챕터2의 원술 정벌은 회남 벌판
+// 전투(warmap) 도중 장비의 하비 함락 소식으로 중단되어 수춘성까지는
+// 이르지 못한다(goHoenam 주변 주석 참고). 나중에 원술 정벌을 이어가는
+// 장면이 추가될 때 바로 쓸 수 있도록 배경 그림과 기본 지형만 미리
+// 반영해 둔다 - 인물 배치는 그 장면이 실제로 만들어질 때 정한다.
+(function () {
+  const w = 36, h = 25;
+  const grid = makeGrid(w, h, 0);
+  rectFill(grid, 19, 2, 20, 3, 4);   // 서문 성벽 상단
+  rectFill(grid, 19, 19, 20, 20, 4); // 서문 성벽 하단
+  rectFill(grid, 19, 2, 35, 3, 4);   // 북쪽 성벽
+  rectFill(grid, 19, 19, 35, 20, 4); // 남쪽 성벽
+  rectFill(grid, 19, 2, 20, 20, 4);  // 서쪽 성벽
+  rectFill(grid, 19, 10, 20, 13, 0); // 서문 통로
+  rectFill(grid, 34, 2, 35, 20, 4);  // 동쪽 성벽
+  rectFill(grid, 22, 4, 25, 6, 2); rectFill(grid, 27, 4, 29, 6, 2); rectFill(grid, 31, 4, 33, 6, 2); // 상단 막사 3채
+  rectFill(grid, 26, 7, 31, 13, 2);  // 중앙 관청
+  rectFill(grid, 21, 15, 24, 17, 2); // 하단좌 건물
+  rectFill(grid, 29, 13, 31, 15, 2); // 하단우 소건물
+  rectFill(grid, 30, 15, 34, 18, 2); // 하단우 대건물
+
+  MAPS.suchun = {
+    name: '수춘성', width: w, height: h, tiles: grid,
+    backgroundKey: 'suchun_overview',
+    playerStart: { x:10, y:12 },
+    camera: { viewportW:800, viewportH:480 },
+    decor: [
+      { type:'mapLabel', x:28.5, y:6.5, label:'수춘 관청' },
+      { type:'mapLabel', x:19.5, y:9.5, label:'수춘 서문' },
+    ],
+    npcs: [],
   };
 })();
 

@@ -15,7 +15,7 @@
   // (특히 오늘 막사·호로관 배경이 추가된 뒤로) 시작이 눈에 띄게 느려진다.
   // 게임 초반에 바로 보이는 탁현만 미리 받고, 나머지는 실제로 그 지도에
   // 들어갈 때 FieldAssets가 알아서 그때 받아오게 둔다.
-  const deferredFieldKeys = ['pyeongwon_city_overview', 'camp_overview', 'warmap_overview', 'seoju_siege_overview', 'seoju_overview'];
+  const deferredFieldKeys = ['pyeongwon_city_overview', 'camp_overview', 'warmap_overview', 'seoju_siege_overview', 'seoju_overview', 'habi_gwannae_overview', 'suchun_overview'];
   const fieldKeys = FieldAssets.keys().filter((k) => !deferredFieldKeys.includes(k));
   const total = fieldKeys.length + extraUrls.length;
   let done = 0;
@@ -157,6 +157,8 @@ const LOCATION_NAMES = {
   warmap: '호로관 전선',
   seoju_siege: '서주성 (대치)',
   seoju: '서주성',
+  habi: '하비성 관청',
+  suchun: '수춘성',
 };
 
 function getObjectives() {
