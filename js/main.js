@@ -216,6 +216,7 @@ function getObjectives() {
     if (step === 0) list.push('유비를 찾아가자');
     else if (step === 1) list.push(`진등을 찾아가 병사를 모집하며 세력을 키워라 (${gs.resources.troop}/${HABI_RECRUIT_GOAL})`);
     else if (step === 2) list.push('유비를 찾아가 회의에 참석하자');
+    else if (step >= 3) list.push('준비되면 [원술 토벌 출전] 버튼으로 출정하기');
   } else if (stage === 'camp') {
     list.push('제후들과 인사하고 손견을 도와 화웅과 맞서기');
   } else if (stage === 'warmap') {
@@ -377,6 +378,14 @@ function updateHUD() {
       progressBtn.classList.remove('hidden');
       progressBtn.textContent = '하비성으로 이동';
       progressBtn.onclick = goHabiCamp;
+    } else {
+      progressBtn.classList.add('hidden');
+    }
+  } else if (stage === 'habi_camp') {
+    if ((gs.flags.habiStep || 0) >= 3) {
+      progressBtn.classList.remove('hidden');
+      progressBtn.textContent = '원술 토벌 출전';
+      progressBtn.onclick = startWonsulExpedition;
     } else {
       progressBtn.classList.add('hidden');
     }
@@ -1278,44 +1287,49 @@ function handleHabiYubi() {
   }
   if (step === 2) {
     Dialogue.show(STORY.habi_council, () => {
-      GameState.flags.habiStep = 3;
+      GameState.flags.habiStep = 3; // 회의 완료 - 이제 우측 상단 [원술 토벌 출전] 버튼으로 원할 때 출정한다
       updateHUD();
-      // 회남 벌판은 관우군(기령 담당)과 유비군(교유 담당)을 각각 편성해 따로
-      // 지휘한다 - 두 군세 모두 플레이어가 직접 짜므로, 같은 인물을 두 군세에
-      // 겹쳐 넣을 수 없도록 관우군에서 고른 부장/책사는 유비군 후보에서 뺀다.
-      openArmyBox(() => {
-        Dialogue.show([{ speaker: '유비', text: '나도 따로 한 부대를 이끌고 교유를 치겠네. 내 군세도 좀 꾸려주게.' }], () => {
-          openArmyBox(goHoenamBattle, {
-            commanderId: 'yubi',
-            field: 'allyArmy',
-            excludeIds: [GameState.army.deputy, ...GameState.army.generals].filter(Boolean),
-            desc: '교유를 상대할 유비군을 꾸리세요.',
-          });
-        });
-      });
+      centerAlert('준비되면 우측 상단 [원술 토벌 출전] 버튼으로 출정하자.');
     });
     return;
   }
-  Dialogue.show([{ speaker: '유비', text: '원술 토벌 준비를 서둘러야겠네.' }]);
+  Dialogue.show([{ speaker: '유비', text: '채비는 끝났네. 준비되면 [원술 토벌 출전]으로 출정하세.' }]);
+}
+
+// 회남 벌판은 관우군(기령 담당)과 유비군(교유 담당)을 각각 편성해 따로
+// 지휘한다 - 두 군세 모두 플레이어가 직접 짜므로, 같은 인물을 두 군세에
+// 겹쳐 넣을 수 없도록 관우군에서 고른 부장/책사는 유비군 후보에서 뺀다.
+// 회의(habiStep 3) 완료 후 우측 상단 [원술 토벌 출전] 버튼에서 호출된다.
+function startWonsulExpedition() {
+  openArmyBox(() => {
+    Dialogue.show([{ speaker: '유비', text: '나도 따로 한 부대를 이끌고 교유를 치겠네. 내 군세도 좀 꾸려주게.' }], () => {
+      openArmyBox(goHoenamBattle, {
+        commanderId: 'yubi',
+        field: 'allyArmy',
+        excludeIds: [GameState.army.deputy, ...GameState.army.generals].filter(Boolean),
+        desc: '교유를 상대할 유비군을 꾸리세요.',
+      });
+    });
+  });
 }
 
 // 진등에게 직접 찾아가 병사를 모집한다 - 행동력을 써서 병력을 조금씩
-// 늘리는, 자동 증가가 아닌 실제 플레이어 행동으로 채우는 미션이다.
+// 늘리는, 자동 증가가 아닌 실제 플레이어 행동으로 채우는 미션이다. 목표
+// (HABI_RECRUIT_GOAL)를 채운 뒤에도 모집 자체는 막지 않는다 - 이후 원술
+// 정벌에 데려갈 병력을 더 불려두고 싶을 수 있으므로, 그 뒤로는 그냥 평범한
+// 상시 모집 NPC로 남는다.
 function handleJindeungRecruit() {
   const step = GameState.flags.habiStep || 0;
-  if (step !== 1) {
+  if (step === 0) {
     Dialogue.show([{ speaker: '진등', text: '이 진등, 힘닿는 데까지 병력을 모아보겠습니다.' }]);
-    return;
-  }
-  if (GameState.resources.troop >= HABI_RECRUIT_GOAL) {
-    Dialogue.show([{ speaker: '진등', text: '충분한 병력을 모았습니다. 이제 유비님을 찾아가 출정을 준비하시지요.' }]);
     return;
   }
   if (!spend(2)) return;
   const gained = 300 + Math.floor(Math.random() * 300);
   GameState.addResource({ troop: gained });
   updateHUD();
-  Dialogue.show([{ speaker: '진등', text: `근방 장정들을 더 모아왔습니다. 병사 ${gained}명을 더 모았습니다. (${GameState.resources.troop}/${HABI_RECRUIT_GOAL})` }]);
+  const progressNote = step === 1 ? `(${GameState.resources.troop}/${HABI_RECRUIT_GOAL})` : `(총 ${GameState.resources.troop}명)`;
+  Dialogue.show([{ speaker: '진등', text: `근방 장정들을 더 모아왔습니다. 병사 ${gained}명을 더 모았습니다. ${progressNote}` }]);
 }
 
 // 반동탁연합 출정(군세 편성) 직전 시점의 GameState를 남겨둔다 - 진행 버튼과
