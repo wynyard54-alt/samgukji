@@ -315,13 +315,16 @@ function buildSeojuGrid(gateOpen) {
   rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
 
   // 성 안 건물 7채(그림 그대로) - 앞마당/계단 쪽은 막지 않아 대화 위치로 쓴다.
+  // 건물과 성벽/다른 건물 사이에 최소 2칸은 트인 통행로가 남도록, 실제
+  // 그림보다 앞마당 쪽을 살짝 넉넉히 걷어냈다(NPC가 외길을 막아버리는
+  // 것을 막기 위함).
   rectFill(grid, 15, 0, 22, 4, 2);  // 관청(도겸) - 중앙 상단, 가장 크다
   rectFill(grid, 5, 1, 10, 4, 2);   // 좌상단 가옥
   rectFill(grid, 25, 1, 30, 4, 2);  // 우상단 가옥
-  rectFill(grid, 9, 6, 14, 9, 2);   // 중앙좌 가옥
-  rectFill(grid, 20, 6, 24, 9, 2);  // 중앙우 가옥(저잣거리 옆)
-  rectFill(grid, 2, 8, 7, 10, 2);   // 좌하단 가옥
-  rectFill(grid, 27, 7, 34, 10, 2); // 우하단 가옥(가장 크다)
+  rectFill(grid, 9, 6, 14, 8, 2);   // 중앙좌 가옥
+  rectFill(grid, 20, 6, 24, 8, 2);  // 중앙우 가옥(저잣거리 옆)
+  rectFill(grid, 2, 8, 7, 8, 2);    // 좌하단 가옥
+  rectFill(grid, 27, 7, 34, 8, 2);  // 우하단 가옥(가장 크다)
 
   // 성벽. 성문(3칸)은 조조군이 물러간 뒤에만 열린다 - 그 전에는 완전히 막혀
   // 있어 성 안으로 들어갈 수 없다.
@@ -381,11 +384,12 @@ const SEOJU_AREA_LABELS = [
       { id:'dogyeom', x:18, y:5, label:'도겸', fixed:true },
       // 조표는 하비상 진규의 관아 동료로, 관청 근처에 자리한다.
       { id:'jopyo', x:16, y:5, label:'조표', fixed:true, storyGate:'seojuFreeRoam' },
-      // 미축·미방·진규·진등 - 성 안쪽 중앙좌 가옥 앞에 가족처럼 모여 있다.
-      { id:'michuk', x:9, y:10, label:'미축', fixed:true, storyGate:'seojuFreeRoam' },
+      // 미축·미방·진규·진등 - 성 안쪽 중앙좌 가옥 앞에 2x2로 모여 있다(한 줄로
+      // 세우면 통로를 막아버려서 일부러 두 줄로 나눴다).
+      { id:'michuk', x:10, y:9, label:'미축', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'jingyu', x:12, y:9, label:'진규', fixed:true, storyGate:'seojuFreeRoam' },
       { id:'mibang', x:10, y:10, label:'미방', fixed:true, storyGate:'seojuFreeRoam' },
-      { id:'jingyu', x:12, y:10, label:'진규', fixed:true, storyGate:'seojuFreeRoam' },
-      { id:'jindeung', x:13, y:10, label:'진등', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'jindeung', x:12, y:10, label:'진등', fixed:true, storyGate:'seojuFreeRoam' },
       // 손건은 도겸의 추천을 받아야만(main.js songgeonRecommended) 등장한다.
       { id:'songgeon', x:21, y:10, label:'', discoverable:true, discoveryRange:2, storyGate:'songgeonRecommended',
         discoveryText:'저잣거리 한켠에서 죽간을 든 선비가 지나가는 소문을 기록하고 있다.',
