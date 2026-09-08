@@ -1166,20 +1166,28 @@ const SEOJU_INSTANT_JOIN_IDS = ['mibang'];
 // 넘기는 장면으로 이어진다. 미방은 유력 인사로 보기엔 무게감이 떨어져
 // 조표로 바꿨다(미방은 여전히 SEOJU_INSTANT_JOIN_IDS로 찾아서 등용된다).
 const SEOJU_GREET_IDS = ['jingyu', 'michuk', 'jopyo'];
+// 다른 챕터 시작 컷신(예: STORY.intro)은 모두 MapView.load()로 지도를
+// 먼저 깔아 explore-viewport 크기(모바일 회전 프리젠테이션의 실제 픽셀
+// 크기)를 잡아둔 다음에 삽화 대사를 보여준다. 여기서 지도 로드를 대사
+// 콜백 안(삽화가 다 끝난 뒤)으로 미뤘더니, 지도를 한 번도 로드한 적
+// 없는 상태(예: 챕터2 미리보기로 곧장 진입한 경우)에서는 explore-viewport가
+// 아직 크기를 잡지 못해 삽화가 작게 나오는 문제가 있었다. 삽화가 지도를
+// 완전히 덮어버리므로(scene-illustration, z-index:2) 지도를 먼저 로드해도
+// 화면상 보이는 건 똑같이 삽화뿐이라 순서를 바꿔도 안전하다.
 function goSeojuFree() {
+  stage = 'seoju_free';
+  showScreen('screen-explore');
+  GameState.flags.seojuArrived = true;
+  MapView.load('seoju_siege', {
+    onInteract: interactNPC,
+    onApSpent: updateHUD,
+    onApBlocked,
+    onAmbientInteract: runAmbientEvent,
+    onStep: renderMinimap,
+  });
+  MapView.lockMovement(true);
+  updateHUD();
   Dialogue.show(STORY.seoju_urgent_call, () => {
-    stage = 'seoju_free';
-    showScreen('screen-explore');
-    GameState.flags.seojuArrived = true;
-    MapView.load('seoju_siege', {
-      onInteract: interactNPC,
-      onApSpent: updateHUD,
-      onApBlocked,
-      onAmbientInteract: runAmbientEvent,
-      onStep: renderMinimap,
-    });
-    MapView.lockMovement(true);
-    updateHUD();
     // 카메라가 조조 진영(반달 대형) 쪽을 비춰주며 첫 대사와 자연스럽게
     // 이어지도록 한다 - 초승달 대형은 위쪽(우금 15)보다 아래쪽(조조/조인/조홍
     // 20~22)에 병력이 더 몰려 있어, 중앙(19)보다 살짝 아래(20)를 비추면
