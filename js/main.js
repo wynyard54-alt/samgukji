@@ -1012,8 +1012,11 @@ function goSeojuFree() {
         MapView.setPlayerPos(18, 14);
         MapView.clearCameraFocus();
         Dialogue.show(STORY.seoju_wall_standoff_city, () => {
+          // 편지를 받은 조조가 곽가와 상의하는 장면이므로, 다시 조조 진영을 비춰준다.
+          MapView.panCameraTo(24, 19, 700);
           Dialogue.show(STORY.puyang_report_retreat, () => {
             SEOJU_JOJO_ARMY_IDS.forEach((id) => MapView.removeNpc(id));
+            MapView.clearCameraFocus();
             Dialogue.show(STORY.dogyeom_disband, () => {
               MapView.lockMovement(false);
               GameState.flags.seojuFreeRoam = true;
