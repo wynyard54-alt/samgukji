@@ -71,6 +71,8 @@ const ROSTER = {
     stats:{atk:91, def:68, spd:97, int:58, cha:79}, intro:'…떠도는 무사요. 정해진 주인은 없소만, 그쪽 형제들 싸우는 모습이 마음에 드는군.' },
   jeonju: { id:'jeonju', name:'전주', kind:'recruit', forced:null, affiliation:'유주',
     stats:{atk:45, def:42, spd:44, int:70, cha:58}, intro:'우북평 무종현의 전주라 하오. 검이든 붓이든, 쓰일 곳이 있다면 마다치 않겠소.' },
+  // 챕터2 서주에서는 도겸의 추천으로 다시 등장(michuk 항목 옆 캐릭터 결 참고
+  // 주석 참조) - 미축·미방과 마찬가지로 유비 개인에게 의리를 지켜 끝까지 함께한다.
   songgeon: { id:'songgeon', name:'손건', kind:'recruit', forced:null, affiliation:'무소속', chance:0.2,
     stats:{atk:21, def:19, spd:24, int:68, cha:61}, intro:'글재주밖에 없는 손건이오만, 필요하다면 붓이라도 들겠소.' },
   jeonye: { id:'jeonye', name:'전예', kind:'recruit', forced:null, affiliation:'유주',
@@ -171,6 +173,16 @@ const ROSTER = {
   // 도겸이 죽고 유비가 서주목이 되는 순간 자연스럽게 유비를 섬기게 된다(main.js
   // checkDeadlines의 dogyeom_death 처리에서 자동으로 등용 처리) - 다른 장수들처럼
   // 친밀도를 쌓아 별도로 등용을 제안하는 대상이 아니라서 kind는 flavor로 둔다.
+  //
+  // [캐릭터 결 참고 - 연의 기준 최종 거취] 이 챕터가 끝나갈 무렵(하비 함락 이후
+  // 여포가 조조에게 처형되는 시점)에 갈라지는 두 부류를 대사에 반영할 것:
+  //   - 진규·진등: 애당초 여포가 서주를 다스릴 때도 유비를 따라 서주를 떠나지
+  //     않았다 - 서주(고향/지역)에 대한 충성이 우선이라, 여포 사후에도 그냥
+  //     서주에 남아 조조를 돕는다. 인물 자체에 대한 충성이 아니라 서주 땅과
+  //     행정을 지키는 실무자적 가치관.
+  //   - 미축·미방·손건: 도겸이 죽은 뒤로는 유비 개인에게 충성하며, 이후로도
+  //     끝까지 유비를 따라간다. 사람(유비)에 대한 의리가 우선인 가치관.
+  // 향후 하비 함락/여포 처형 관련 장면을 쓸 때 이 구분을 대사 톤에 녹일 것.
   michuk: { id:'michuk', name:'미축', kind:'flavor', affiliation:'서주',
     stats:{atk:20, def:24, spd:22, int:76, cha:82},
     intro:'서주의 미축이라 하오. 도겸 어른을 오래 모셔왔소만, 이제 유 사군께 힘을 보태고 싶소.' },
