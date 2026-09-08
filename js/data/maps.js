@@ -560,18 +560,18 @@ const SEOJU_AREA_LABELS = [
 })();
 
 // ---------------- 챕터2 (관우) : 회남 벌판 [장면3, 원술 정벌] ----------------
-// 실사용 수춘성 그림(원술의 근거지)을 배경으로 쓴다 - 성문은 굳게 잠겨있어
-// (원술 대사 "성문을 굳게 걸어라" 그대로) 이번 장면에서는 통과할 수 없고,
-// 플레이어는 성 서쪽 트인 벌판에서 싸운다. 갈림길 위/아래에 기령(관우군이
-// 상대)과 교유(유비군이 상대, warArmy:'ally')가 실제 전투 대상으로 있고,
-// 성문 앞에는 원술과 잔여 두 부대가 틀어박혀 있다(성문이 잠겨 있어 안으로는
-// 못 들어가므로 이번 장면에서는 전투 없이 장식용).
+// 실사용 수춘성 그림(원술의 근거지)을 배경으로 쓴다. 성문은 열어둬서 이동은
+// 자유롭다 - 대신 성문 앞에 나와 있는 선봉(뇌박·진란, 관우군이 상대)을 둘 다
+// 무너뜨리면 원술이 남은 병력을 이끌고 성 안으로 물러난다(main.js
+// checkWonsulRetreat, MapView.removeNpc('wonsul')). 갈림길 위/아래에는
+// 기령(관우군이 상대)과 교유(유비군이 상대, warArmy:'ally')가 있다.
 (function () {
   const w = 36, h = 25;
   const grid = makeGrid(w, h, 0);
   rectFill(grid, 19, 2, 35, 3, 4);   // 북쪽 성벽
   rectFill(grid, 19, 19, 35, 20, 4); // 남쪽 성벽
-  rectFill(grid, 19, 2, 20, 20, 4);  // 서쪽 성벽 (성문 굳게 잠김 - 통과 불가)
+  rectFill(grid, 19, 2, 20, 20, 4);  // 서쪽 성벽
+  rectFill(grid, 19, 10, 20, 13, 0); // 서문 통로 - 열어둔다
   rectFill(grid, 34, 2, 35, 20, 4);  // 동쪽 성벽
   rectFill(grid, 22, 4, 25, 6, 2); rectFill(grid, 27, 4, 29, 6, 2); rectFill(grid, 31, 4, 33, 6, 2); // 상단 막사 3채
   rectFill(grid, 26, 7, 31, 13, 2);  // 중앙 관청
@@ -590,14 +590,14 @@ const SEOJU_AREA_LABELS = [
     decor: [
       { type:'mapLabel', x:2, y:10.5, label:'출정로' },
       { type:'mapLabel', x:28.5, y:6.5, label:'수춘 관청' },
-      { type:'mapLabel', x:19.5, y:10.5, label:'수춘성 (농성 중)' },
+      { type:'mapLabel', x:19.5, y:9.5, label:'수춘 서문' },
     ],
     npcs: [
       { id:'giryeong', x:9, y:7, label:'기령 군세', fixed:true },
       { id:'gyoyu', x:9, y:18, label:'교유 군세', fixed:true, warArmy:'ally' },
-      { id:'wonsul', x:16, y:12, label:'원술 군세', fixed:true },
-      { id:'noebak', x:15, y:10, label:'뇌박 군세', fixed:true },
-      { id:'jinran', x:15, y:14, label:'진란 군세', fixed:true },
+      { id:'wonsul', x:17, y:12, label:'원술 군세', fixed:true },
+      { id:'noebak', x:12, y:10, label:'뇌박 군세', fixed:true },
+      { id:'jinran', x:12, y:14, label:'진란 군세', fixed:true },
     ],
   };
 })();

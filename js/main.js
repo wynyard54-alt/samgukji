@@ -1349,16 +1349,35 @@ function goHoenamBattle() {
 // 기령(관우군)과 교유(유비군)를 각각 실제로 격파해야 원술이 잔여 세력과
 // 성에 틀어박힌다. 곧이어 장비가 하비 함락 소식을 갖고 도착하며 원술 정벌이
 // 중단된다 - 챕터2의 결말이다.
+// 성문 앞을 지키던 선봉 뇌박·진란을 둘 다 관우군이 무너뜨리면, 뒤에 있던
+// 원술은 더 버티지 못하고 남은 병력을 이끌고 성 안으로 물러난다 - 원술
+// 본인과는 이번 장면에서 싸우지 않는다(성벽에 남은 이는 장식용 서사뿐).
+// afterCb는 항상(대사가 뜨든 안 뜨든) 정확히 한 번 호출된다 - checkHoenamClear가
+// 이어서 기령/교유 완료 여부를 확인할 때 두 대사가 동시에 겹쳐 뜨지 않도록
+// 순서를 맞추기 위함이다.
+function checkWonsulRetreat(afterCb) {
+  const done = (id) => ['resolved', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]);
+  if (GameState.flags.wonsulRetreated || !done('noebak') || !done('jinran')) {
+    if (afterCb) afterCb();
+    return;
+  }
+  GameState.flags.wonsulRetreated = true;
+  MapView.removeNpc('wonsul');
+  Dialogue.show([{ speaker: '내레이션', text: '앞서 나와 있던 뇌박과 진란이 무너지자, 원술은 남은 병력을 이끌고 성 안으로 황급히 물러났다.' }], afterCb);
+}
+
 function checkHoenamClear() {
   if (MapView.currentMapId !== 'hoenam' || GameState.flags.hoenamCleared) return;
-  const done = (id) => ['resolved', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]);
-  if (!done('giryeong') || !done('gyoyu')) return;
-  GameState.flags.hoenamCleared = true;
-  MapView.lockMovement(true);
-  Dialogue.show(STORY.hoenam_giryeong_win, () => {
-    Dialogue.show(STORY.hoenam_jangbi_arrives, () => {
-      MapView.lockMovement(false);
-      toast('원술 정벌이 중단되었다. (다음 장면에서 계속)');
+  checkWonsulRetreat(() => {
+    const done = (id) => ['resolved', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]);
+    if (!done('giryeong') || !done('gyoyu')) return;
+    GameState.flags.hoenamCleared = true;
+    MapView.lockMovement(true);
+    Dialogue.show(STORY.hoenam_giryeong_win, () => {
+      Dialogue.show(STORY.hoenam_jangbi_arrives, () => {
+        MapView.lockMovement(false);
+        toast('원술 정벌이 중단되었다. (다음 장면에서 계속)');
+      });
     });
   });
 }

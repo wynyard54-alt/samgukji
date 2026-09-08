@@ -220,10 +220,12 @@ const ROSTER = {
     stats:{atk:56, def:50, spd:46, int:28, cha:30}, intro:'…소문으로만 듣던 그대들이군. 이 몸이 상대해주겠소.' },
 
   // ---- 챕터2 (관우) : 회남 - 원술 정벌 [장면3] ----
-  // 기령과 교유만 실제 전투 대상(kind:'enemy')이고, 나머지는 서사 전용이다.
-  // 기령은 관우군이, 교유는 유비군이 직접 맡는다(warArmy:'ally'가 있으면
-  // main.js의 openWarCommandMenu가 GameState.allyArmy를 써서 판정한다) -
-  // 원술·뇌박·진란은 성에 틀어박혀 이번 장면에서는 싸우지 않는다.
+  // 기령·교유·뇌박·진란은 실제 전투 대상(kind:'enemy')이고, 원술만 서사
+  // 전용이다. 기령은 관우군이, 교유는 유비군이 맡는다(warArmy:'ally'가
+  // 있으면 main.js의 openWarCommandMenu가 GameState.allyArmy를 써서
+  // 판정한다). 뇌박·진란은 성문 앞을 지키는 선봉이라 관우군이 상대하고,
+  // 둘 다 쓰러지면(main.js checkWonsulRetreat) 원술은 남은 병력을 이끌고
+  // 성 안으로 물러난다 - 이번 장면에서는 원술 본인과는 싸우지 않는다.
   giryeong: { id:'giryeong', name:'기령', kind:'enemy', forced:null, affiliation:'원술군', troop:5000,
     stats:{atk:80, def:65, spd:60, int:45, cha:50},
     intro:'…네놈이 관우로구나! 이 기령의 삼첨도를 받아보아라!', sprite:SPRITE_COALITION },
@@ -232,10 +234,12 @@ const ROSTER = {
     intro:'유비 그자가 감히 우리 주공을 노린단 말이냐!', sprite:SPRITE_COALITION },
   wonsul: { id:'wonsul', name:'원술', kind:'flavor', affiliation:'원술군', troop:8000,
     intro:'…흥, 유비 따위가 감히 이 원술의 땅을 넘본단 말이냐. 성문을 굳게 걸어라!', sprite:SPRITE_COALITION },
-  noebak: { id:'noebak', name:'뇌박', kind:'flavor', affiliation:'원술군', troop:3000,
-    intro:'주공의 명이다, 성벽만 지키면 된다.', sprite:SPRITE_COALITION },
-  jinran: { id:'jinran', name:'진란', kind:'flavor', affiliation:'원술군', troop:3000,
-    intro:'섣불리 나가 싸울 필요 없다. 버티기만 하면 이긴다.', sprite:SPRITE_COALITION },
+  noebak: { id:'noebak', name:'뇌박', kind:'enemy', forced:null, affiliation:'원술군', troop:3000,
+    stats:{atk:55, def:50, spd:45, int:20, cha:25},
+    intro:'주공의 명이다, 성벽만 지키면 된다. 함부로 들어올 생각 마라!', sprite:SPRITE_COALITION },
+  jinran: { id:'jinran', name:'진란', kind:'enemy', forced:null, affiliation:'원술군', troop:3000,
+    stats:{atk:58, def:52, spd:48, int:22, cha:24},
+    intro:'섣불리 나가 싸울 필요 없다. 버티기만 하면 이긴다더니… 어쩔 수 없군!', sprite:SPRITE_COALITION },
 
   // ---- 데이터베이스 등록용 (아직 특정 장면/지도에 배치되지 않음) ----
   // 챕터2 후반(하비 함락, 여포 처형 / 회남 원술 정벌 확장)에 어떻게든 등장할
