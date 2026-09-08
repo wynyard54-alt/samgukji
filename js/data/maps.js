@@ -359,13 +359,15 @@ const SEOJU_AREA_LABELS = [
     npcs:[
       // 반달(초승달) 모양으로 성벽을 포위한 8부대 - 우금은 유비 일행이
       // 리젠되는 우측 하단 언덕길과 이어지는 진형 가장 오른쪽 끝에 둔다.
-      { id:'jojo_jungong', x:15, y:21, label:'조조(중군)', fixed:true },
+      // 가운데 5부대(조조 중군·조인·조홍·악진·이전)는 배경 그림의 막사
+      // 구조물 위가 아니라 그 사이 트인 잔디밭에 서도록 좌표를 잡았다.
+      { id:'jojo_jungong', x:14, y:19, label:'조조(중군)', fixed:true },
       { id:'habudon_seoju', x:4, y:16, label:'하후돈군', fixed:true },
       { id:'habuyeon_seoju', x:3, y:19, label:'하후연군', fixed:true },
-      { id:'join_seoju', x:7, y:21, label:'조인군', fixed:true },
-      { id:'johong_seoju', x:11, y:22, label:'조홍군', fixed:true },
-      { id:'akjin_seoju', x:19, y:20, label:'악진군', fixed:true },
-      { id:'ijeon_seoju', x:23, y:17, label:'이전군', fixed:true },
+      { id:'join_seoju', x:9, y:19, label:'조인군', fixed:true },
+      { id:'johong_seoju', x:12, y:19, label:'조홍군', fixed:true },
+      { id:'akjin_seoju', x:18, y:19, label:'악진군', fixed:true },
+      { id:'ijeon_seoju', x:20, y:17, label:'이전군', fixed:true },
       { id:'ugeum_seoju', x:26, y:15, label:'우금군', fixed:true },
       // 우금이 패퇴한 뒤 성문 앞에서 도겸과 만나는 장면(seoju_wall_standoff_city) 전용
       // 인물 - 평소엔 등장하지 않다가(storyGate가 절대 참이 되지 않음) main.js에서
