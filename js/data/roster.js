@@ -189,12 +189,34 @@ const ROSTER = {
   mibang: { id:'mibang', name:'미방', kind:'flavor', affiliation:'서주',
     stats:{atk:34, def:36, spd:32, int:48, cha:40},
     intro:'형님을 따라왔소이다. 큰 도움은 못 되겠지만, 힘껏 돕겠소.' },
+  // 진규·진등 부자는 서주 자유탐방 중 찾아가면(친밀도 없이) 곧바로 등용된다 -
+  // 손건과 달리 이미 마음을 정한 상태라 미방과 같은 "찾아서 등용" 취급.
   jingyu: { id:'jingyu', name:'진규', kind:'flavor', affiliation:'서주',
+    stats:{atk:22, def:26, spd:20, int:80, cha:78},
     intro:'하비상 진규요. 그대의 그릇이 어떤지, 이렇게 직접 보러 왔소.', sprite:SPRITE_ELDER },
   // 진규의 아들. 챕터2 장면2(하비성 관청)에서 원술 정벌에 필요한 병력을
   // 모아주는 실제 상호작용(행동력 소모 + 병력 획득)을 담당한다.
   jindeung: { id:'jindeung', name:'진등', kind:'flavor', affiliation:'서주',
+    stats:{atk:38, def:40, spd:36, int:74, cha:66},
     intro:'광릉태수 진등이라 하오. 병력을 모으는 일이라면 제게 맡겨주십시오.', sprite:SPRITE_ELDER },
+
+  // 서주 자유탐방 중 새로 만나는 인물들. 진군·서성은 희귀 출현(도겸의 소개 없이
+  // 우연히 마주치는 발견형), 손관은 일반 출현(장패와 동향인 낭야 사람으로,
+  // 자유탐방이 시작되면 곧바로 등장), 조표는 도겸 밑의 관원으로 훗날 하비성을
+  // 여포에게 열어주는 배신을 암시하는 서사 전용 인물이다(연의 14회).
+  jingun: { id:'jingun', name:'진군', kind:'recruit', forced:null, affiliation:'서주', chance:0.2,
+    stats:{atk:22, def:26, spd:24, int:81, cha:77}, intro:'예주 출신 진군이라 하오. 어지러운 세상, 그대라면 믿고 몸을 맡길 만하다 여겨 찾아왔소.' },
+  seoseong: { id:'seoseong', name:'서성', kind:'recruit', forced:null, affiliation:'서주', chance:0.2,
+    stats:{atk:82, def:66, spd:58, int:56, cha:48}, intro:'서성이라 하오. 힘 쓰는 일이라면 자신 있으니, 부디 써주시오.' },
+  songgwan: { id:'songgwan', name:'손관', kind:'recruit', forced:null, affiliation:'서주',
+    stats:{atk:78, def:63, spd:57, int:33, cha:41}, intro:'낭야의 손관이라 하오. 같은 고향의 장패가 그대들 밑에 있다기에 찾아왔소.' },
+  jopyo: { id:'jopyo', name:'조표', kind:'flavor', affiliation:'서주',
+    intro:'서주의 관원 조표요. …흥, 굴러온 돌이 사는 게 참 편해 보이는구려.', sprite:SPRITE_ELDER },
+  // 장패 무리의 일원 - 지도에 고정 배치하지 않고, 챕터1의 여상과 같은 방식으로
+  // 서주 자유탐방 중 휴식(다음달)할 때 확률적으로 마주치는 돌발 전투로 등장한다
+  // (main.js의 triggerOdonEvent/maybeSeojuRandomEvent 참고).
+  odon: { id:'odon', name:'오돈', kind:'enemy', forced:null, affiliation:'무소속',
+    stats:{atk:56, def:50, spd:46, int:28, cha:30}, intro:'…소문으로만 듣던 그대들이군. 이 몸이 상대해주겠소.' },
 
   // ---- 챕터2 (관우) : 회남 - 원술 정벌 [장면3] ----
   // 기령만 실제 전투 대상(kind:'enemy')이고, 나머지는 서사 전용이다 -
@@ -211,6 +233,49 @@ const ROSTER = {
     intro:'주공의 명이다, 성벽만 지키면 된다.', sprite:SPRITE_COALITION },
   jinran: { id:'jinran', name:'진란', kind:'flavor', affiliation:'원술군', troop:3000,
     intro:'섣불리 나가 싸울 필요 없다. 버티기만 하면 이긴다.', sprite:SPRITE_COALITION },
+
+  // ---- 데이터베이스 등록용 (아직 특정 장면/지도에 배치되지 않음) ----
+  // 챕터2 후반(하비 함락, 여포 처형 / 회남 원술 정벌 확장)에 어떻게든 등장할
+  // 예정인 인물들을 미리 등록해둔다. troop·배치 좌표는 실제 장면을 만들 때
+  // 정한다. 위속·송헌은 이미 위(호로관 섹션)에 등록되어 있어 여기서는 제외.
+  jingung: { id:'jingung', name:'진궁', kind:'enemy', forced:null, affiliation:'여포군',
+    stats:{atk:30, def:34, spd:32, int:92, cha:68}, sprite:SPRITE_DONGTAK,
+    intro:'…내 계책을 따랐더라면, 이 지경까지 오지는 않았을 것을.' },
+  gosun: { id:'gosun', name:'고순', kind:'enemy', forced:null, affiliation:'여포군',
+    stats:{atk:88, def:82, spd:60, int:58, cha:35}, sprite:SPRITE_DONGTAK,
+    intro:'…함진영은 항복을 모른다. 덤벼라.' },
+  jangryo: { id:'jangryo', name:'장료', kind:'enemy', forced:null, affiliation:'여포군',
+    stats:{atk:90, def:75, spd:80, int:70, cha:72}, sprite:SPRITE_DONGTAK,
+    intro:'…주공이 어리석었을 뿐, 나는 아직 죽을 자리를 찾지 못했다.' },
+  hakmaeng: { id:'hakmaeng', name:'학맹', kind:'enemy', forced:null, affiliation:'여포군',
+    stats:{atk:70, def:60, spd:58, int:40, cha:38}, sprite:SPRITE_DONGTAK,
+    intro:'여포군의 학맹이다. 이대로 물러설 성싶으냐!' },
+  joseong: { id:'joseong', name:'조성', kind:'enemy', forced:null, affiliation:'여포군',
+    stats:{atk:66, def:58, spd:52, int:38, cha:36}, sprite:SPRITE_DONGTAK,
+    intro:'여포군의 조성이다.' },
+  seongryeom: { id:'seongryeom', name:'성렴', kind:'enemy', forced:null, affiliation:'여포군',
+    stats:{atk:64, def:56, spd:50, int:36, cha:34}, sprite:SPRITE_DONGTAK,
+    intro:'여포군의 성렴이다.' },
+  huseong: { id:'huseong', name:'후성', kind:'enemy', forced:null, affiliation:'여포군',
+    stats:{atk:60, def:54, spd:52, int:42, cha:38}, sprite:SPRITE_DONGTAK,
+    intro:'…술 때문에 매질까지 당했는데, 계속 이 밑에 있어야 할지 모르겠군.' },
+  janghun: { id:'janghun', name:'장훈', kind:'enemy', forced:null, affiliation:'원술군',
+    stats:{atk:70, def:60, spd:55, int:44, cha:46}, sprite:SPRITE_COALITION,
+    intro:'원술군의 장훈이다.' },
+  jingi: { id:'jingi', name:'진기', kind:'enemy', forced:null, affiliation:'원술군',
+    stats:{atk:50, def:48, spd:44, int:60, cha:54}, sprite:SPRITE_COALITION,
+    intro:'원술군의 진기라 하오.' },
+  // 조조군의 이전(李典, id:ijeon_seoju)과는 한글 표기만 같은 별개 인물(원술군
+  // 이전/李豊)이라 id를 구분한다.
+  ipung: { id:'ipung', name:'이전', kind:'enemy', forced:null, affiliation:'원술군',
+    stats:{atk:56, def:52, spd:48, int:42, cha:40}, sprite:SPRITE_COALITION,
+    intro:'원술군의 이전이다.' },
+  yanggang: { id:'yanggang', name:'양강', kind:'enemy', forced:null, affiliation:'원술군',
+    stats:{atk:60, def:54, spd:50, int:40, cha:38}, sprite:SPRITE_COALITION,
+    intro:'원술군의 양강이다.' },
+  akchwi: { id:'akchwi', name:'악취', kind:'enemy', forced:null, affiliation:'원술군',
+    stats:{atk:54, def:50, spd:46, int:36, cha:34}, sprite:SPRITE_COALITION,
+    intro:'원술군의 악취다.' },
 };
 
 // 책사형(지력형) vs 무력형 판정 — 등용 경로가 갈리는 기준

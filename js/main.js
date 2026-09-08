@@ -384,6 +384,27 @@ function interactNPC(id, context) {
     Dialogue.show([{ speaker: rd.name, text: rd.intro }]);
     return;
   }
+  // 미방·진규·진등은 이미 마음을 정한 상태라, 손건과 달리 친밀도를 쌓을 필요
+  // 없이 서주에서 찾아가 인사만 나누면 곧바로 등용된다("찾아서 등용"). 미축은
+  // 도겸의 죽음과 함께 자동으로 합류하므로(checkDeadlines의 dogyeom_death
+  // 처리) 여기 포함하지 않지만, 세 사람을 모두 "만난" 시점(서주 인사 3/3)에
+  // 도겸이 서주를 넘기는 장면으로 이어지는 건 동일하다.
+  if (SEOJU_INSTANT_JOIN_IDS.includes(id) && stage === 'seoju_free') {
+    if (GameState.recruited.includes(id)) {
+      Dialogue.show([{ speaker: rd.name, text: rd.intro }]);
+      return;
+    }
+    const completesGreetQuest = SEOJU_GREET_IDS.includes(id) &&
+      SEOJU_GREET_IDS.filter((x) => x !== id && !!GameState.npcStatus[x]).length === SEOJU_GREET_IDS.length - 1;
+    Dialogue.show([{ speaker: rd.name, text: rd.intro }], () => {
+      GameState.recruit(id, 0);
+      stationRecruitOrRemove(id);
+      toast(`${rd.name}이(가) 합류했다.`);
+      updateHUD();
+      if (completesGreetQuest) checkDeadlines();
+    });
+    return;
+  }
   if (st === 'recruited' && (stage === 'takhyeon_free' || stage === 'pyeongwon_free')) { interactRecruitedGeneral(id); return; }
   if (st === 'recruited' || st === 'resolved' || st === 'dead' || st === 'fled') return;
 
@@ -420,13 +441,12 @@ function interactNPC(id, context) {
   }
 
   if (rd.kind === 'flavor') {
-    // 진규·미축·미방은 등용 대상이 아니라 별도 상태 추적이 없지만, 서주 인사
-    // (0/3) 임무에는 포함되므로 첫 만남을 기록해둔다. 세 사람을 모두 만나면
-    // (인재 등용 완료) 도겸이 서주를 넘기는 장면으로 이어진다.
-    const seojuGreetIds = ['jingyu', 'michuk', 'mibang'];
-    const isFirstMeet = seojuGreetIds.includes(id) && !GameState.npcStatus[id];
+    // 미축은 등용 대상이 아니라 별도 상태 추적이 없지만, 서주 인사 (0/3)
+    // 임무에는 포함되므로 첫 만남을 기록해둔다 - 실제 등용은 도겸 사망 시
+    // 자동으로 처리된다.
+    const isFirstMeet = id === 'michuk' && !GameState.npcStatus[id];
     const completesGreetQuest = isFirstMeet &&
-      seojuGreetIds.filter((x) => x !== id && !!GameState.npcStatus[x]).length === seojuGreetIds.length - 1;
+      SEOJU_GREET_IDS.filter((x) => x !== id && !!GameState.npcStatus[x]).length === SEOJU_GREET_IDS.length - 1;
     if (isFirstMeet) {
       GameState.npcStatus[id] = 'met';
       updateHUD();
@@ -969,15 +989,24 @@ const SEOJU_JOJO_ARMY_IDS = [
   'jojo_jungong', 'habudon_seoju', 'habuyeon_seoju', 'join_seoju',
   'johong_seoju', 'akjin_seoju', 'ugeum_seoju', 'ijeon_seoju',
 ];
-const SEOJU_FREEROAM_NPC_IDS = ['michuk', 'mibang', 'jingyu'];
+// 자유탐방이 시작되면 곧바로(확률 없이) 등장하는 서주 사람들.
+const SEOJU_FREEROAM_NPC_IDS = ['michuk', 'mibang', 'jingyu', 'jindeung', 'songgwan', 'jopyo'];
+// 진군·서성은 도겸의 소개 없이 우연히 마주치는 희귀 출현 인재라, 자유탐방
+// 시작 시점에 각자의 확률(ROSTER[id].chance)로 한 번만 등장 여부를 굴린다.
+const SEOJU_RARE_RECRUIT_IDS = ['jingun', 'seoseong'];
+// 손건과 달리 친밀도 없이 만나기만 하면 곧바로 등용되는 인물(가족·측근).
+const SEOJU_INSTANT_JOIN_IDS = ['mibang', 'jingyu', 'jindeung'];
+// "서주 인사 (0/3)" 임무 - 이 셋을 모두 만나면(등용 포함) 도겸이 서주를
+// 넘기는 장면으로 이어진다.
+const SEOJU_GREET_IDS = ['jingyu', 'michuk', 'mibang'];
 // 이 지도는 챕터1(어양)의 것을 그대로 재사용한 것뿐, 이야기상 서주다 - 어양
 // 소속 인물(유비 포함)이 그대로 보이면 헷갈리므로 전부 지도에서 제거한다.
 // 유비는 나중에 실제 서주 지도가 만들어지면 성 안쪽에 배치할 예정이라, 그때까지는
-// 등장시키지 않는다.
+// 등장시키지 않는다. (손건은 storyGate로 이미 가려져 있어 사실상 중복 방지용.)
 const SEOJU_EXCLUDE_CH1_NPC_IDS = [
   'yubi', 'gongsonchan', 'yuwoo', 'gwanhae', 'jangsun',
-  'jeonhae', 'gwanjeong', 'eomgang', 'jowoon', 'jeonju',
-  'songgeon', 'jeonye', 'yeomyu', 'jangpae', 'taesaja', 'yuyo', 'choeyeom',
+  'jeonhae', 'eomgang', 'jowoon', 'jeonju',
+  'songgeon', 'jeonye', 'yeomyu', 'jangpae', 'taesaja', 'choeyeom',
 ];
 function goSeojuFree() {
   Dialogue.show(STORY.seoju_urgent_call, () => {
@@ -1021,6 +1050,9 @@ function goSeojuFree() {
               MapView.lockMovement(false);
               GameState.flags.seojuFreeRoam = true;
               SEOJU_FREEROAM_NPC_IDS.forEach((id) => MapView.addNpc(id));
+              SEOJU_RARE_RECRUIT_IDS.forEach((id) => {
+                if (Math.random() < (ROSTER[id].chance || 0.2)) MapView.addNpc(id);
+              });
               toast('서주 성내를 둘러보자.');
             });
           });
@@ -1570,9 +1602,9 @@ function interactRecruitedGeneral(id) {
   }
 }
 
-// 등용 완료 시 호출 - 마을(탁현/평원)에서는 그 자리에 남아 훈련/모병역을 맡고, 그 외(전장 등)에서는 기존처럼 퇴장한다.
+// 등용 완료 시 호출 - 마을(탁현/평원/서주)에서는 그 자리에 남아 훈련/모병역을 맡고, 그 외(전장 등)에서는 기존처럼 퇴장한다.
 function stationRecruitOrRemove(id) {
-  if (stage === 'takhyeon_free' || stage === 'pyeongwon_free') { MapView.render(); return; }
+  if (stage === 'takhyeon_free' || stage === 'pyeongwon_free' || stage === 'seoju_free') { MapView.render(); return; }
   MapView.removeNpc(id);
 }
 
@@ -2284,6 +2316,23 @@ function maybeRandomEvent() {
   return true;
 }
 
+// 서주 자유탐방 전용 돌발 이벤트 - 챕터1의 RANDOM_EVENT_BANDITS/checkScheduledSpawns는
+// 같은 지도를 챕터1과 공유하는 탓에 그대로 재사용하면 챕터1 인물들까지 되살아날
+// 위험이 있어, 오돈(장패 무리)만을 위한 경량 버전을 따로 둔다.
+function triggerOdonEvent() {
+  if (GameState.npcStatus['odon']) { triggerFlavorEvent(); return; }
+  startFreeBattle('odon', undefined, true);
+}
+function maybeSeojuRandomEvent() {
+  if (Math.random() >= RANDOM_EVENT_CHANCE) return false;
+  const kind = ['odon', 'merchant', 'harvest', 'flavor'][Math.floor(Math.random() * 4)];
+  if (kind === 'odon') triggerOdonEvent();
+  else if (kind === 'merchant') triggerMerchantEvent();
+  else if (kind === 'harvest') triggerHarvestEvent();
+  else triggerFlavorEvent();
+  return true;
+}
+
 // ---- 지나가는 백성 - 가끔 "…" 말풍선을 달고 나타나 말을 걸면 짧은 대화를 나눈다 ----
 // 매달 자동으로 뜨는 안내문구 대신, 돌아다니다 우연히 마주치는 이런 짧은 상호작용이
 // 마을에 더 살아있는 느낌을 준다.
@@ -2370,13 +2419,13 @@ function availableLoreLines() {
 // 달리, 다른 사람에게서 전해 들은 소문 형태라 근처에 가지 않아도 들을 수 있다.
 const RUMOR_HINTS = {
   noshik: '장터 근처에 학식이 깊어 보이는 노학자가 나타났다는 소문이오.',
-  gwanjeong: '주막 근처에서 눈빛이 예사롭지 않은 나그네를 봤다는군.',
   jeonju: '마을 사람들이 어느 은둔 선비에게 자꾸 세상에 나오라 권하고 있다던데.',
   songgeon: '주막 앞에서 떠도는 소문을 죽간에 옮겨 적는 사람이 있다고 하오.',
   jeonye: '유비 장군 진영 근처를 서성이는 낯선 학자를 봤다는 소문이오.',
   yeomyu: '성벽 밖에서 오환족 얘기를 하는 병사들 무리를 봤다고 하오.',
-  yuyo: '한실 소식을 궁금해하는 기품 있는 선비가 돌아다닌다는군.',
   choeyeom: '거리의 풍속을 유심히 살피는 수염 기른 선비를 봤다고 하오.',
+  jingun: '주막 근처에서 단정한 차림의 선비를 봤다는 사람이 있소.',
+  seoseong: '창을 손질하는 덩치 큰 사내를 봤다는 소문이오.',
 };
 
 function rumorCandidates() {
@@ -2510,12 +2559,17 @@ document.getElementById('btn-nextmonth').onclick = () => {
   const incomeMsg = income > 0 ? ` (책사들의 수완으로 금 ${income} 획득)` : '';
   const hpMsg = inCampaign || inJangsunMarch ? '체력과 행동력이 재보급되었다.' : '휴식을 취해 체력과 행동력이 모두 회복되었다.';
   const inTown = (stage === 'takhyeon_free' || stage === 'pyeongwon_free') && !inJangsunMarch;
+  // 서주 자유탐방도 마을 체류와 같은 결이지만, 챕터1과 지도를 공유하는 탓에
+  // checkScheduledSpawns()/RANDOM_EVENT_BANDITS를 그대로 재사용하면 챕터1
+  // 인물들까지 되살아날 위험이 있어 spawned 계산에서는 제외하고, 돌발 이벤트만
+  // 별도의 경량 버전(maybeSeojuRandomEvent)으로 처리한다.
+  const inSeojuTown = stage === 'seoju_free';
   const spawned = inTown ? MapView.checkScheduledSpawns() : [];
   const spawnMsg = spawned.length ? ' 마을에 낯선 인물이 나타났다는 소문이 돈다. 돌아다니다 보면 마주칠지도 모른다.' : '';
   // 마을 체류 중에는 매달 뜨는 정형화된 안내문구를 없애고, 대신 지나가던 백성에게
   // 가끔 말풍선이 걸려 돌아다니다 우연히 마주치는 편이 더 재미있다.
   const finishTurn = () => {
-    if (inTown) {
+    if (inTown || inSeojuTown) {
       const extra = `${incomeMsg}${spawnMsg}`.trim();
       if (extra) toast(`${GameState.dateLabel()}이(가) 되었다. ${extra}`);
       return;
@@ -2529,6 +2583,9 @@ document.getElementById('btn-nextmonth').onclick = () => {
     MapView.rollAmbientEvent(availableAmbientKinds());
     if (!maybeRandomEvent()) finishTurn();
     // maybeRandomEvent가 발생했다면 그 자체의 대사/토스트가 턴 진행 피드백을 대신한다.
+  } else if (inSeojuTown) {
+    MapView.rollAmbientEvent(availableAmbientKinds());
+    if (!maybeSeojuRandomEvent()) finishTurn();
   } else {
     finishTurn();
   }

@@ -253,7 +253,6 @@ if (false) (function () {
     camera:{ viewportW:800, viewportH:480 },
     foregroundCrops:[{ x:.39, y:.425, w:.13, h:.12 }],
     decor:[
-      { type:'mapLabel', x:8.5, y:3.55, label:'민가', residenceIds:['yuyo'], revealedLabel:'유요의 집' },
       { type:'mapLabel', x:21.0, y:3.55, label:'민가', residenceIds:['jeonju'], revealedLabel:'전주의 집' },
       { type:'mapLabel', x:33.0, y:3.55, label:'민가', residenceIds:['choeyeom'], revealedLabel:'최염의 집' },
       { type:'mapLabel', x:18.8, y:8.75, label:'어양 주막' },
@@ -274,15 +273,15 @@ if (false) (function () {
       { id:'yubi', x:24, y:20, label:'유비', fixed:true },
       { id:'gongsonchan', x:25, y:20, label:'공손찬', fixed:true },
       { id:'jeonhae', x:13, y:12, label:'전해', randomSpawn:true },
-      { id:'gwanjeong', x:18, y:5, label:'관정', randomSpawn:true, discoverable:true, discoveryRange:2,
-        discoveryText:'주막으로 향하던 선비가 관우의 걸음을 유심히 바라본다.',
-        residence:{ x:18, y:10, label:'관정' } },
       { id:'eomgang', x:28, y:5, label:'엄강', randomSpawn:true },
       { id:'jowoon', x:35, y:12, label:'조운(?)', randomSpawn:true },
       { id:'jeonju', x:20, y:12, label:'', randomSpawn:true, discoverable:true, discoveryRange:2,
         discoveryText:'마을에서 떠들썩한 소리가 들린다. "선생님, 이제 세상에 나가셔야죠." "자네만한 인재가 없는데 왜 이곳에서 서책만 읽는가?"',
         residence:{ x:20, y:5, label:'전주' } },
-      { id:'songgeon', x:14, y:5, label:'손건', randomSpawn:true, discoverable:true, discoveryRange:2,
+      // 손건은 챕터1에서는 등장하지 않고(storyGate), 챕터2 서주에서 도겸의
+      // 추천을 받아야만(main.js interactNPC의 songgeonRecommended 처리)
+      // MapView.addNpc()로 등장한다.
+      { id:'songgeon', x:14, y:5, label:'손건', discoverable:true, discoveryRange:2, storyGate:'songgeonRecommended',
         discoveryText:'주막 앞에서 죽간을 든 선비가 지나가는 소문을 기록하고 있다.',
         residence:{ x:20, y:10, label:'손건' } },
       { id:'jeonye', x:27, y:21, label:'', randomSpawn:true, discoverable:true, discoveryRange:2,
@@ -291,9 +290,6 @@ if (false) (function () {
         discoveryText:'성벽 밖에서 병사들이 수군거린다. "오환을 움직여 이 반란을 잠재우려면, 그 사람밖에 없다는데."' },
       { id:'jangpae', x:11, y:12, label:'장패', randomSpawn:true },
       { id:'taesaja', x:36, y:5, label:'태사자', randomSpawn:true },
-      { id:'yuyo', x:16, y:5, label:'유요', randomSpawn:true, discoverable:true, discoveryRange:2,
-        discoveryText:'기품 있는 선비가 한실의 소식을 묻고 다닌다.',
-        residence:{ x:8, y:5, label:'유요' } },
       { id:'choeyeom', x:34, y:12, label:'최염', randomSpawn:true, discoverable:true, discoveryRange:2,
         discoveryText:'수염을 단정히 기른 선비가 거리의 풍속을 말없이 살피고 있다.',
         residence:{ x:33, y:5, label:'최염' } },
@@ -314,6 +310,17 @@ if (false) (function () {
       { id:'michuk', x:29, y:20, label:'미축', fixed:true, storyGate:'seojuFreeRoam' },
       { id:'mibang', x:29, y:21, label:'미방', fixed:true, storyGate:'seojuFreeRoam' },
       { id:'jingyu', x:23, y:22, label:'진규', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'jindeung', x:25, y:22, label:'진등', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'songgwan', x:9, y:12, label:'손관', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'jopyo', x:19, y:13, label:'조표', fixed:true, storyGate:'seojuFreeRoam' },
+      // 진군·서성은 확률 출현(main.js SEOJU_RARE_RECRUIT_IDS) - 등장이 확정된
+      // 경우에만 addNpc()로 지도에 올라온다.
+      { id:'jingun', x:16, y:5, label:'', discoverable:true, discoveryRange:2, storyGate:'seojuFreeRoam',
+        discoveryText:'주막 근처에서 단정한 차림의 선비가 세상 돌아가는 이야기를 나누고 있다.',
+        residence:{ x:12, y:5, label:'진군' } },
+      { id:'seoseong', x:18, y:5, label:'', discoverable:true, discoveryRange:2, storyGate:'seojuFreeRoam',
+        discoveryText:'덩치 큰 사내가 창을 손질하며 주변을 살피고 있다.',
+        residence:{ x:30, y:5, label:'서성' } },
     ],
     ambient:[
       ['merchant',13,5,'ash',2],['farmer',20,5,'earth',2],['woman',27,5,'ash',2],
