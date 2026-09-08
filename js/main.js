@@ -720,6 +720,7 @@ function duelAcceptChance(challengerGrade, defenderGrade) {
 }
 
 function enemyArmyGrade(rd) { return gradeFor(armyMuryeokValue(rd, []), MURYEOK_GRADES); }
+function enemyJiryeokGrade(rd) { return gradeFor(rd.stats.int, JIRYEOK_GRADES); }
 
 function npcOnGateTile(id) {
   // 현재 챕터1 지도에는 관문/요새 타일에 서있는 적 군세가 없다 - 향후 지도 확장을 위한 훅
@@ -801,7 +802,15 @@ function openWarCommandMenu(id) {
 // 효과만 넣어둔다 - 나중에 책사마다 고유 책략을 배정하면 이 함수가 그
 // 분기로 바뀐다. 교전이 아직 시작 전이면 처음부터 약해진 채로 잠기고, 이미
 // 시작된 교전이면 남은 교전 동안 추가로 30% 더 약해진다.
-const STRATEGY_SUCCESS_CHANCE = { S: 80, A: 65, B: 50, C: 35, D: 20 };
+// 책략 성공률은 내 책사의 지력 등급 하나만 보지 않고, 적 총사령관의 지력
+// 등급과 비교한 "등급차"로 정한다 - 동률 50%를 기준으로 등급차 1당 10%p씩
+// 오르내린다(1등급 앞서면 60%, 4등급 앞서면 90% / 반대로 뒤처지면 40%,
+// 10%까지 내려간다). 무력 등급차 1당 -20%인 일기토 수락률(duelAcceptChance)과
+// 같은 계열의 산식이다.
+function strategySuccessChance(deputyGrade, enemyGrade) {
+  const diff = GRADE_RANK[enemyGrade] - GRADE_RANK[deputyGrade]; // 양수면 내 책사가 우위
+  return Math.max(10, Math.min(90, 50 + 10 * diff));
+}
 function attemptStrategy(id) {
   const rd = ROSTER[id];
   const ctx = resolveWarArmy(rd);
@@ -814,7 +823,7 @@ function attemptStrategy(id) {
     return;
   }
   const grade = gradeFor(deputy.stats.int, JIRYEOK_GRADES);
-  const chance = STRATEGY_SUCCESS_CHANCE[grade];
+  const chance = strategySuccessChance(grade, enemyJiryeokGrade(rd));
   const roll = Math.random() * 100;
   if (roll < chance) {
     Dialogue.show([{ speaker: deputy.name, text: '계책이 통했습니다! 적진이 크게 흔들리고 있습니다.' }], () => {
