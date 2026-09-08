@@ -1071,19 +1071,27 @@ function checkDeadlines() {
     return true;
   }
   if (stage === 'habi_camp' && gs.flags.habiStep === 1 && gs.resources.troop >= HABI_RECRUIT_GOAL) {
-    gs.flags.habiStep = 1.5; // 컷신 진행 중 - 완료 후 2로 넘어간다 (중복 발동 방지)
-    MapView.lockMovement(true);
-    Dialogue.show(STORY.habi_xuchang_intercept, () => {
-      Dialogue.show(STORY.habi_messenger_call, () => {
-        MapView.lockMovement(false);
-        gs.flags.habiStep = 2;
-        updateHUD();
-        centerAlert('유비를 찾아가 회의에 참석하자.');
-      });
-    });
+    triggerHabiRecruitComplete();
     return true;
   }
   return false;
+}
+
+// 하비성 모병 목표(HABI_RECRUIT_GOAL) 달성 시의 컷신 - "다음달" 버튼을 눌렀을
+// 때(checkDeadlines)뿐 아니라, 목표를 채운 채로 곧장 유비에게 말을 걸었을
+// 때(handleHabiYubi)도 같은 흐름을 타야 "병사가 부족하다"는 낡은 대사가
+// 나오지 않는다.
+function triggerHabiRecruitComplete() {
+  GameState.flags.habiStep = 1.5; // 컷신 진행 중 - 완료 후 2로 넘어간다 (중복 발동 방지)
+  MapView.lockMovement(true);
+  Dialogue.show(STORY.habi_xuchang_intercept, () => {
+    Dialogue.show(STORY.habi_messenger_call, () => {
+      MapView.lockMovement(false);
+      GameState.flags.habiStep = 2;
+      updateHUD();
+      centerAlert('유비를 찾아가 회의에 참석하자.');
+    });
+  });
 }
 
 function onApBlocked() {
@@ -1261,6 +1269,10 @@ function handleHabiYubi() {
     return;
   }
   if (step === 1) {
+    if (GameState.resources.troop >= HABI_RECRUIT_GOAL) {
+      triggerHabiRecruitComplete();
+      return;
+    }
     Dialogue.show([{ speaker: '유비', text: `아직 병사가 부족하네 (${GameState.resources.troop}/${HABI_RECRUIT_GOAL}). 진등을 찾아가 병사를 모아주게.` }]);
     return;
   }
