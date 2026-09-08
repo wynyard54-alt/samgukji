@@ -261,8 +261,6 @@ if (false) (function () {
       { type:'mapLabel', x:26.0, y:20.4, label:'유비 세력 막사' },
       { type:'mapLabel', x:5.5, y:24.8, label:'어양 들판' },
       { type:'mapLabel', x:34.0, y:26.0, label:'장순 반란군 진지', storyGate:'jangsunAppeared' },
-      // 챕터2(관우) 서주 임시 재사용 - 실제 서주 지도가 만들어지면 교체된다.
-      { type:'mapLabel', x:24.0, y:19.0, label:'조조 공략군 진영', storyGate:'seojuArrived' },
     ],
     areaLabels:[
       { x:18.5, y:13.4, text:'남문대로' },
@@ -278,12 +276,6 @@ if (false) (function () {
       { id:'jeonju', x:20, y:12, label:'', randomSpawn:true, discoverable:true, discoveryRange:2,
         discoveryText:'마을에서 떠들썩한 소리가 들린다. "선생님, 이제 세상에 나가셔야죠." "자네만한 인재가 없는데 왜 이곳에서 서책만 읽는가?"',
         residence:{ x:20, y:5, label:'전주' } },
-      // 손건은 챕터1에서는 등장하지 않고(storyGate), 챕터2 서주에서 도겸의
-      // 추천을 받아야만(main.js interactNPC의 songgeonRecommended 처리)
-      // MapView.addNpc()로 등장한다.
-      { id:'songgeon', x:14, y:5, label:'손건', discoverable:true, discoveryRange:2, storyGate:'songgeonRecommended',
-        discoveryText:'주막 앞에서 죽간을 든 선비가 지나가는 소문을 기록하고 있다.',
-        residence:{ x:20, y:10, label:'손건' } },
       { id:'jeonye', x:27, y:21, label:'', randomSpawn:true, discoverable:true, discoveryRange:2,
         discoveryText:'유비 세력 막사 근처를 서성이던 젊은 학자가, 삼형제를 유심히 바라보다 다가온다.' },
       { id:'yeomyu', x:36, y:16, label:'', randomSpawn:true, discoverable:true, discoveryRange:2, hideAfterJangsun:true,
@@ -296,37 +288,122 @@ if (false) (function () {
       { id:'yuwoo', x:25, y:13, label:'유우', fixed:true },
       { id:'jangsun', x:31, y:26, label:'장순(반란군)', fixed:true, storyGate:'jangsunAppeared' },
       { id:'gwanhae', x:6, y:22, label:'관해(황건적 잔당)' },
-      // 챕터2(관우) 서주 임시 재사용 - 실제 서주 지도가 만들어지면 이 블록 전체를 옮긴다.
-      { id:'dogyeom', x:17, y:13, label:'도겸', fixed:true, storyGate:'seojuArrived' },
-      { id:'jojo_jungong', x:24, y:18, label:'조조(중군)', fixed:true, storyGate:'seojuArrived' },
-      { id:'habudon_seoju', x:21, y:17, label:'하후돈군', fixed:true, storyGate:'seojuArrived' },
-      { id:'habuyeon_seoju', x:27, y:17, label:'하후연군', fixed:true, storyGate:'seojuArrived' },
-      { id:'join_seoju', x:21, y:20, label:'조인군', fixed:true, storyGate:'seojuArrived' },
-      { id:'johong_seoju', x:27, y:20, label:'조홍군', fixed:true, storyGate:'seojuArrived' },
-      { id:'akjin_seoju', x:24, y:21, label:'악진군', fixed:true, storyGate:'seojuArrived' },
-      { id:'ugeum_seoju', x:30, y:19, label:'우금군', fixed:true, storyGate:'seojuArrived' },
-      { id:'ijeon_seoju', x:20, y:19, label:'이전군', fixed:true, storyGate:'seojuArrived' },
-      // 조조군 퇴각 후 자유탐방이 시작될 때 addNpc()로 등장시키는 서주 사람들.
-      { id:'michuk', x:29, y:20, label:'미축', fixed:true, storyGate:'seojuFreeRoam' },
-      { id:'mibang', x:29, y:21, label:'미방', fixed:true, storyGate:'seojuFreeRoam' },
-      { id:'jingyu', x:23, y:22, label:'진규', fixed:true, storyGate:'seojuFreeRoam' },
-      { id:'jindeung', x:25, y:22, label:'진등', fixed:true, storyGate:'seojuFreeRoam' },
-      { id:'songgwan', x:9, y:12, label:'손관', fixed:true, storyGate:'seojuFreeRoam' },
-      { id:'jopyo', x:19, y:13, label:'조표', fixed:true, storyGate:'seojuFreeRoam' },
-      // 진군·서성은 확률 출현(main.js SEOJU_RARE_RECRUIT_IDS) - 등장이 확정된
-      // 경우에만 addNpc()로 지도에 올라온다.
-      { id:'jingun', x:16, y:5, label:'', discoverable:true, discoveryRange:2, storyGate:'seojuFreeRoam',
-        discoveryText:'주막 근처에서 단정한 차림의 선비가 세상 돌아가는 이야기를 나누고 있다.',
-        residence:{ x:12, y:5, label:'진군' } },
-      { id:'seoseong', x:18, y:5, label:'', discoverable:true, discoveryRange:2, storyGate:'seojuFreeRoam',
-        discoveryText:'덩치 큰 사내가 창을 손질하며 주변을 살피고 있다.',
-        residence:{ x:30, y:5, label:'서성' } },
     ],
     ambient:[
       ['merchant',13,5,'ash',2],['farmer',20,5,'earth',2],['woman',27,5,'ash',2],
       ['elder',14,12,'earth',2],['porter',22,12,'ash',2],['woman',25,12,'dust',2],
       ['guard',17,13,'iron',1],['guard',20,13,'iron',1],['child',11,12,'dust',2],
       ['farmer',16,17,'earth',2],['porter',20,18,'ash',2],['merchant',35,12,'earth',2],
+    ].map(([archetype,x,y,palette,wander]) => ({ archetype,x,y,palette,wander,roadOnly:true })),
+  };
+})();
+
+// ---------------- 챕터2 (관우) : 서주성 ----------------
+// 실사용 그림 2장(성문을 닫아건 대치 상태 / 조조군이 물러간 뒤 성문을 연 상태)을
+// 그대로 반영해 지도를 두 개로 나눴다 - 건물 배치는 완전히 동일하고, 성문
+// 통행 가능 여부와 성벽 밖 조조군 진영의 유무만 다르다. main.js의
+// goSeojuFree()가 puyang_report_retreat(미축의 "서주가...살았습니다!") 직후,
+// dogyeom_disband로 넘어가기 전에 seoju_siege -> seoju로 지도를 갈아끼운다.
+function buildSeojuGrid(gateOpen) {
+  const w = 36, h = 25;
+  const grid = makeGrid(w, h, 0);
+
+  // 외곽 - 그림상 나무/바위 테두리라 실제로도 막아둔다.
+  rectFill(grid, 0, 0, w - 1, 0, 4);
+  rectFill(grid, 0, h - 1, w - 1, h - 1, 4);
+  rectFill(grid, 0, 0, 0, h - 1, 4);
+  rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
+
+  // 성 안 건물 7채(그림 그대로) - 앞마당/계단 쪽은 막지 않아 대화 위치로 쓴다.
+  rectFill(grid, 15, 0, 22, 4, 2);  // 관청(도겸) - 중앙 상단, 가장 크다
+  rectFill(grid, 5, 1, 10, 4, 2);   // 좌상단 가옥
+  rectFill(grid, 25, 1, 30, 4, 2);  // 우상단 가옥
+  rectFill(grid, 9, 6, 14, 9, 2);   // 중앙좌 가옥
+  rectFill(grid, 20, 6, 24, 9, 2);  // 중앙우 가옥(저잣거리 옆)
+  rectFill(grid, 2, 8, 7, 10, 2);   // 좌하단 가옥
+  rectFill(grid, 27, 7, 34, 10, 2); // 우하단 가옥(가장 크다)
+
+  // 성벽. 성문(3칸)은 조조군이 물러간 뒤에만 열린다 - 그 전에는 완전히 막혀
+  // 있어 성 안으로 들어갈 수 없다.
+  rectFill(grid, 0, 11, w - 1, 13, 4);
+  if (gateOpen) rectFill(grid, 17, 11, 19, 13, 0);
+
+  return grid;
+}
+
+const SEOJU_DECOR = [
+  { type:'mapLabel', x:18.5, y:0.6, label:'서주 관청' },
+  { type:'mapLabel', x:18.5, y:10.6, label:'서주 남문' },
+  { type:'mapLabel', x:26.0, y:6.2, label:'저잣거리' },
+];
+const SEOJU_AREA_LABELS = [
+  { x:18.5, y:5.4, text:'관청 앞뜰' },
+  { x:18.5, y:16.5, text:'출정로' },
+];
+
+// ---- 장면1-A: 성문을 닫아건 대치 상태(조조군 진영 포함) ----
+(function () {
+  MAPS.seoju_siege = {
+    name:'서주성 (대치)', width:36, height:25, tiles:buildSeojuGrid(false),
+    backgroundKey:'seoju_siege_overview',
+    playerStart:{ x:29, y:23 },
+    camera:{ viewportW:800, viewportH:480 },
+    decor:[
+      ...SEOJU_DECOR,
+      { type:'mapLabel', x:15.0, y:19.0, label:'조조 공략군 진영' },
+    ],
+    areaLabels: SEOJU_AREA_LABELS,
+    npcs:[
+      // 반달(초승달) 모양으로 성벽을 포위한 8부대 - 우금은 유비 일행이
+      // 리젠되는 우측 하단 언덕길과 이어지는 진형 가장 오른쪽 끝에 둔다.
+      { id:'jojo_jungong', x:15, y:21, label:'조조(중군)', fixed:true },
+      { id:'habudon_seoju', x:4, y:16, label:'하후돈군', fixed:true },
+      { id:'habuyeon_seoju', x:3, y:19, label:'하후연군', fixed:true },
+      { id:'join_seoju', x:7, y:21, label:'조인군', fixed:true },
+      { id:'johong_seoju', x:11, y:22, label:'조홍군', fixed:true },
+      { id:'akjin_seoju', x:19, y:20, label:'악진군', fixed:true },
+      { id:'ijeon_seoju', x:23, y:17, label:'이전군', fixed:true },
+      { id:'ugeum_seoju', x:26, y:15, label:'우금군', fixed:true },
+    ],
+  };
+})();
+
+// ---- 장면1-B: 조조군이 물러간 뒤(성문 개방, 서주 자유탐방) ----
+(function () {
+  MAPS.seoju = {
+    name:'서주성', width:36, height:25, tiles:buildSeojuGrid(true),
+    backgroundKey:'seoju_overview',
+    playerStart:{ x:18, y:12 },
+    camera:{ viewportW:800, viewportH:480 },
+    decor: SEOJU_DECOR,
+    areaLabels: SEOJU_AREA_LABELS,
+    npcs:[
+      { id:'dogyeom', x:18, y:5, label:'도겸', fixed:true },
+      // 조표는 하비상 진규의 관아 동료로, 관청 근처에 자리한다.
+      { id:'jopyo', x:16, y:5, label:'조표', fixed:true, storyGate:'seojuFreeRoam' },
+      // 미축·미방·진규·진등 - 성 안쪽 중앙좌 가옥 앞에 가족처럼 모여 있다.
+      { id:'michuk', x:9, y:10, label:'미축', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'mibang', x:10, y:10, label:'미방', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'jingyu', x:12, y:10, label:'진규', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'jindeung', x:13, y:10, label:'진등', fixed:true, storyGate:'seojuFreeRoam' },
+      // 손건은 도겸의 추천을 받아야만(main.js songgeonRecommended) 등장한다.
+      { id:'songgeon', x:21, y:10, label:'', discoverable:true, discoveryRange:2, storyGate:'songgeonRecommended',
+        discoveryText:'저잣거리 한켠에서 죽간을 든 선비가 지나가는 소문을 기록하고 있다.',
+        residence:{ x:27, y:5, label:'손건' } },
+      // 진군은 성 안쪽에서 우연히 마주치는 희귀 출현 인재(main.js SEOJU_RARE_RECRUIT_IDS).
+      { id:'jingun', x:7, y:6, label:'', discoverable:true, discoveryRange:2, storyGate:'seojuFreeRoam',
+        discoveryText:'관아 골목에서 단정한 차림의 선비가 세상 돌아가는 이야기를 나누고 있다.',
+        residence:{ x:7, y:5, label:'진군' } },
+      // 서성·손관은 성 밖(옛 조조군 진영 자리)에서 만난다.
+      { id:'seoseong', x:10, y:18, label:'', discoverable:true, discoveryRange:2, storyGate:'seojuFreeRoam',
+        discoveryText:'성 밖 들판에서 덩치 큰 사내가 창을 손질하며 주변을 살피고 있다.',
+        residence:{ x:6, y:16, label:'서성' } },
+      { id:'songgwan', x:22, y:19, label:'손관', fixed:true, storyGate:'seojuFreeRoam' },
+    ],
+    ambient:[
+      ['merchant',25,8,'ash',2],['woman',12,5,'dust',2],['farmer',22,11,'earth',2],
+      ['elder',30,5,'earth',1],['porter',5,11,'ash',2],['child',18,9,'dust',2],
+      ['guard',18,10,'iron',1],['merchant',28,8,'earth',2],
     ].map(([archetype,x,y,palette,wander]) => ({ archetype,x,y,palette,wander,roadOnly:true })),
   };
 })();

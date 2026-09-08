@@ -15,7 +15,7 @@
   // (특히 오늘 막사·호로관 배경이 추가된 뒤로) 시작이 눈에 띄게 느려진다.
   // 게임 초반에 바로 보이는 탁현만 미리 받고, 나머지는 실제로 그 지도에
   // 들어갈 때 FieldAssets가 알아서 그때 받아오게 둔다.
-  const deferredFieldKeys = ['pyeongwon_city_overview', 'camp_overview', 'warmap_overview'];
+  const deferredFieldKeys = ['pyeongwon_city_overview', 'camp_overview', 'warmap_overview', 'seoju_siege_overview', 'seoju_overview'];
   const fieldKeys = FieldAssets.keys().filter((k) => !deferredFieldKeys.includes(k));
   const total = fieldKeys.length + extraUrls.length;
   let done = 0;
@@ -155,6 +155,8 @@ const LOCATION_NAMES = {
   pyeongwon: '계 · 어양',
   camp: '반동탁연합 진영',
   warmap: '호로관 전선',
+  seoju_siege: '서주성 (대치)',
+  seoju: '서주성',
 };
 
 function getObjectives() {
@@ -982,11 +984,10 @@ function goPyeongwonFree() {
 }
 
 // ---------------- 챕터2 (관우) : 서주 - 삼양서주 [장면1] ----------------
-// 실제 서주(담현) 지도가 만들어지기 전까지는 챕터1의 계·어양(평원현) 지도를
-// 임시로 재사용한다 - 조조군 8부대/도겸은 storyGate:'seojuArrived'로만 지도에
-// 등장하므로 챕터1 쪽 흐름에는 영향이 없다. 원군요청 삽화(seoju_urgent_call)가
-// 화면을 가리는 동안 지도가 뒤에서 새로 로드되므로, 이어지는 성벽 대화까지는
-// 별도 화면전환 연출 없이 자연스럽게 이어진다.
+// 서주성 전용 지도 2장(seoju_siege=성문을 닫아건 대치 상태, seoju=조조군이
+// 물러간 뒤 성문을 연 상태)을 쓴다 - 건물 배치는 완전히 동일하고 성문
+// 통행 여부와 성벽 밖 진영 유무만 다르므로, js/data/maps.js에서 같은
+// buildSeojuGrid() 함수로 함께 만든다.
 const SEOJU_JOJO_ARMY_IDS = [
   'jojo_jungong', 'habudon_seoju', 'habuyeon_seoju', 'join_seoju',
   'johong_seoju', 'akjin_seoju', 'ugeum_seoju', 'ijeon_seoju',
@@ -1001,34 +1002,23 @@ const SEOJU_INSTANT_JOIN_IDS = ['mibang', 'jingyu', 'jindeung'];
 // "서주 인사 (0/3)" 임무 - 이 셋을 모두 만나면(등용 포함) 도겸이 서주를
 // 넘기는 장면으로 이어진다.
 const SEOJU_GREET_IDS = ['jingyu', 'michuk', 'mibang'];
-// 이 지도는 챕터1(어양)의 것을 그대로 재사용한 것뿐, 이야기상 서주다 - 어양
-// 소속 인물(유비 포함)이 그대로 보이면 헷갈리므로 전부 지도에서 제거한다.
-// 유비는 나중에 실제 서주 지도가 만들어지면 성 안쪽에 배치할 예정이라, 그때까지는
-// 등장시키지 않는다. (손건은 storyGate로 이미 가려져 있어 사실상 중복 방지용.)
-const SEOJU_EXCLUDE_CH1_NPC_IDS = [
-  'yubi', 'gongsonchan', 'yuwoo', 'gwanhae', 'jangsun',
-  'jeonhae', 'eomgang', 'jowoon', 'jeonju',
-  'songgeon', 'jeonye', 'yeomyu', 'jangpae', 'taesaja', 'choeyeom',
-];
 function goSeojuFree() {
   Dialogue.show(STORY.seoju_urgent_call, () => {
     stage = 'seoju_free';
     showScreen('screen-explore');
     GameState.flags.seojuArrived = true;
-    MapView.load('pyeongwon', {
+    MapView.load('seoju_siege', {
       onInteract: interactNPC,
       onApSpent: updateHUD,
       onApBlocked,
       onAmbientInteract: runAmbientEvent,
       onStep: renderMinimap,
     });
-    SEOJU_EXCLUDE_CH1_NPC_IDS.forEach((id) => MapView.removeNpc(id));
-    // 맵 오른쪽 아래(성문에서 떨어진 개활지)에서 시작해, 카메라가 조조 진영
-    // 쪽으로 올라가며 비춰주는 첫 대사와 자연스럽게 이어지도록 한다.
-    MapView.setPlayerPos(29, 22);
     MapView.lockMovement(true);
     updateHUD();
-    MapView.panCameraTo(24, 19, 700);
+    // 카메라가 조조 진영(반달 대형의 중앙, 조조 본인 위치) 쪽을 비춰주며
+    // 첫 대사와 자연스럽게 이어지도록 한다.
+    MapView.panCameraTo(15, 19, 700);
     // 대치 중인 군세는 자유롭게 돌아다니기보다 대열을 유지한 채 한두 칸
     // 정도만 자세를 바꾸는 편이 실제 진영다워 보인다 (radius:1).
     MapView.startNpcStir(SEOJU_JOJO_ARMY_IDS, { radius: 1, intervalMs: 900 });
@@ -1036,7 +1026,7 @@ function goSeojuFree() {
     // seoju_wall_standoff(장비-우금 접전)까지는 계속 조조 진영을 비춰준다 -
     // "저것이 조조의 군세다" 같은 대사가 나오는 동안은 그걸 보고 있어야
     // 자연스럽다. 우금이 패퇴한 다음에야 성 안으로 들어가는 것이므로,
-    // 그 시점에 플레이어를 성문(도겸 곁)으로 옮기고 카메라도 되돌린다.
+    // 그 시점에 플레이어를 성문 앞으로 옮기고 카메라도 되돌린다.
     Dialogue.show(STORY.seoju_wall_standoff_intro, () => {
       Dialogue.show(STORY.seoju_wall_standoff, () => {
         MapView.stopNpcStir();
@@ -1044,10 +1034,20 @@ function goSeojuFree() {
         MapView.clearCameraFocus();
         Dialogue.show(STORY.seoju_wall_standoff_city, () => {
           // 편지를 받은 조조가 곽가와 상의하는 장면이므로, 다시 조조 진영을 비춰준다.
-          MapView.panCameraTo(24, 19, 700);
+          MapView.panCameraTo(15, 19, 700);
           Dialogue.show(STORY.puyang_report_retreat, () => {
-            SEOJU_JOJO_ARMY_IDS.forEach((id) => MapView.removeNpc(id));
-            MapView.clearCameraFocus();
+            // 조조군이 물러가며 그림 자체가 바뀐다(성문 닫힘 -> 열림, 진영
+            // 철거) - 같은 지도에서 NPC만 지우는 대신 지도를 통째로 갈아
+            // 끼운다. movementLocked 상태는 load()가 건드리지 않으므로
+            // dogyeom_disband가 끝날 때까지 계속 잠겨 있다.
+            MapView.load('seoju', {
+              onInteract: interactNPC,
+              onApSpent: updateHUD,
+              onApBlocked,
+              onAmbientInteract: runAmbientEvent,
+              onStep: renderMinimap,
+            });
+            updateHUD();
             Dialogue.show(STORY.dogyeom_disband, () => {
               MapView.lockMovement(false);
               GameState.flags.seojuFreeRoam = true;

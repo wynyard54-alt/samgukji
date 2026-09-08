@@ -29,6 +29,8 @@ const FieldAssets = (function () {
     pyeongwon_city_overview:'pyeongwon_map_v1.jpg',
     camp_overview:'camp_map_v1.jpg',
     warmap_overview:'warmap_map_v1.jpg',
+    seoju_siege_overview:'seoju_siege_map_v1.jpg',
+    seoju_overview:'seoju_map_v1.jpg',
   };
 
   function get(key) {
