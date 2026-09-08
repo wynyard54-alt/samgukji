@@ -742,7 +742,37 @@ function openWarCommandMenu(id) {
   showChoice(`${rd.name} 군세와 마주쳤다. 어떻게 하시겠습니까?`, [
     { label: '일기토', cb: () => attemptDuelChallenge(id) },
     { label: '전투', cb: () => resolveArmyBattle(id) },
+    { label: '책략', cb: () => attemptStrategy(id) },
   ]);
+}
+
+// ---- 책략 커맨드 ----
+// 책사별 고유 책략은 아직 정하지 않아, 우선 군세 편성에서 지정한 책사(부장)의
+// 지력 등급에 따른 성공률로 적 군세의 사기를 낮추는 범용 효과만 넣어둔다 -
+// 나중에 책사마다 고유 책략을 배정하면 이 함수가 그 분기로 바뀐다.
+const STRATEGY_SUCCESS_CHANCE = { S: 80, A: 65, B: 50, C: 35, D: 20 };
+function attemptStrategy(id) {
+  const rd = ROSTER[id];
+  const deputyId = GameState.army && GameState.army.deputy;
+  const deputy = deputyId ? ROSTER[deputyId] : null;
+  if (!deputy) {
+    toast('책략을 쓰려면 군세 편성에서 책사를 부장으로 등용해야 합니다.');
+    openWarCommandMenu(id);
+    return;
+  }
+  const grade = gradeFor(deputy.stats.int, JIRYEOK_GRADES);
+  const chance = STRATEGY_SUCCESS_CHANCE[grade];
+  const roll = Math.random() * 100;
+  if (roll < chance) {
+    Dialogue.show([{ speaker: deputy.name, text: '계책이 통했습니다! 적진이 크게 흔들리고 있습니다.' }], () => {
+      resolveArmyBattle(id, { enemyMorale: 70 });
+    });
+  } else {
+    Dialogue.show([{ speaker: deputy.name, text: '송구합니다, 적이 계책을 미리 간파한 듯합니다...' }], () => {
+      toast(`책략이 실패했다. (성공 확률 ${chance}%)`);
+      openWarCommandMenu(id);
+    });
+  }
 }
 
 function attemptDuelChallenge(id) {
@@ -768,12 +798,12 @@ function attemptDuelChallenge(id) {
   }
 }
 
-function resolveArmyBattle(id) {
+function resolveArmyBattle(id, opts) {
   const rd = ROSTER[id];
   const army = GameState.army;
   const result = simulateArmyBattle(
     { troops: army ? army.troop : 0, grade: playerArmyGrade(), morale: GameState.morale, onGate: false },
-    { troops: rd.troop || 1000, grade: enemyArmyGrade(rd), morale: 100, onGate: npcOnGateTile(id) },
+    { troops: rd.troop || 1000, grade: enemyArmyGrade(rd), morale: (opts && opts.enemyMorale) || 100, onGate: npcOnGateTile(id) },
   );
   if (army) army.troop = result.playerTroopsLeft;
   rd.troop = result.enemyTroopsLeft; // 적 군세 표기가 실시간으로 갱신되도록 손실을 그대로 반영
