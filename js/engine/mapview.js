@@ -47,11 +47,18 @@ const MapView = (function () {
   // 계산해 #explore-viewport에 그대로 적용한다 - 여백을 최소화해 화면을 최대한 채운다.
   const MAX_DESKTOP_VIEW_W = 1400; // 데스크톱에서 창이 아주 커도 지나치게 확대되지 않도록 두는 상한
 
+  // css/style.css의 회전 규칙(@media (orientation:portrait) and (max-width:1024px))과
+  // 정확히 같은 조건이어야 한다 - 실제로 body가 90도 돌아가 있는 상태를 판단하는 데
+  // 쓰인다.
+  function isRotatedPresentation() {
+    return window.innerWidth > 0 && window.innerHeight > 0 &&
+      window.innerWidth < window.innerHeight && window.innerWidth <= 1024;
+  }
+
   function computeCameraSize(map) {
     const baseW = (map.camera && map.camera.viewportW) || Math.min(DEFAULT_VIEW_W, map.width * TILE);
     const baseH = (map.camera && map.camera.viewportH) || Math.min(DEFAULT_VIEW_H, map.height * TILE);
-    const isRotated = window.innerWidth > 0 && window.innerHeight > 0 &&
-      window.innerWidth < window.innerHeight && window.innerWidth <= 1024;
+    const isRotated = isRotatedPresentation();
     if (isRotated) {
       // 회전된 상태의 가용 가로폭은 물리적 세로 길이, 가용 세로폭은 물리적 가로
       // 길이에서 안내문구 한 줄 정도의 최소 공간만 뺀 값이다. 타일 카메라는
@@ -101,6 +108,12 @@ const MapView = (function () {
     if (viewportEl) {
       viewportEl.style.width = camera.w + 'px';
       viewportEl.classList.toggle('compact', camera.w < COMPACT_HUD_THRESHOLD);
+      // 회전 프리젠테이션(세로로 든 모바일)은 계산된 지도 폭 자체는 넓게 잡힐 때가
+      // 많아 .compact(폭 기준)가 안 걸리지만, 실기기 화면은 작으므로 인물 스텟
+      // 패널만이라도 항상 작게 줄인다 - 다른 컴팩트 레이아웃(하단 메뉴/터치패드
+      // 위치 등)까지 건드리면 폭이 넓은 회전 화면에서 오히려 어긋날 수 있어
+      // 패널 하나로 범위를 좁혔다.
+      viewportEl.classList.toggle('player-compact', isRotatedPresentation());
     }
     updateCamera(true);
   }

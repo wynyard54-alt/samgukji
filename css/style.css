@@ -968,16 +968,24 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #explore-viewport.compact #minimap-title{ font-size:9px; margin-bottom:2px; }
 #explore-viewport.compact #minimap-canvas{ width:62px; height:44px; }
 
-#explore-viewport.compact #player-panel{
+#explore-viewport.compact #player-panel,
+#explore-viewport.player-compact #player-panel{
   bottom:8px; left:8px; padding:6px 8px; gap:7px; align-items:center;
 }
-#explore-viewport.compact #player-portrait{ width:40px; height:40px; border-radius:7px; }
-#explore-viewport.compact #player-info{ display:flex; flex-direction:column; }
-#explore-viewport.compact #player-name{ font-size:13px; margin-bottom:0; }
-#explore-viewport.compact .stat-row{ display:none; }
-#explore-viewport.compact .hp-row{ display:flex; margin-bottom:0; padding-bottom:0; border-bottom:none; }
-#explore-viewport.compact .hp-row .stat-bar{ width:56px; }
-#explore-viewport.compact .hp-row .stat-val{ width:46px; font-size:11px; }
+#explore-viewport.compact #player-portrait,
+#explore-viewport.player-compact #player-portrait{ width:40px; height:40px; border-radius:7px; }
+#explore-viewport.compact #player-info,
+#explore-viewport.player-compact #player-info{ display:flex; flex-direction:column; }
+#explore-viewport.compact #player-name,
+#explore-viewport.player-compact #player-name{ font-size:13px; margin-bottom:0; }
+#explore-viewport.compact .stat-row,
+#explore-viewport.player-compact .stat-row{ display:none; }
+#explore-viewport.compact .hp-row,
+#explore-viewport.player-compact .hp-row{ display:flex; margin-bottom:0; padding-bottom:0; border-bottom:none; }
+#explore-viewport.compact .hp-row .stat-bar,
+#explore-viewport.player-compact .hp-row .stat-bar{ width:56px; }
+#explore-viewport.compact .hp-row .stat-val,
+#explore-viewport.player-compact .hp-row .stat-val{ width:46px; font-size:11px; }
 
 #explore-viewport.compact #bottom-menu{
   /* 세로로 든 상태(회전 프리젠테이션)에서는 화면 중앙이 아니라 터치패드 쪽에

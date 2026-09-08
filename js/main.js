@@ -198,7 +198,7 @@ function getObjectives() {
     }
     if (gs.flags.act2) list.push(`반동탁연합 참전 준비하기 (${DEADLINES.pyeongwon}년까지)`);
   } else if (stage === 'seoju_free') {
-    const metCount = ['michuk', 'mibang', 'jingyu'].filter((id) => !!gs.npcStatus[id]).length;
+    const metCount = SEOJU_GREET_IDS.filter((id) => !!gs.npcStatus[id]).length;
     if (metCount < 3) list.push(`서주의 유력 인사들과 인사 나누기 (${metCount}/3)`);
   } else if (stage === 'habi_camp') {
     const step = gs.flags.habiStep || 0;
@@ -445,10 +445,10 @@ function interactNPC(id, context) {
   }
 
   if (rd.kind === 'flavor') {
-    // 미축은 등용 대상이 아니라 별도 상태 추적이 없지만, 서주 인사 (0/3)
-    // 임무에는 포함되므로 첫 만남을 기록해둔다 - 실제 등용은 도겸 사망 시
-    // 자동으로 처리된다.
-    const isFirstMeet = id === 'michuk' && !GameState.npcStatus[id];
+    // 미축·조표는 등용 대상이 아니라 별도 상태 추적이 없지만, 서주 인사 (0/3)
+    // 임무에는 포함되므로 첫 만남을 기록해둔다 - 미축의 실제 등용은 도겸
+    // 사망 시 자동으로 처리된다.
+    const isFirstMeet = (id === 'michuk' || id === 'jopyo') && !GameState.npcStatus[id];
     const completesGreetQuest = isFirstMeet &&
       SEOJU_GREET_IDS.filter((x) => x !== id && !!GameState.npcStatus[x]).length === SEOJU_GREET_IDS.length - 1;
     if (isFirstMeet) {
@@ -914,7 +914,7 @@ function checkDeadlines() {
     return true;
   }
   if (stage === 'seoju_free' && !gs.flags.dogyeomDied
-      && ['michuk', 'mibang', 'jingyu'].every((id) => !!gs.npcStatus[id])) {
+      && SEOJU_GREET_IDS.every((id) => !!gs.npcStatus[id])) {
     gs.flags.dogyeomDied = true;
     MapView.lockMovement(true);
     Dialogue.show(STORY.dogyeom_death, () => {
@@ -1000,8 +1000,9 @@ const SEOJU_RARE_RECRUIT_IDS = ['jingun', 'seoseong'];
 // 손건과 달리 친밀도 없이 만나기만 하면 곧바로 등용되는 인물(가족·측근).
 const SEOJU_INSTANT_JOIN_IDS = ['mibang', 'jingyu', 'jindeung'];
 // "서주 인사 (0/3)" 임무 - 이 셋을 모두 만나면(등용 포함) 도겸이 서주를
-// 넘기는 장면으로 이어진다.
-const SEOJU_GREET_IDS = ['jingyu', 'michuk', 'mibang'];
+// 넘기는 장면으로 이어진다. 미방은 유력 인사로 보기엔 무게감이 떨어져
+// 조표로 바꿨다(미방은 여전히 SEOJU_INSTANT_JOIN_IDS로 찾아서 등용된다).
+const SEOJU_GREET_IDS = ['jingyu', 'michuk', 'jopyo'];
 function goSeojuFree() {
   Dialogue.show(STORY.seoju_urgent_call, () => {
     stage = 'seoju_free';
