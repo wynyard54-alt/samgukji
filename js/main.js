@@ -377,10 +377,10 @@ function interactNPC(id, context) {
   const rd = ROSTER[id];
   if (!rd) return;
   const st = GameState.npcStatus[id];
-  // 미축·미방은 도겸이 죽으면서 별도 등용 절차 없이 자동으로 유비를 섬기게
-  // 되므로(checkDeadlines의 dogyeom_death 처리), 하비성 관청에서는 등용
-  // 여부와 무관하게 그냥 인사만 나눈다.
-  if ((id === 'michuk' || id === 'mibang') && stage === 'habi_camp') {
+  // 미축·미방·진규는 씬1에서 이미 등용되어 있을 수 있으므로, 하비 관청에서는
+  // 등용 여부와 무관하게 그냥 인사만 나눈다(진등은 별도의 모병 상호작용이
+  // 있어 아래에서 따로 처리한다).
+  if ((id === 'michuk' || id === 'mibang' || id === 'jingyu') && stage === 'habi_camp') {
     Dialogue.show([{ speaker: rd.name, text: rd.intro }]);
     return;
   }
@@ -405,6 +405,9 @@ function interactNPC(id, context) {
     });
     return;
   }
+  // 진등은 씬1(서주 자유탐방)에서 이미 등용된 상태로 하비 관청에 들어올 수
+  // 있으므로, 아래의 "이미 등용됨" 일괄 차단보다 먼저 확인해야 한다.
+  if (id === 'jindeung' && stage === 'habi_camp') { handleJindeungRecruit(); return; }
   if (st === 'recruited' && (stage === 'takhyeon_free' || stage === 'pyeongwon_free')) { interactRecruitedGeneral(id); return; }
   if (st === 'recruited' || st === 'resolved' || st === 'dead' || st === 'fled') return;
 
@@ -413,7 +416,6 @@ function interactNPC(id, context) {
     return;
   }
   if (id === 'yubi' && stage === 'habi_camp') { handleHabiYubi(); return; }
-  if (id === 'jindeung' && stage === 'habi_camp') { handleJindeungRecruit(); return; }
   if (id === 'yubi') { handleYubi(); return; }
 
   if (id === 'songyeon' && stage === 'camp') {
