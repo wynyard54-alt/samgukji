@@ -501,7 +501,7 @@ const MapView = (function () {
 
   function drawNpc(n) {
     const rd=ROSTER[n.id]; if(!rd) return;
-    const x=worldX(n.x)+TILE/2, y=worldY(n.y)+TILE*.9;
+    const x=worldX(n.x)+TILE/2, y=worldY(n.y)+TILE*.9-attackBumpOffset(n.id);
     const met=!!GameState.npcStatus[n.id];
     const hidden=n.discoverable && !met;
     const scholar=isScholarType(rd);
@@ -546,16 +546,17 @@ const MapView = (function () {
   function drawHero() {
     const id=GameState.mainHero;
     const x=worldX(player.x)+TILE/2, y=worldY(player.y)+TILE*.94;
+    const spriteY=y-attackBumpOffset(id);
     const key=id==='gwanwoo' ? 'hero_gwanwoo' : 'hero_jangbi';
     const frame=animFrame%3;
     const drawn = id === 'gwanwoo'
-      ? FieldAssets.sprite(ctx,key,x,y,player.dir,frame,136,144,.43,3,.445)
-      : FieldAssets.sprite(ctx,key,x,y,player.dir,frame,362,362,.18,3,.18);
+      ? FieldAssets.sprite(ctx,key,x,spriteY,player.dir,frame,136,144,.43,3,.445)
+      : FieldAssets.sprite(ctx,key,x,spriteY,player.dir,frame,362,362,.18,3,.18);
     if (!drawn) {
       const palette=id==='gwanwoo'
         ? {robe:'#356547',dark:'#253e31',trim:'#a88749',skin:'#b56d54'}
         : {robe:'#7b4035',dark:'#4d2b27',trim:'#b58c4f',skin:'#bd795e'};
-      drawPersonSprite(x,y,{palette,archetype:'hero',scale:1.17,dir:player.dir,heroId:id});
+      drawPersonSprite(x,spriteY,{palette,archetype:'hero',scale:1.17,dir:player.dir,heroId:id});
     }
     // Named hero marker stays subtle: unique color/weapon should do most of the work.
     // 출정 중(군세 편성 완료)에는 적 군세와 같은 형식으로 [병력/무력/지력]을 함께 표기한다.
@@ -627,6 +628,36 @@ const MapView = (function () {
     ctx.textAlign = 'center';
     ctx.fillText(f.text, x, tagTopY - 4 - DAMAGE_FLOAT_RISE * t);
     ctx.restore();
+  }
+
+  // 공격할 때 스프라이트가 위로 살짝 까딱 튀었다가 제자리로 돌아오는 아주
+  // 단순한 동작(전용 공격 모션 그림 없이도 "쳤다"는 느낌만 준다).
+  const attackBumps = Object.create(null); // id -> { start }
+  const ATTACK_BUMP_MS = 220;
+  const ATTACK_BUMP_HEIGHT = 7;
+  let attackBumpTimer = null;
+  function showAttackBump(id) {
+    if (!id) return;
+    attackBumps[id] = { start: performance.now() };
+    render();
+    if (!attackBumpTimer) {
+      attackBumpTimer = setInterval(() => {
+        const now = performance.now();
+        let any = false;
+        for (const key in attackBumps) {
+          if (now - attackBumps[key].start > ATTACK_BUMP_MS) delete attackBumps[key];
+          else any = true;
+        }
+        render();
+        if (!any) { clearInterval(attackBumpTimer); attackBumpTimer = null; }
+      }, 30);
+    }
+  }
+  function attackBumpOffset(id) {
+    const b = attackBumps[id];
+    if (!b) return 0;
+    const t = Math.min(1, (performance.now() - b.start) / ATTACK_BUMP_MS);
+    return Math.sin(t * Math.PI) * ATTACK_BUMP_HEIGHT; // 0 -> 최대 -> 0으로 살짝 튀었다 돌아온다
   }
 
   function drawLocationRibbon() {
@@ -900,7 +931,7 @@ const MapView = (function () {
 
   return {
     load,render,removeNpc,addNpc,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,setPlayerPos,
-    panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,showDamageFloat,
+    panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,showDamageFloat,showAttackBump,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},
     get playerPos(){return {x:player.x,y:player.y,dir:player.dir};},

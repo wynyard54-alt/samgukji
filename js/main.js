@@ -700,10 +700,18 @@ function attemptPersuadeCaptured(id) {
   updateHUD();
 }
 
-// ---- 군세간 전투 (전쟁맵 [일기토]/[전투] 커맨드) ----
+// ---- 군세간 전투 (전쟁맵 [일기토]/[전투]/[책략] 커맨드) ----
+// 데미지는 "현재 병력"이 아니라 "이번 교전이 시작된 시점의 병력" 기준으로
+// 고정한다 - 그래야 대등한 두 군세끼리도 몇 번 안에 승부가 난다(20% 기준
+// 시뮬레이션상 3~7교전). [전투]를 누르면 속도가 빠른 쪽이 먼저 한 대
+// 치고, 그 한 방으로 상대가 쓰러지면 반격 없이 끝난다 - 이게 선타의 실질적
+// 의미다. 공격이 이번 행동력 소모의 마지막 액션이라(포켓몬 카드게임에서
+// 서포터·아이템을 쓰고 마지막에 공격해 턴을 마치는 것과 같은 감각) 행동력을
+// 1 소모하고, 다음 [전투]를 누르기 전까지는 그대로 멈춰 있다.
 const GRADE_RANK = { S:1, A:2, B:3, C:4, D:5 };
 const GRADE_ATTACK_MOD = { S:0.10, A:0.05, B:0, C:-0.05, D:-0.10 };
 const GATE_TILES = { 2:true }; // 관문/요새 타일 - 방어측이 있으면 피해 -5%
+const ARMY_HIT_RATE = 0.20; // 교전 시작 시점 병력의 20%가 교전 1회당 고정 피해량이 된다
 
 // 방어측 군세 등급이 도전측보다 낮을수록 일기토 수락 확률이 낮아진다 (등급차 1당 -20%)
 function duelAcceptChance(challengerGrade, defenderGrade) {
@@ -718,32 +726,37 @@ function npcOnGateTile(id) {
   return false;
 }
 
-// 병사수 10% 기준 공격에 군세등급/사기/지형 보정을 더해 additive로 합산한다 (병종은 챕터2에서 반영)
-// 병사가 남아있는 한 최소 1명의 피해는 발생한다 - 그렇지 않으면 병력이 적을 때 매턴 반올림으로
-// 피해가 0이 되어 전투가 영원히 끝나지 않는 경우가 생긴다.
-function armyAttackDamage(attackerTroops, attackerGrade, attackerMorale, defenderOnGate) {
-  if (attackerTroops <= 0) return 0;
-  const mult = 1 + GRADE_ATTACK_MOD[attackerGrade] + (attackerMorale - 100) / 100 - (defenderOnGate ? 0.05 : 0);
-  return Math.max(1, Math.round(attackerTroops * 0.10 * mult));
+// 부장 무력 가산과 같은 방식(3인 합×10%)으로 속도만 따로 합산한다 - 무력등급과
+// 달리 교전 선타 순서를 정하는 데만 쓰인다.
+function armySpeedValue(commanderRd, generalIds) {
+  const base = commanderRd.stats.spd;
+  const bonus = (generalIds || []).reduce((sum, id) => {
+    const rd = ROSTER[id];
+    return sum + (rd ? rd.stats.spd * ARMY_GENERAL_BONUS_PCT : 0);
+  }, 0);
+  return base + bonus;
 }
 
-function simulateArmyBattle(player, enemy) {
-  // player/enemy: { troops, grade, morale, onGate }
-  if (player.morale <= 0) return { winner:'enemy', rounds:0, playerTroopsLeft:player.troops, enemyTroopsLeft:enemy.troops, surrender:'player' };
-  if (enemy.morale <= 0) return { winner:'player', rounds:0, playerTroopsLeft:player.troops, enemyTroopsLeft:enemy.troops, surrender:'enemy' };
-  let pT = player.troops, eT = enemy.troops, rounds = 0;
-  while (pT > 0 && eT > 0 && rounds < 50) {
-    const dmgToEnemy = armyAttackDamage(pT, player.grade, player.morale, enemy.onGate);
-    const dmgToPlayer = armyAttackDamage(eT, enemy.grade, enemy.morale, player.onGate);
-    eT = Math.max(0, eT - dmgToEnemy);
-    pT = Math.max(0, pT - dmgToPlayer);
-    rounds++;
-  }
-  // 라운드 상한에 도달했는데도 양쪽 다 병력이 남아있다면(이론상 거의 없지만) 남은 병력 비율로 판정한다 -
-  // 무조건 적이 이기는 것으로 처리하면 대등하거나 우세한 전투도 항상 패배로 나오는 버그가 된다.
-  const winner = pT <= 0 && eT <= 0 ? (player.troops >= enemy.troops ? 'player' : 'enemy')
-    : pT <= 0 ? 'enemy' : eT <= 0 ? 'player' : (pT >= eT ? 'player' : 'enemy');
-  return { winner, rounds, playerTroopsLeft:pT, enemyTroopsLeft:eT };
+// 병사가 남아있는 한 최소 1명의 피해는 발생한다.
+function fixedHitDamage(troops, grade, morale, defenderOnGate) {
+  const mult = 1 + GRADE_ATTACK_MOD[grade] + (morale - 100) / 100 - (defenderOnGate ? 0.05 : 0);
+  return Math.max(1, Math.round(troops * ARMY_HIT_RATE * mult));
+}
+
+// 교전이 시작되면(첫 [전투] 또는 [책략]) 그 시점 병력·등급·사기로 이번
+// 교전 내내 쓸 고정 피해량을 잠가둔다(GameState.warLocks[id]) - 이후 몇
+// 번을 더 때리든 이 값을 그대로 쓴다. 병력이 줄어들 때마다 다시 계산하면
+// 대등한 싸움이 영영 안 끝나는 예전 산식의 문제가 그대로 재현되기 때문이다.
+function getWarLock(id, ctx, enemyMoraleOverride) {
+  let lock = GameState.warLocks[id];
+  if (lock) return lock;
+  const rd = ROSTER[id];
+  lock = {
+    playerHit: fixedHitDamage(ctx.army.troop, warArmyGrade(ctx), GameState.morale, npcOnGateTile(id)),
+    enemyHit: fixedHitDamage(rd.troop || 1000, enemyArmyGrade(rd), enemyMoraleOverride != null ? enemyMoraleOverride : 100, false),
+  };
+  GameState.warLocks[id] = lock;
+  return lock;
 }
 
 // 이 적을 어느 편의 군세가 상대하는지 정한다 - 기본은 플레이어가 직접
@@ -764,6 +777,9 @@ function resolveWarArmy(rd) {
 function warArmyGrade(ctx) {
   return gradeFor(armyMuryeokValue(ROSTER[ctx.commanderId], ctx.army.generals), MURYEOK_GRADES);
 }
+function warArmySpeed(ctx) {
+  return armySpeedValue(ROSTER[ctx.commanderId], ctx.army.generals);
+}
 
 function openWarCommandMenu(id) {
   const rd = ROSTER[id];
@@ -781,13 +797,16 @@ function openWarCommandMenu(id) {
 
 // ---- 책략 커맨드 ----
 // 책사별 고유 책략은 아직 정하지 않아, 우선 군세 편성에서 지정한 책사(부장)의
-// 지력 등급에 따른 성공률로 적 군세의 사기를 낮추는 범용 효과만 넣어둔다 -
-// 나중에 책사마다 고유 책략을 배정하면 이 함수가 그 분기로 바뀐다.
+// 지력 등급에 따른 성공률로 적의 이번 교전 고정 피해량을 30% 깎는 범용
+// 효과만 넣어둔다 - 나중에 책사마다 고유 책략을 배정하면 이 함수가 그
+// 분기로 바뀐다. 교전이 아직 시작 전이면 처음부터 약해진 채로 잠기고, 이미
+// 시작된 교전이면 남은 교전 동안 추가로 30% 더 약해진다.
 const STRATEGY_SUCCESS_CHANCE = { S: 80, A: 65, B: 50, C: 35, D: 20 };
 function attemptStrategy(id) {
   const rd = ROSTER[id];
   const ctx = resolveWarArmy(rd);
-  const deputyId = ctx && ctx.army.deputy;
+  if (!ctx) { toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`); return; }
+  const deputyId = ctx.army.deputy;
   const deputy = deputyId ? ROSTER[deputyId] : null;
   if (!deputy) {
     toast('책략을 쓰려면 군세 편성에서 책사를 부장으로 등용해야 합니다.');
@@ -799,7 +818,11 @@ function attemptStrategy(id) {
   const roll = Math.random() * 100;
   if (roll < chance) {
     Dialogue.show([{ speaker: deputy.name, text: '계책이 통했습니다! 적진이 크게 흔들리고 있습니다.' }], () => {
-      resolveArmyBattle(id, { enemyMorale: 70 });
+      const hadLock = !!GameState.warLocks[id];
+      const lock = getWarLock(id, ctx, hadLock ? undefined : 70);
+      if (hadLock) lock.enemyHit = Math.max(1, Math.round(lock.enemyHit * 0.7));
+      toast(`${rd.name}의 다음 공격력이 크게 약해졌다.`);
+      openWarCommandMenu(id);
     });
   } else {
     Dialogue.show([{ speaker: deputy.name, text: '송구합니다, 적이 계책을 미리 간파한 듯합니다...' }], () => {
@@ -833,38 +856,72 @@ function attemptDuelChallenge(id) {
   }
 }
 
-function resolveArmyBattle(id, opts) {
+// [전투] 한 번 = 딱 한 교전. 속도가 빠른 쪽이 먼저 때리고, 그 한 방으로
+// 상대가 쓰러지면 반격 없이 그대로 끝난다. 공격이 이번 행동의 마지막
+// 액션이라 행동력을 1 소모하고, 양쪽 다 살아남으면 결과만 보여준 뒤
+// 멈춘다 - 계속하려면 다시 [전투]를 눌러야 한다.
+function resolveArmyBattle(id) {
   const rd = ROSTER[id];
   const ctx = resolveWarArmy(rd);
-  const army = ctx ? ctx.army : null;
-  const playerTroopBefore = army ? army.troop : 0;
-  const enemyTroopBefore = rd.troop || 1000;
-  const result = simulateArmyBattle(
-    { troops: playerTroopBefore, grade: ctx ? warArmyGrade(ctx) : 'D', morale: GameState.morale, onGate: false },
-    { troops: enemyTroopBefore, grade: enemyArmyGrade(rd), morale: (opts && opts.enemyMorale) || 100, onGate: npcOnGateTile(id) },
-  );
-  // 이름표 위에 이번 교전에서 줄어든 병력을 "-320"처럼 잠깐 띄운다 - 유비군
-  // 전투는 지도에 별도 스프라이트가 없어 관우 쪽 표시는 생략한다.
-  MapView.showDamageFloat(id, enemyTroopBefore - result.enemyTroopsLeft);
-  if (rd.warArmy !== 'ally') MapView.showDamageFloat(GameState.mainHero, playerTroopBefore - result.playerTroopsLeft);
-  if (army) army.troop = result.playerTroopsLeft;
-  rd.troop = result.enemyTroopsLeft; // 적 군세 표기가 실시간으로 갱신되도록 손실을 그대로 반영
+  if (!ctx) { toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`); return; }
+  if (!spend(1)) return;
+  const army = ctx.army;
+  const commanderName = ROSTER[ctx.commanderId].name;
+  const showOnMap = rd.warArmy !== 'ally'; // 유비군은 지도에 별도 스프라이트가 없다
+
+  const lock = getWarLock(id, ctx);
+  const playerFirst = warArmySpeed(ctx) >= rd.stats.spd;
+  const lines = [{
+    speaker: '내레이션',
+    text: playerFirst ? `${commanderName}군이 더 빨라 선제공격!` : `${rd.name}의 군세가 더 빨라 선제공격!`,
+  }];
+  let enemyDown = false, playerDown = false;
+
+  function playerStrikes() {
+    rd.troop = Math.max(0, rd.troop - lock.playerHit);
+    MapView.showDamageFloat(id, lock.playerHit);
+    if (showOnMap) MapView.showAttackBump(GameState.mainHero);
+    lines.push({ speaker: '내레이션', text: `${commanderName}군의 공격! ${rd.name}의 군세에 ${lock.playerHit}명 피해.` });
+    if (rd.troop <= 0) enemyDown = true;
+  }
+  function enemyStrikes() {
+    army.troop = Math.max(0, army.troop - lock.enemyHit);
+    if (showOnMap) MapView.showDamageFloat(GameState.mainHero, lock.enemyHit);
+    MapView.showAttackBump(id);
+    lines.push({ speaker: '내레이션', text: `${rd.name}의 군세가 공격! ${commanderName}군이 ${lock.enemyHit}명 피해를 입었다.` });
+    if (army.troop <= 0) playerDown = true;
+  }
+
+  if (playerFirst) { playerStrikes(); if (!enemyDown) enemyStrikes(); }
+  else { enemyStrikes(); if (!playerDown) playerStrikes(); }
+
   updateHUD();
   MapView.render();
-  if (id === 'jangsun') { resolveJangsunBattle(result); return; }
-  if (result.winner === 'player') {
-    Dialogue.show([{ speaker: '내레이션', text: `치열한 교전 끝에 ${rd.name}의 군세를 격파했다! (아군 병력 ${result.playerTroopsLeft}명, 적 병력 궤멸)` }], () => {
-      GameState.npcStatus[id] = 'resolved';
-      MapView.removeNpc(id);
-      toast(`${rd.name}이(가) 패주했다.`);
-      if (stage === 'warmap') checkWarmapClear();
-    });
-  } else {
-    Dialogue.show([{ speaker: '내레이션', text: `아군이 ${rd.name}의 군세에 밀려 물러났다. (아군 병력 ${result.playerTroopsLeft}명 남음)` }], () => {
-      releaseCapturedOnDefeat();
-      toast('전열을 정비해 다시 도전하자.');
-    });
-  }
+
+  Dialogue.show(lines, () => {
+    if (!enemyDown && !playerDown) {
+      toast('한 차례 접전이 끝났다. 계속하려면 다시 [전투]를 사용하자.');
+      return;
+    }
+    delete GameState.warLocks[id];
+    if (id === 'jangsun') {
+      resolveJangsunBattle({ winner: enemyDown ? 'player' : 'enemy', playerTroopsLeft: army.troop });
+      return;
+    }
+    if (enemyDown) {
+      Dialogue.show([{ speaker: '내레이션', text: `${rd.name}의 군세가 완전히 무너졌다! (아군 병력 ${army.troop}명 남음)` }], () => {
+        GameState.npcStatus[id] = 'resolved';
+        MapView.removeNpc(id);
+        toast(`${rd.name}이(가) 패주했다.`);
+        if (stage === 'warmap') checkWarmapClear();
+      });
+    } else {
+      Dialogue.show([{ speaker: '내레이션', text: `아군이 ${rd.name}의 군세에 완전히 밀려 무너졌다.` }], () => {
+        releaseCapturedOnDefeat();
+        toast('전열을 정비해 다시 도전하자.');
+      });
+    }
+  });
 }
 
 function startFreeBattle(id, afterCb, persistHp) {
