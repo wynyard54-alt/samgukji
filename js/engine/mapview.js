@@ -334,6 +334,7 @@ const MapView = (function () {
       drawGround();
       drawBackDecor();
     }
+    drawFireTiles();
     drawAreaLabels();
     if (map.backgroundKey) drawMapLandmarkLabels();
 
@@ -404,6 +405,36 @@ const MapView = (function () {
     // 시장 중심부는 흙길을 넓게 깔아 도시 생활권이 한눈에 읽히게 한다. (탁현 외 맵에서만 사용)
     for (let y=6; y<=14; y++) for (let x=4; x<=24; x++) {
       if (map.tiles[y] && map.tiles[y][x] === 0) FieldAssets.tile(ctx,'tile_dirt',worldX(x),worldY(y),TILE);
+    }
+  }
+
+  // 화염 타일 연출 - 전용 이미지(tile_fire)가 field-assets.js 매니페스트에
+  // 등록되면 그걸 그대로 쓰고, 아직 없으면 절차적으로 그린 불꽃으로 대신한다
+  // (다른 배경 그래픽들이 PNG 우선/도형 대체로 그려지는 방식과 동일하다).
+  function drawFireTiles() {
+    if (!mapId) return;
+    const tiles = StatusEffects.fireTilesForMap(mapId);
+    if (!tiles.length) return;
+    const flicker = (animFrame % 2) === 0 ? 1 : 0.88;
+    for (const eff of tiles) {
+      const px = worldX(eff.x), py = worldY(eff.y);
+      if (px < -TILE || py < -TILE || px > camera.w || py > camera.h) continue;
+      if (FieldAssets.tile(ctx, 'tile_fire', px, py, TILE)) continue;
+      ctx.save();
+      ctx.translate(px + TILE / 2, py + TILE * 0.6);
+      ctx.scale(flicker, flicker);
+      ctx.fillStyle = 'rgba(210,50,20,.5)';
+      ctx.beginPath(); ctx.ellipse(0, 3, 13, 8, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,130,30,.88)';
+      ctx.beginPath();
+      ctx.moveTo(0, -15); ctx.quadraticCurveTo(10, -1, 4, 9); ctx.quadraticCurveTo(9, 3, 0, 11);
+      ctx.quadraticCurveTo(-9, 3, -4, 9); ctx.quadraticCurveTo(-10, -1, 0, -15);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,215,90,.92)';
+      ctx.beginPath();
+      ctx.moveTo(0, -6); ctx.quadraticCurveTo(4, 2, 2, 8); ctx.quadraticCurveTo(0, 5, -2, 8); ctx.quadraticCurveTo(-4, 2, 0, -6);
+      ctx.closePath(); ctx.fill();
+      ctx.restore();
     }
   }
 

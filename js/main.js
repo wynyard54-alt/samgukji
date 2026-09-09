@@ -819,7 +819,12 @@ function openWarCommandMenu(id) {
 // 등급과 비교한 "등급차"로 정한다 - 동률 50%를 기준으로 등급차 1당 10%p씩
 // 오르내린다(1등급 앞서면 60%, 4등급 앞서면 90% / 반대로 뒤처지면 40%,
 // 10%까지 내려간다). 무력 등급차 1당 -20%인 일기토 수락률(duelAcceptChance)과
-// 같은 계열의 산식이다.
+// 같은 효과의 산식이다.
+// 화염/혼란/공포/도발/연환계 같은 이름 붙은 책략을 나중에 추가할 때는 여기서
+// StatusEffects.applyArmyStatus(id,'confuse'|'fear'|'taunt',{turns})나
+// StatusEffects.igniteTile(mapId,x,y,{dps,ticks}), StatusEffects.linkChain([ids])를
+// 호출하기만 하면 된다 - resolveArmyBattle이 이미 그 효과들을 반영하도록
+// 연결돼 있다 (js/engine/status-effects.js).
 function strategySuccessChance(deputyGrade, enemyGrade) {
   const diff = GRADE_RANK[enemyGrade] - GRADE_RANK[deputyGrade]; // 양수면 내 책사가 우위
   return Math.max(10, Math.min(90, 50 + 10 * diff));
@@ -878,6 +883,30 @@ function attemptDuelChallenge(id) {
   }
 }
 
+// StatusEffects(js/engine/status-effects.js)는 ROSTER/MapView를 모르는 순수
+// 모듈이라, "화염 타일에 누가 서있는지"/"그 대상에게 피해를 입혀라"는 여기서
+// 어댑터로 연결해준다. 아직 어떤 책략도 igniteTile을 호출하지 않으므로
+// 실제 게임에서는 항상 빈 목록이 돌아와 아무 일도 일어나지 않는다.
+function fireTileOccupantsAt(x, y) {
+  const occ = [];
+  const pos = MapView.playerPos;
+  if (GameState.army && pos.x === x && pos.y === y) occ.push(GameState.army.commanderId);
+  const mapSpec = MAPS[MapView.currentMapId];
+  for (const n of (mapSpec ? mapSpec.npcs : [])) {
+    if (n.x === x && n.y === y && MapView.liveNpcIds.includes(n.id)) occ.push(n.id);
+  }
+  return occ;
+}
+function applyFireTileDamage(occId, dps) {
+  if (GameState.army && occId === GameState.army.commanderId) {
+    GameState.army.troop = Math.max(0, GameState.army.troop - dps);
+    MapView.showDamageFloat(occId, dps);
+  } else if (ROSTER[occId]) {
+    ROSTER[occId].troop = Math.max(0, ROSTER[occId].troop - dps);
+    MapView.showDamageFloat(occId, dps);
+  }
+}
+
 // [전투] 한 번 = 딱 한 교전. 속도가 빠른 쪽이 먼저 때리고, 그 한 방으로
 // 상대가 쓰러지면 반격 없이 그대로 끝난다. 공격이 이번 행동의 마지막
 // 액션이라 행동력을 3 소모하고, 양쪽 다 살아남으면 결과만 보여준 뒤
@@ -891,32 +920,52 @@ function resolveArmyBattle(id) {
   const army = ctx.army;
   const commanderName = ROSTER[ctx.commanderId].name;
   const showOnMap = rd.warArmy !== 'ally'; // 유비군은 지도에 별도 스프라이트가 없다
+  const playerKey = ctx.commanderId;
 
   const lock = getWarLock(id, ctx);
-  const playerFirst = warArmySpeed(ctx) >= rd.stats.spd;
+  // 공포(fear) 디버프에 걸린 쪽은 실제 속도와 무관하게 이번 교전 선타를 놓친다.
+  let playerFirst = warArmySpeed(ctx) >= rd.stats.spd;
+  if (StatusEffects.forcedSecond(playerKey) && !StatusEffects.forcedSecond(id)) playerFirst = false;
+  else if (StatusEffects.forcedSecond(id) && !StatusEffects.forcedSecond(playerKey)) playerFirst = true;
   const lines = [{
     speaker: '내레이션',
     text: playerFirst ? `${commanderName}군이 더 빨라 선제공격!` : `${rd.name}의 군세가 더 빨라 선제공격!`,
   }];
   let enemyDown = false, playerDown = false;
 
+  // 연환계로 묶인 군세끼리는 한쪽이 입는 피해의 일부를 나머지도 함께 입는다.
+  function chainDamage(otherId, amount) {
+    const other = ROSTER[otherId];
+    if (!other) return;
+    other.troop = Math.max(0, other.troop - amount);
+    MapView.showDamageFloat(otherId, amount);
+    lines.push({ speaker: '내레이션', text: `연환계로 묶인 ${other.name}의 군세에도 ${amount}명 피해가 전이되었다.` });
+  }
+
   function playerStrikes() {
-    rd.troop = Math.max(0, rd.troop - lock.playerHit);
-    MapView.showDamageFloat(id, lock.playerHit);
+    const dmg = Math.max(1, Math.round(lock.playerHit * StatusEffects.outgoingMult(playerKey) * StatusEffects.incomingMult(id)));
+    rd.troop = Math.max(0, rd.troop - dmg);
+    MapView.showDamageFloat(id, dmg);
     if (showOnMap) MapView.showAttackBump(GameState.mainHero);
-    lines.push({ speaker: '내레이션', text: `${commanderName}군의 공격! ${rd.name}의 군세에 ${lock.playerHit}명 피해.` });
+    lines.push({ speaker: '내레이션', text: `${commanderName}군의 공격! ${rd.name}의 군세에 ${dmg}명 피해.` });
+    StatusEffects.propagateDamage(id, dmg, chainDamage);
     if (rd.troop <= 0) enemyDown = true;
   }
   function enemyStrikes() {
-    army.troop = Math.max(0, army.troop - lock.enemyHit);
-    if (showOnMap) MapView.showDamageFloat(GameState.mainHero, lock.enemyHit);
+    const dmg = Math.max(1, Math.round(lock.enemyHit * StatusEffects.outgoingMult(id) * StatusEffects.incomingMult(playerKey)));
+    army.troop = Math.max(0, army.troop - dmg);
+    if (showOnMap) MapView.showDamageFloat(GameState.mainHero, dmg);
     MapView.showAttackBump(id);
-    lines.push({ speaker: '내레이션', text: `${rd.name}의 군세가 공격! ${commanderName}군이 ${lock.enemyHit}명 피해를 입었다.` });
+    lines.push({ speaker: '내레이션', text: `${rd.name}의 군세가 공격! ${commanderName}군이 ${dmg}명 피해를 입었다.` });
     if (army.troop <= 0) playerDown = true;
   }
 
   if (playerFirst) { playerStrikes(); if (!enemyDown) enemyStrikes(); }
   else { enemyStrikes(); if (!playerDown) playerStrikes(); }
+
+  StatusEffects.tickArmyStatus(playerKey);
+  StatusEffects.tickArmyStatus(id);
+  StatusEffects.tickFireTiles(MapView.currentMapId, fireTileOccupantsAt, applyFireTileDamage);
 
   updateHUD();
   MapView.render();
@@ -927,6 +976,8 @@ function resolveArmyBattle(id) {
       return;
     }
     delete GameState.warLocks[id];
+    StatusEffects.clearArmyStatus(id);
+    StatusEffects.unlinkChain(id);
     if (id === 'jangsun') {
       resolveJangsunBattle({ winner: enemyDown ? 'player' : 'enemy', playerTroopsLeft: army.troop });
       return;
@@ -1002,6 +1053,8 @@ function captureCommander(id, afterCb) {
   const salvagePct = armyGeneralSalvagePct((rd.generalIds || []).length);
   const salvaged = salvagePct > 0 ? Math.round((rd.troop || 0) * salvagePct / 100) : 0;
   if (salvaged > 0) { GameState.addResource({ troop: salvaged }); updateHUD(); }
+  StatusEffects.clearArmyStatus(id);
+  StatusEffects.unlinkChain(id);
   MapView.removeNpc(id);
 
   const lines = [{ speaker: '내레이션', text: `압도적인 실력차로 ${rd.name}을(를) 사로잡았다! 이번 전쟁이 끝나면 등용을 제안할 수 있을 것이다.` }];

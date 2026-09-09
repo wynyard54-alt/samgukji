@@ -15,6 +15,9 @@ const GameState = {
   army: null, // 플레이어가 직접 편성한 주력 군세 {commanderId, deputy, generals, troop, rice}
   allyArmy: null, // 플레이어가 별도로 편성해 직접 지휘하는 두 번째 군세 (회남 벌판의 유비군 등) - 같은 구조
   warLocks: {}, // id -> {playerHit, enemyHit} - 그 적과의 교전이 시작된 시점 병력 기준으로 고정된 교전당 피해량
+  armyStatus: {}, // id(사령관/commanderId) -> [{type, turnsLeft, sourceId}] - 혼란/공포/도발 등 책략 디버프 (js/engine/status-effects.js)
+  warChains: {}, // id -> {members:[id,...], ratio} - 연환계로 묶인 군세끼리 피해를 나눠 받는 사슬
+  tileEffects: {}, // "mapId#x#y" -> {type:'fire', x, y, ticksLeft, dps} - 화염 등 타일에 붙는 상태이상
   trainingEv: 0, // 훈련 노력치 (100마다 스텟 1 상승)
   combatStatUps: 0, // 공/방/속 상승 누적 횟수 (skillThreshold 도달시 필살공격 습득)
   skillThreshold: 2 + Math.floor(Math.random() * 2), // 2 또는 3
@@ -39,6 +42,9 @@ const GameState = {
     this.army = null;
     this.allyArmy = null;
     this.warLocks = {};
+    this.armyStatus = {};
+    this.warChains = {};
+    this.tileEffects = {};
     this.trainingEv = 0;
     this.combatStatUps = 0;
     this.skillThreshold = 2 + Math.floor(Math.random() * 2);
