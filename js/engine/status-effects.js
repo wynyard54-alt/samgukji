@@ -5,9 +5,9 @@
 // attemptStrategy/attemptDuelChallenge, mapview.js의 runAiTurn/tryMove)에
 // 연결돼 있어 자동으로 반영된다.
 //
-// 세 군세 디버프의 실제 효과:
+// 세 군세 디버프의 실제 효과("턴"은 [전투] 교전이 아니라 1달 휴식 = 1턴이다):
 // - 혼란: 이동 불가 / 이 군세를 노리는 책략은 100% 성공 / [전투]에서 반격 불가
-// - 공포: 걸려 있는 동안 매 교전(틱)마다 사기 -10
+// - 공포: 걸려 있는 동안 매 턴(다음달)마다 사기 -10
 // - 도발: 도발을 건 군세를 쫓아오게 됨 / 도발 상태인 상대에게 거는 일기토는 100% 발동
 const StatusEffects = (function () {
   const ARMY_STATUS_LABELS = { confuse: '혼란', fear: '공포', taunt: '도발' };
@@ -55,9 +55,10 @@ const StatusEffects = (function () {
     else if (ROSTER[id]) ROSTER[id].morale = Math.max(0, (ROSTER[id].morale != null ? ROSTER[id].morale : 100) - amount);
   }
 
-  // [전투] 교전 1회가 끝날 때마다 호출한다 - 공포는 틱마다 사기를 10 깎고,
-  // 모든 효과는 지속시간을 1씩 줄여 만료되면 제거한다. 이번 교전에 걸려
-  // 있던 효과 라벨 목록을 돌려준다(연출용).
+  // "턴"은 [전투] 교전 단위가 아니라 1달 휴식(다음달로 넘어가는 것) 하나를
+  // 뜻한다 - main.js의 "다음달" 버튼 핸들러가 매달 한 번 tickAllArmyStatus를
+  // 불러준다. 공포는 틱마다 사기를 10 깎고, 모든 효과는 지속시간을 1씩 줄여
+  // 만료되면 제거한다. 이번 틱에 걸려 있던 효과 라벨 목록을 돌려준다(연출용).
   function tickArmyStatus(id) {
     const arr = GameState.armyStatus[id];
     if (!arr || !arr.length) return [];
@@ -68,6 +69,10 @@ const StatusEffects = (function () {
     }
     GameState.armyStatus[id] = arr.filter((s) => s.turnsLeft > 0);
     return activeLabels;
+  }
+  // 상태이상이 걸려 있는 모든 대상을 한 번에 틱한다 - 매달 휴식마다 한 번씩만 부르면 된다.
+  function tickAllArmyStatus() {
+    for (const id in GameState.armyStatus) tickArmyStatus(id);
   }
 
   // ---- 화염 타일 ----
@@ -128,7 +133,7 @@ const StatusEffects = (function () {
   }
 
   return {
-    applyArmyStatus, clearArmyStatus, activeStatuses, hasStatus, tickArmyStatus,
+    applyArmyStatus, clearArmyStatus, activeStatuses, hasStatus, tickArmyStatus, tickAllArmyStatus,
     isConfused, isTaunted, tauntSourceId,
     igniteTile, extinguishTile, fireTilesForMap, tickFireTiles,
     linkChain, unlinkChain, chainedWith, propagateDamage,

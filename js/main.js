@@ -827,9 +827,12 @@ function openWarCommandMenu(id) {
 // (js/engine/status-effects.js):
 //  - 혼란: 이동 불가(mapview.js tryMove/runAiTurn) / 이 군세를 노리는 책략은
 //    100% 성공(attemptStrategy) / [전투]에서 반격 불가(resolveArmyBattle)
-//  - 공포: 걸려 있는 동안 [전투] 교전(틱)마다 사기 -10
+//  - 공포: 걸려 있는 동안 매 턴(1달 휴식 = "다음달" 버튼 한 번)마다 사기 -10
 //  - 도발: 도발을 건 군세를 쫓아옴(원래 AI가 항상 플레이어를 쫓으므로 지금은
 //    자동으로 충족됨) / 도발당한 상대에게 거는 일기토는 100% 발동(attemptDuelChallenge)
+// 지속시간(turns)과 공포의 사기 드레인은 "다음달" 버튼 핸들러에서
+// StatusEffects.tickAllArmyStatus()로 매 턴 한 번씩만 처리된다([전투]를 몇 번
+// 누르든 턴 안에서는 소모되지 않는다).
 function strategySuccessChance(deputyGrade, enemyGrade) {
   const diff = GRADE_RANK[enemyGrade] - GRADE_RANK[deputyGrade]; // 양수면 내 책사가 우위
   return Math.max(10, Math.min(90, 50 + 10 * diff));
@@ -978,10 +981,6 @@ function resolveArmyBattle(id) {
       else playerStrikes();
     }
   }
-
-  StatusEffects.tickArmyStatus(playerKey);
-  StatusEffects.tickArmyStatus(id);
-  StatusEffects.tickFireTiles(MapView.currentMapId, fireTileOccupantsAt, applyFireTileDamage);
 
   updateHUD();
   MapView.render();
@@ -2899,6 +2898,14 @@ document.getElementById('btn-nextmonth').onclick = () => {
   if (inCampaign && GameState.army) {
     GameState.army.rice = Math.max(0, GameState.army.rice - Math.ceil(GameState.army.troop / 100));
     if (GameState.army.rice <= 0) GameState.changeMorale(-1); // 군량 고갈시 매턴 사기 하락
+  }
+  // 책략 상태이상(혼란/공포/도발)의 "턴"은 이 1달 휴식 하나를 가리킨다 -
+  // 공포의 사기 드레인도 여기서 함께 처리된다. 화염 타일은 지금 지도가
+  // 전쟁맵일 때만(그 타일 위 군세가 실제로 존재할 때만) 의미가 있다.
+  StatusEffects.tickAllArmyStatus();
+  if (inCampaign) {
+    StatusEffects.tickFireTiles(MapView.currentMapId, fireTileOccupantsAt, applyFireTileDamage);
+    MapView.render();
   }
   const income = scholarGoldIncome();
   if (income > 0) GameState.addResource({ gold: income });
