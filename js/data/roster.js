@@ -244,13 +244,14 @@ const ROSTER = {
   // 판정한다). 뇌박·진란은 성문 앞을 지키는 선봉이라 관우군이 상대하고,
   // 둘 다 쓰러지면(main.js checkWonsulRetreat) 원술은 남은 병력을 이끌고
   // 성 안으로 물러난다 - 이번 장면에서는 원술 본인과는 싸우지 않는다.
-  // generalIds: 일기토로 기령이 포로로 잡혀 군세가 와해될 때, 휘하 부장인
+  // generals: 일기토로 기령이 포로로 잡혀 군세가 와해될 때, 휘하 부장인
   // 뇌박·진란이 패잔병 일부를 수습해 아군에 합류시킨다(main.js captureCommander).
-  // advisorId: 다만 책사 양홍이 있으면 군세는 와해되지 않고 양홍이 지휘를
-  // 이어받는다 - 그쪽이 먼저 적용되어 generalIds 쪽 병력 흡수는 발동하지
-  // 않는다(captureCommander의 advisor 우선 분기 참고).
+  // deputy: 다만 책사 양홍이 있으면 군세는 와해되지 않고 양홍이 지휘를
+  // 이어받는다 - 그쪽이 먼저 적용되어 generals 쪽 병력 흡수는 발동하지
+  // 않는다(captureCommander의 advisor 우선 분기 참고). 전투 개시 시 양홍이
+  // 자기 책략(위보)을 자동으로 한 번 시전하기도 한다(maybeEnemyCastsStrategy).
   giryeong: { id:'giryeong', name:'기령', birth:155, deathReal:210, deathVirtual:245, kind:'enemy', forced:null, affiliation:'원술군', troop:5000,
-    stats:{atk:93, def:78, spd:86, int:50, cha:58, lead:75}, generalIds:['noebak','jinran'], advisorId:'yanghong',
+    stats:{atk:93, def:78, spd:86, int:50, cha:58, lead:75}, generals:['noebak','jinran'], deputy:'yanghong',
     intro:'…네놈이 관우로구나! 이 기령의 삼첨도를 받아보아라!', sprite:SPRITE_COALITION },
   // 원술의 장사(長史) - 기령의 책사. 무력은 낮은 전형적 문관 스텟이라, 기령이
   // 일기토로 포로가 되면 지휘를 이어받아 군세를 겨우 수습하지만 크게 약해진다.

@@ -734,12 +734,12 @@ function shiftGrade(grade, boost) {
   return ranks[Math.max(0, Math.min(ranks.length - 1, idx - boost))];
 }
 
-// 일기토에서 군세장이 포로로 잡혔는데 그 군세에 책사(advisorId)가 있었다면,
+// 일기토에서 군세장이 포로로 잡혔는데 그 군세에 책사(deputy)가 있었다면,
 // 지휘를 이어받은 책사의 무력으로 등급을 다시 매긴다(대개 훨씬 낮아 사실상
 // 와해 수준으로 약해진다) - captureCommander 참고.
 function enemyArmyGrade(rd) {
-  const base = (rd.commanderCaptured && rd.advisorId && ROSTER[rd.advisorId])
-    ? gradeFor(armyMuryeokValue(ROSTER[rd.advisorId], []), MURYEOK_GRADES)
+  const base = (rd.commanderCaptured && rd.deputy && ROSTER[rd.deputy])
+    ? gradeFor(armyMuryeokValue(ROSTER[rd.deputy], []), MURYEOK_GRADES)
     : gradeFor(armyMuryeokValue(rd, []), MURYEOK_GRADES);
   return shiftGrade(base, StatusEffects.gradeBoostAmount(rd.id));
 }
@@ -786,22 +786,23 @@ function getWarLock(id, ctx, enemyMoraleOverride) {
   return lock;
 }
 
-// 적 책사(advisorId)가 있고, 아직 못 쓴 "안전한" 책략을 갖고 있으면 자동으로
+// 적 책사(deputy)가 있고, 아직 못 쓴 "안전한" 책략을 갖고 있으면 자동으로
 // 한 번 걸어준다 - 어차피 책사 1명당 책략이 보통 1개뿐이라 복잡한 선택 판단이
 // 필요 없다("있으면 쓴다"). "안전한"이란 ROSTER[targetId].troop을 직접
-// 건드리지 않고 StatusEffects 버프/디버프만 targetId에 그대로 적용하는
-// 책략을 말한다 - 그 외(격려/견수처럼 "시전자 쪽"을 계산하거나, 병력을 직접
-// 깎는) 책략은 캐스터가 플레이어라고 가정하고 만들어져 있어 적이 쓰면 값이
-// 꼬인다. 이 목록을 넓히려면 그 책략들부터 "어느 쪽이 캐스터인지" 무관하게
-// 동작하도록 먼저 손봐야 한다.
-const ENEMY_CASTABLE_STRATEGIES = new Set(['hollan', 'dobal', 'heojangseongse', 'wibo', 'sugong']);
+// 건드리지 않고 StatusEffects 버프/디버프만 적용하는 책략을 말한다 - "시전자
+// 쪽"에 적용되는 효과(격려/견수/기습/허실전환)는 STRATEGY_EFFECTS 호출부가
+// casterCommanderId를 직접 넘겨줘서 어느 쪽이 캐스터든 동일하게 동작하도록
+// 이미 고쳐뒀다. 아직 안 되는 건 "인스턴트 값(GameState.morale/GameState.ap
+// 처럼 플레이어 전용 전역값)을 직접 건드리는" 책략(고무/의병모집/질주 등,
+// 아군 전체용 S~D급 다수)과, 병종/사거리 등 다른 시스템이 필요한 것들이다.
+const ENEMY_CASTABLE_STRATEGIES = new Set(['hollan', 'dobal', 'heojangseongse', 'wibo', 'sugong', 'giseup', 'gyeongryeo', 'gyeonsu', 'heosiljeonhwan']);
 function maybeEnemyCastsStrategy(rd, ctx) {
-  if (!rd.advisorId) return;
-  const advisor = ROSTER[rd.advisorId];
+  if (!rd.deputy) return;
+  const advisor = ROSTER[rd.deputy];
   if (!advisor) return;
-  const sid = strategiesFor(rd.advisorId).find((s) => ENEMY_CASTABLE_STRATEGIES.has(s) && strategyIsUsable(s));
+  const sid = strategiesFor(rd.deputy).find((s) => ENEMY_CASTABLE_STRATEGIES.has(s) && strategyIsUsable(s));
   if (!sid) return;
-  const desc = STRATEGY_EFFECTS[sid](ctx.commanderId, rd.advisorId);
+  const desc = STRATEGY_EFFECTS[sid](ctx.commanderId, rd.deputy, rd.id);
   markStrategyUsed(sid);
   toast(`${rd.name} 진영의 ${advisor.name}이(가) ${STRATEGIES[sid].name}을(를) 시전했다! ${desc}`);
 }
@@ -933,14 +934,13 @@ function shuffled(arr) {
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
 }
-// "아군 1명"을 타겟으로 하는 책략(격려/견수/질주 등)은 이 전투를 실제로
-// 치르고 있는 군세의 사령관에게 적용한다 - 아직 "여러 아군 중 하나를 직접
-// 고르는" UI가 없어서, 지금 교전 상대(targetId)를 상대하는 쪽으로 정한다.
-function casterCommanderFor(targetId) {
-  const ctx = resolveWarArmy(ROSTER[targetId]);
-  if (ctx) return ctx.commanderId;
-  return GameState.army ? GameState.army.commanderId : null;
-}
+// "아군 1명"을 타겟으로 하는 책략(격려/견수 등)은 시전자 쪽 사령관에게
+// 적용한다 - 아직 "여러 아군 중 하나를 직접 고르는" UI가 없어서, 그 전투를
+// 치르고 있는 사령관으로 정한다. 예전에는 이걸 targetId(상대편)에서
+// resolveWarArmy로 거꾸로 추측했는데, 그러면 "캐스터가 항상 플레이어"라고
+// 가정하게 되어 적이 같은 책략을 쓰면 값이 꼬였다 - 이제는 호출부
+// (castNamedStrategy/maybeEnemyCastsStrategy)가 caster의 사령관 id를 직접
+// 알고 있으니 그걸 그대로 세 번째 인자(casterCommanderId)로 넘겨받는다.
 // 이간계/반목처럼 "타겟 적이 인접한 다른 적을 공격하게" 만드는 책략의 공통
 // 로직 - maxAttackers가 없으면(이간계) 인접한 적 전부, 있으면(반목) 그
 // 수만큼만 무작위로 고른다. 서로 주고받는 피해는 기존 고정 데미지 산식
@@ -1092,9 +1092,8 @@ const STRATEGY_EFFECTS = {
     StatusEffects.applyArmyStatus(targetId, 'guaranteedCapture', { turns: 2 });
     return `${ROSTER[targetId].name}의 퇴로를 끊었다. 2턴 안에 무너뜨리면 반드시 포박할 수 있을 것이다.`;
   },
-  heosiljeonhwan(targetId) {
+  heosiljeonhwan(targetId, deputyId, casterId) {
     const BUFF_TYPES = ['dmgDealtMult', 'dmgTakenMult', 'gradeBoost', 'evade', 'immune', 'apMult', 'moveCostMult', 'stratSuccessMult', 'moveMoraleCost'];
-    const casterId = casterCommanderFor(targetId);
     const stolen = StatusEffects.activeStatuses(targetId).filter((s) => BUFF_TYPES.includes(s.type));
     stolen.forEach((s) => {
       StatusEffects.applyArmyStatus(casterId, s.type, { turns: s.turnsLeft, magnitude: s.magnitude });
@@ -1156,9 +1155,8 @@ const STRATEGY_EFFECTS = {
   // ---- C급 ----
   // (연노지휘는 병종 궁병 시스템이 아직 없어 제외, 책략봉쇄도 반계/간파와
   // 같은 이유로 보류한다.)
-  giseup(targetId) {
-    const cid = casterCommanderFor(targetId);
-    StatusEffects.applyArmyStatus(cid, 'forceFirstStrike', { turns: 1 });
+  giseup(targetId, deputyId, casterId) {
+    StatusEffects.applyArmyStatus(casterId, 'forceFirstStrike', { turns: 1 });
     StatusEffects.applyArmyStatus(targetId, 'apMult', { turns: 2, magnitude: 0.5 });
     return `다음 교전에서 아군이 반드시 선제공격하며, ${ROSTER[targetId].name}의 행동력이 크게 줄었다.`;
   },
@@ -1190,15 +1188,13 @@ const STRATEGY_EFFECTS = {
     StatusEffects.applyArmyStatus(targetId, 'noCounter', { turns: 1 });
     return `${ROSTER[targetId].name}의 군세 배후에 매복했다. 다음 공격에는 반격당하지 않을 것이다.`;
   },
-  gyeongryeo(targetId) {
-    const cid = casterCommanderFor(targetId);
-    StatusEffects.applyArmyStatus(cid, 'dmgDealtMult', { turns: 2, magnitude: 1.1 });
-    GameState.changeMorale(15);
+  gyeongryeo(targetId, deputyId, casterId) {
+    StatusEffects.applyArmyStatus(casterId, 'dmgDealtMult', { turns: 2, magnitude: 1.1 });
+    StatusEffects.drainMorale(casterId, -15); // 음수 = 사기 상승(누가 캐스터든 자기 편 사기가 오른다)
     return '아군의 사기가 오르고 다음 공격이 더 매서워질 것이다.';
   },
-  gyeonsu(targetId) {
-    const cid = casterCommanderFor(targetId);
-    StatusEffects.applyArmyStatus(cid, 'dmgTakenMult', { turns: 2, magnitude: 0.65 });
+  gyeonsu(targetId, deputyId, casterId) {
+    StatusEffects.applyArmyStatus(casterId, 'dmgTakenMult', { turns: 2, magnitude: 0.65 });
     return '아군의 방어 태세가 크게 강화되었다.';
   },
   wibo(targetId) {
@@ -1244,8 +1240,8 @@ const STRATEGY_EFFECTS = {
   },
 };
 
-function castNamedStrategy(sid, targetId, deputyId) {
-  const desc = STRATEGY_EFFECTS[sid](targetId, deputyId);
+function castNamedStrategy(sid, targetId, deputyId, casterCommanderId) {
+  const desc = STRATEGY_EFFECTS[sid](targetId, deputyId, casterCommanderId);
   markStrategyUsed(sid);
   Dialogue.show([{ speaker: ROSTER[deputyId].name, text: `${STRATEGIES[sid].name}!` }, { speaker: '내레이션', text: desc }], () => {
     updateHUD();
@@ -1274,7 +1270,7 @@ function attemptStrategy(id) {
   if (!castable.length) { castGenericStrategy(id, ctx, deputy); return; }
   const options = castable.map((sid) => ({
     label: `${STRATEGIES[sid].name}(${STRATEGIES[sid].grade}급)`,
-    cb: () => castNamedStrategy(sid, id, deputyId),
+    cb: () => castNamedStrategy(sid, id, deputyId, ctx.commanderId),
   }));
   options.push({ label: '기본 계책 (적 공격력 약화)', cb: () => castGenericStrategy(id, ctx, deputy) });
   showChoice(`${deputy.name}의 책략 - 무엇을 쓰시겠습니까?`, options);
@@ -1477,7 +1473,7 @@ function captureCommander(id, afterCb) {
   GameState.npcStatus[id] = 'captured';
   GameState.capturedCommanders.push(id);
 
-  const advisor = rd.advisorId && ROSTER[rd.advisorId];
+  const advisor = rd.deputy && ROSTER[rd.deputy];
   if (advisor) {
     // 군세장은 포로로 잡혔지만 책사가 지휘를 이어받는다 - 군세는 지도에 그대로
     // 남고 병력도 그대로지만, 이후 [전투]/일기토 계산에는 책사의 무력이
@@ -1496,7 +1492,7 @@ function captureCommander(id, afterCb) {
 
   // 책사가 없으면 지휘 계통이 완전히 무너져 군세 자체가 와해된다 - 부장이
   // 있었다면 패잔병 일부를 그 자리에서 수습해 아군 세력 병력에 합류시킨다.
-  const salvagePct = armyGeneralSalvagePct((rd.generalIds || []).length);
+  const salvagePct = armyGeneralSalvagePct((rd.generals || []).length);
   const salvaged = salvagePct > 0 ? Math.round((rd.troop || 0) * salvagePct / 100) : 0;
   if (salvaged > 0) { GameState.addResource({ troop: salvaged }); updateHUD(); }
   StatusEffects.clearArmyStatus(id);
