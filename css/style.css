@@ -247,6 +247,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .stat-fill.stat-atk{ background:#5fa8d3; } .stat-fill.stat-def{ background:#c98a4b; }
 .stat-fill.stat-spd{ background:#8fbf6a; } .stat-fill.stat-int{ background:#8f7fd6; }
 .stat-fill.stat-cha{ background:#dcb24a; }
+.stat-fill.stat-lead{ background:#6a9e7f; }
 .stat-fill.stat-hp{ background:linear-gradient(90deg,#8e2e25,#d26b45,#e0a95a); }
 .stat-val{ width:20px; text-align:right; color:#f5ecd6; }
 .hp-row{ margin-bottom:5px; padding-bottom:5px; border-bottom:1px solid rgba(233,214,168,.25); }

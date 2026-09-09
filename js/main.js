@@ -71,8 +71,8 @@ function pyeongwonDeadlineAbsMonth() {
   if (GameState.pyeongwonEnterAbsMonth == null) return base;
   return Math.max(base, GameState.pyeongwonEnterAbsMonth + MIN_PYEONGWON_STAY_MONTHS);
 }
-const STAT_LABELS = { atk: '공격', def: '방어', spd: '속도', int: '지력', cha: '매력' };
-const COMBAT_STATS = ['atk', 'def', 'spd'];
+const STAT_LABELS = { atk: '공격', def: '방어', spd: '속도', int: '지력', cha: '매력', lead: '통솔' };
+const COMBAT_STATS = ['atk', 'def', 'spd']; // 통솔(lead)은 필살공격 습득 진행에는 관여하지 않는다
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
@@ -1945,7 +1945,7 @@ function stationRecruitOrRemove(id) {
 }
 
 function formatStatLine(stats) {
-  return `공${stats.atk} 방${stats.def} 속${stats.spd} 지${stats.int} 매${stats.cha}`;
+  return `공${stats.atk} 방${stats.def} 속${stats.spd} 지${stats.int} 매${stats.cha} 통${stats.lead || 0}`;
 }
 
 function renderRosterPanel() {
@@ -2006,9 +2006,11 @@ function openRosterPanel() {
 }
 
 const ARMY_MIN_TROOP = 500;
-const ARMY_MAX_TROOP = 10000;
+const ARMY_TROOP_PER_LEAD = 200; // 군세 최대 병력 = 사령관 통솔 × 200 (통솔 100이면 최대 2만명)
 const ARMY_GENERAL_BONUS_PCT = 0.10; // 부장 1명당 자신의 무력3스텟합 × 10%를 가산, 최대 3명
 const ARMY_MAX_GENERALS = 3;
+
+function armyMaxTroop(commanderRd) { return (commanderRd.stats.lead || 0) * ARMY_TROOP_PER_LEAD; }
 
 let armySelectedGenerals = [];
 let armySteppers = {};
@@ -2156,11 +2158,12 @@ function openArmyBox(onConfirm, opts) {
   armySelectedGenerals = [];
   renderArmyGenerals();
 
-  const troopMax = Math.min(ARMY_MAX_TROOP, GameState.resources.troop);
-  document.getElementById('army-troop-max').textContent = GameState.resources.troop;
+  const maxTroopByLead = armyMaxTroop(commanderRd);
+  const troopMax = Math.min(maxTroopByLead, GameState.resources.troop);
+  document.getElementById('army-troop-max').textContent = troopMax;
   document.getElementById('army-rice-max').textContent = GameState.resources.rice;
   armySteppers = {
-    'army-troop': makeArmyStepper('army-troop-value', 0, () => Math.min(ARMY_MAX_TROOP, GameState.resources.troop), 100),
+    'army-troop': makeArmyStepper('army-troop-value', 0, () => Math.min(maxTroopByLead, GameState.resources.troop), 100),
     'army-rice': makeArmyStepper('army-rice-value', 0, () => GameState.resources.rice, 50),
   };
   armySteppers['army-troop'].set(troopMax);
