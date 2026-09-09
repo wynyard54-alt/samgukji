@@ -110,8 +110,8 @@ const ROSTER = {
   // 반동탁연합 진영 (등용 불가, 서사 전용 인물)
   wonso: { id:'wonso', name:'원소', birth:154, deathReal:202, deathVirtual:244, kind:'flavor', affiliation:'반동탁연합',
     stats:{atk:67, def:65, spd:63, int:62, cha:60, lead:95}, intro:'맹주로 추대된 원소요. 각지의 제후들이 모였으나, 아직 누가 선봉에 설지 정하지 못했소.', sprite:SPRITE_COALITION },
-  jojo: { id:'jojo', name:'조조', birth:155, deathReal:220, deathVirtual:245, kind:'flavor', affiliation:'반동탁연합',
-    stats:{atk:77, def:75, spd:73, int:76, cha:87, lead:98}, intro:'맹덕이라 하오. 이런 촌구석 의용군에서도 쓸만한 인재가 나올 수 있는 법이지.', sprite:SPRITE_COALITION },
+  jojo: { id:'jojo', name:'조조', birth:155, deathReal:220, deathVirtual:245, kind:'flavor', forceWarrior:true, affiliation:'반동탁연합',
+    stats:{atk:77, def:75, spd:73, int:92, cha:87, lead:98}, intro:'맹덕이라 하오. 이런 촌구석 의용군에서도 쓸만한 인재가 나올 수 있는 법이지.', sprite:SPRITE_COALITION },
   gongsonchan: { id:'gongsonchan', name:'공손찬', birth:150, deathReal:199, deathVirtual:240, kind:'flavor', affiliation:'반동탁연합',
     stats:{atk:93, def:78, spd:86, int:50, cha:55, lead:95}, intro:'백규요. 자네들이 현덕의 아우들인가. 내 현덕과는 동문수학한 사이라네, 잘 부탁하네.', sprite:SPRITE_COALITION },
   songyeon: { id:'songyeon', name:'손견', birth:155, deathReal:191, deathVirtual:245, kind:'flavor', affiliation:'반동탁연합',
@@ -159,8 +159,8 @@ const ROSTER = {
   // 그 사이 진궁이 여포를 끌어들여 복양을 빼앗는 것이 바로 이 장면 다음에
   // 벌어지는 사건이므로(챕터2 핵심 반전), 이들을 서주 진중에 등장시키지
   // 않는다 - 대신 조조 본인의 지력을 높게 잡아 지휘부의 지력을 담당하게 했다.
-  jojo_jungong: { id:'jojo_jungong', name:'조조(중군)', birth:155, deathReal:220, deathVirtual:245, kind:'enemy', forced:null, affiliation:'조조군', troop:5000,
-    stats:{atk:77, def:75, spd:73, int:76, cha:87, lead:98},
+  jojo_jungong: { id:'jojo_jungong', name:'조조(중군)', birth:155, deathReal:220, deathVirtual:245, kind:'enemy', forced:null, forceWarrior:true, affiliation:'조조군', troop:5000,
+    stats:{atk:77, def:75, spd:73, int:92, cha:87, lead:98},
     intro:'…아버지의 원한, 이 서주 땅에서 반드시 갚고야 말겠다.', sprite:SPRITE_COALITION },
   habudon_seoju: { id:'habudon_seoju', name:'하후돈군', birth:156, deathReal:220, deathVirtual:246, kind:'enemy', forced:null, affiliation:'조조군', troop:5000,
     stats:{atk:99, def:88, spd:96, int:50, cha:62, lead:85},
@@ -639,8 +639,8 @@ const ROSTER = {
     stats:{atk:68, def:82, spd:70, int:62, cha:56, lead:95}, intro:'진태라 하오. 곽회 장군과 함께라면 두렵지 않소.' },
   deungae: { id:'deungae', name:'등애', birth:197, deathReal:264, deathVirtual:287, kind:'flavor', affiliation:'위·진',
     stats:{atk:89, def:90, spd:76, int:82, cha:58, lead:96}, intro:'등애라 하오. 험한 길이라도 갈 수 있다면 가야 하오.' },
-  jonghoe: { id:'jonghoe', name:'종회', birth:225, deathReal:264, deathVirtual:315, kind:'flavor', affiliation:'위·진',
-    stats:{atk:65, def:63, spd:61, int:64, cha:52, lead:96}, intro:'종회라 하오. 계책이라면 누구에게도 뒤지지 않소.' },
+  jonghoe: { id:'jonghoe', name:'종회', birth:225, deathReal:264, deathVirtual:315, kind:'flavor', forceWarrior:true, affiliation:'위·진',
+    stats:{atk:65, def:63, spd:61, int:75, cha:52, lead:96}, intro:'종회라 하오. 계책이라면 누구에게도 뒤지지 않소.' },
   wangssang: { id:'wangssang', name:'왕쌍', birth:190, deathReal:229, deathVirtual:280, kind:'flavor', affiliation:'위·진',
     stats:{atk:99, def:88, spd:96, int:50, cha:58, lead:74}, intro:'조진 장군을 섬기는 왕쌍이오.' },
   haksoh: { id:'haksoh', name:'학소', birth:190, deathReal:231, deathVirtual:280, kind:'flavor', affiliation:'위·진',
@@ -683,21 +683,21 @@ const ROSTER = {
     stats:{atk:99, def:90, spd:98, int:38, cha:58, lead:85}, intro:'문흠의 아들, 문앙이오. 홀로 적진에 뛰어드는 게 뭐 대수요.' },
   jegaltan: { id:'jegaltan', name:'제갈탄', birth:190, deathReal:258, deathVirtual:280, kind:'flavor', affiliation:'위·진',
     stats:{atk:76, def:74, spd:72, int:50, cha:50, lead:84}, intro:'제갈탄이라 하오. 사마씨의 뜻대로만 되지는 않을 것이오.' },
-  samasa: { id:'samasa', name:'사마사', birth:208, deathReal:255, deathVirtual:298, kind:'flavor', affiliation:'위·진',
+  samasa: { id:'samasa', name:'사마사', birth:208, deathReal:255, deathVirtual:298, kind:'flavor', forceWarrior:true, affiliation:'위·진',
     stats:{atk:45, def:43, spd:41, int:85, cha:55, lead:85}, intro:'사마사라 하오. 아버님(사마의)의 뜻을 잇고 있소.' },
-  samaso: { id:'samaso', name:'사마소', birth:211, deathReal:265, deathVirtual:301, kind:'flavor', affiliation:'위·진',
+  samaso: { id:'samaso', name:'사마소', birth:211, deathReal:265, deathVirtual:301, kind:'flavor', forceWarrior:true, affiliation:'위·진',
     stats:{atk:45, def:43, spd:41, int:83, cha:52, lead:85}, intro:'사마소라 하오. 세상의 뜻이 어디로 흐르는지는 내가 정하오.' },
-  samamang: { id:'samamang', name:'사마망', birth:205, deathReal:272, deathVirtual:295, kind:'flavor', affiliation:'위·진',
+  samamang: { id:'samamang', name:'사마망', birth:205, deathReal:272, deathVirtual:295, kind:'flavor', forceWarrior:true, affiliation:'위·진',
     stats:{atk:45, def:43, spd:41, int:60, cha:50, lead:84}, intro:'사마망이라 하오. 사마의 어른의 조카요.' },
   wangneung: { id:'wangneung', name:'왕릉', birth:172, deathReal:251, deathVirtual:262, kind:'flavor', affiliation:'위·진',
     stats:{atk:65, def:63, spd:61, int:55, cha:48, lead:84}, intro:'왕릉이라 하오. 위 조정의 원로로서 할 말은 해야겠소.' },
   seokpo: { id:'seokpo', name:'석포', birth:205, deathReal:273, deathVirtual:295, kind:'flavor', affiliation:'위·진',
     stats:{atk:76, def:74, spd:72, int:48, cha:50, lead:84}, intro:'석포라 하오.' },
-  yangho: { id:'yangho', name:'양호', birth:221, deathReal:278, deathVirtual:311, kind:'flavor', affiliation:'위·진',
-    stats:{atk:65, def:63, spd:61, int:64, cha:70, lead:95}, intro:'양호라 하오. 덕으로 사람을 대하는 것이 진짜 힘이라 믿소.' },
-  duye: { id:'duye', name:'두예', birth:222, deathReal:285, deathVirtual:312, kind:'flavor', affiliation:'위·진',
+  yangho: { id:'yangho', name:'양호', birth:221, deathReal:278, deathVirtual:311, kind:'flavor', forceWarrior:true, affiliation:'위·진',
+    stats:{atk:65, def:63, spd:61, int:72, cha:70, lead:95}, intro:'양호라 하오. 덕으로 사람을 대하는 것이 진짜 힘이라 믿소.' },
+  duye: { id:'duye', name:'두예', birth:222, deathReal:285, deathVirtual:312, kind:'flavor', forceWarrior:true, affiliation:'위·진',
     stats:{atk:44, def:42, spd:40, int:80, cha:58, lead:96}, intro:'두예라 하오. 학문도 병법도, 파고들면 다 하나로 통하오.' },
-  wangjun: { id:'wangjun', name:'왕준', birth:206, deathReal:286, deathVirtual:296, kind:'flavor', affiliation:'위·진',
+  wangjun: { id:'wangjun', name:'왕준', birth:206, deathReal:286, deathVirtual:296, kind:'flavor', forceWarrior:true, affiliation:'위·진',
     stats:{atk:44, def:42, spd:40, int:60, cha:52, lead:95}, intro:'왕준이라 하오. 큰 배를 지어 강을 건너면 그만이오.' },
   wanghon: { id:'wanghon', name:'왕혼', birth:223, deathReal:297, deathVirtual:313, kind:'flavor', affiliation:'위·진',
     stats:{atk:76, def:74, spd:72, int:52, cha:50, lead:84}, intro:'왕혼이라 하오.' },
@@ -725,7 +725,7 @@ const ROSTER = {
     stats:{atk:75, def:73, spd:71, int:42, cha:50, lead:73}, intro:'제갈서라 하오.' },
   jeonsok: { id:'jeonsok', name:'전속', birth:195, deathReal:264, deathVirtual:285, kind:'flavor', affiliation:'위·진',
     stats:{atk:75, def:73, spd:71, int:42, cha:50, lead:73}, intro:'전속이라 하오.' },
-  wigwan: { id:'wigwan', name:'위관', birth:220, deathReal:291, deathVirtual:310, kind:'flavor', affiliation:'위·진',
+  wigwan: { id:'wigwan', name:'위관', birth:220, deathReal:291, deathVirtual:310, kind:'flavor', forceWarrior:true, affiliation:'위·진',
     stats:{atk:43, def:41, spd:39, int:65, cha:48, lead:73}, intro:'위관이라 하오. 법과 절차대로 처리하면 될 일이오.' },
   yangheun: { id:'yangheun', name:'양흔', birth:195, deathReal:265, deathVirtual:285, kind:'flavor', affiliation:'위·진',
     stats:{atk:44, def:42, spd:40, int:32, cha:40, lead:63}, intro:'양흔이라 하오.' },
@@ -915,11 +915,11 @@ const ROSTER = {
     stats:{atk:93, def:78, spd:86, int:50, cha:58, lead:74}, intro:'손유의 아우, 손교요.' },
   juchi: { id:'juchi', name:'주치', birth:150, deathReal:224, deathVirtual:240, kind:'flavor', affiliation:'오',
     stats:{atk:76, def:74, spd:72, int:42, cha:50, lead:74}, intro:'주치라 하오.' },
-  yeobeom: { id:'yeobeom', name:'여범', birth:160, deathReal:228, deathVirtual:250, kind:'flavor', affiliation:'오',
+  yeobeom: { id:'yeobeom', name:'여범', birth:160, deathReal:228, deathVirtual:250, kind:'flavor', forceWarrior:true, affiliation:'오',
     stats:{atk:44, def:42, spd:40, int:55, cha:48, lead:73}, intro:'여범이라 하오. 셈에는 밝은 편이오.' },
   yeodae: { id:'yeodae', name:'여대', birth:161, deathReal:256, deathVirtual:251, kind:'flavor', affiliation:'오',
     stats:{atk:78, def:79, spd:65, int:45, cha:50, lead:85}, intro:'여대라 하오. 오래 산 만큼 아는 것도 많소.' },
-  yukhang: { id:'yukhang', name:'육항', birth:226, deathReal:274, deathVirtual:316, kind:'flavor', affiliation:'오',
+  yukhang: { id:'yukhang', name:'육항', birth:226, deathReal:274, deathVirtual:316, kind:'flavor', forceWarrior:true, affiliation:'오',
     stats:{atk:44, def:42, spd:40, int:75, cha:60, lead:95}, intro:'육손의 아들, 육항이오. 아버님의 뜻을 잊지 않았소.' },
   juyi: { id:'juyi', name:'주이', birth:190, deathReal:250, deathVirtual:280, kind:'flavor', affiliation:'오',
     stats:{atk:75, def:73, spd:71, int:42, cha:50, lead:73}, intro:'주이라 하오.' },
@@ -971,8 +971,8 @@ const ROSTER = {
     stats:{atk:44, def:42, spd:40, int:32, cha:40, lead:42}, intro:'유략이라 하오.' },
   jeongbongbong: { id:'jeongbongbong', name:'정봉', birth:185, deathReal:260, deathVirtual:275, kind:'flavor', affiliation:'오',
     stats:{atk:66, def:64, spd:62, int:36, cha:44, lead:44}, intro:'정봉 장군의 아우, 정봉(丁封)이오.' },
-  songgwon: { id:'songgwon', name:'손권', birth:182, deathReal:252, deathVirtual:272, kind:'flavor', affiliation:'오',
-    stats:{atk:66, def:64, spd:62, int:65, cha:70, lead:96}, intro:'손권이라 하오. 강동의 세 세대가 이룬 것을 지키는 게 내 몫이오.' },
+  songgwon: { id:'songgwon', name:'손권', birth:182, deathReal:252, deathVirtual:272, kind:'flavor', forceWarrior:true, affiliation:'오',
+    stats:{atk:66, def:64, spd:62, int:78, cha:70, lead:96}, intro:'손권이라 하오. 강동의 세 세대가 이룬 것을 지키는 게 내 몫이오.' },
   anryang: { id:'anryang', name:'안량', birth:160, deathReal:200, deathVirtual:250, kind:'flavor', affiliation:'군웅·후한',
     stats:{atk:99, def:90, spd:98, int:28, cha:40, lead:75}, intro:'원소군의 안량이오. 이 창을 받아본 자는 몇 없소.' },
   munchu: { id:'munchu', name:'문추', birth:160, deathReal:200, deathVirtual:250, kind:'flavor', affiliation:'군웅·후한',
@@ -1025,7 +1025,7 @@ const ROSTER = {
     stats:{atk:93, def:78, spd:86, int:38, cha:44, lead:95}, intro:'완성의 장수라 하오. 조공도 이곳에서 큰코다쳤소.' },
   hogeoa: { id:'hogeoa', name:'호거아', birth:165, deathReal:198, deathVirtual:255, kind:'flavor', affiliation:'군웅·후한',
     stats:{atk:82, def:67, spd:75, int:42, cha:50, lead:64}, intro:'장수 장군을 섬기는 호거아요. 힘이라면 전위에게도 지지 않소.' },
-  yupyo: { id:'yupyo', name:'유표', birth:142, deathReal:208, deathVirtual:232, kind:'flavor', affiliation:'군웅·후한',
+  yupyo: { id:'yupyo', name:'유표', birth:142, deathReal:208, deathVirtual:232, kind:'flavor', forceWarrior:true, affiliation:'군웅·후한',
     stats:{atk:44, def:42, spd:40, int:48, cha:50, lead:42}, intro:'형주목 유표라 하오. 이 땅은 그저 조용히 지키고 싶을 뿐이오.' },
   hwangjo: { id:'hwangjo', name:'황조', birth:150, deathReal:208, deathVirtual:240, kind:'flavor', affiliation:'군웅·후한',
     stats:{atk:72, def:57, spd:65, int:42, cha:50, lead:74}, intro:'강하태수 황조요.' },
@@ -1077,7 +1077,7 @@ const ROSTER = {
     stats:{atk:44, def:42, spd:40, int:32, cha:40, lead:42}, intro:'선경이라 하오.' },
   gongsonsok: { id:'gongsonsok', name:'공손속', birth:180, deathReal:199, deathVirtual:270, kind:'flavor', affiliation:'군웅·후한',
     stats:{atk:44, def:42, spd:40, int:32, cha:40, lead:42}, intro:'공손찬의 아들, 공손속이오.' },
-  jangno: { id:'jangno', name:'장로', birth:156, deathReal:216, deathVirtual:246, kind:'flavor', affiliation:'군웅·후한',
+  jangno: { id:'jangno', name:'장로', birth:156, deathReal:216, deathVirtual:246, kind:'flavor', forceWarrior:true, affiliation:'군웅·후한',
     stats:{atk:44, def:42, spd:40, int:50, cha:45, lead:64}, intro:'한중의 장로라 하오. 오두미도로 사람들을 다스리고 있소.' },
   jangwi: { id:'jangwi', name:'장위', birth:160, deathReal:220, deathVirtual:250, kind:'flavor', affiliation:'군웅·후한',
     stats:{atk:36, def:50, spd:38, int:32, cha:40, lead:74}, intro:'장로의 아우, 장위요. 양평관은 쉽게 내주지 않겠소.' },
@@ -1085,7 +1085,7 @@ const ROSTER = {
     stats:{atk:66, def:64, spd:62, int:36, cha:44, lead:64}, intro:'장로 어른을 섬기는 양임이오.' },
   yangang: { id:'yangang', name:'양앙', birth:160, deathReal:215, deathVirtual:250, kind:'flavor', affiliation:'군웅·후한',
     stats:{atk:72, def:57, spd:65, int:42, cha:50, lead:42}, intro:'장로 어른을 섬기는 양앙이오.' },
-  janggak: { id:'janggak', name:'장각', birth:150, deathReal:184, deathVirtual:240, kind:'flavor', affiliation:'군웅·후한',
+  janggak: { id:'janggak', name:'장각', birth:150, deathReal:184, deathVirtual:240, kind:'flavor', forceWarrior:true, affiliation:'군웅·후한',
     stats:{atk:44, def:42, spd:40, int:55, cha:60, lead:75}, intro:'태평도의 장각이오. 창천은 이미 죽었고, 황천이 서리라!' },
   jangbo: { id:'jangbo', name:'장보', birth:152, deathReal:184, deathVirtual:242, kind:'flavor', affiliation:'군웅·후한',
     stats:{atk:93, def:78, spd:86, int:50, cha:58, lead:64}, intro:'장각의 아우, 장보요.' },
@@ -1099,7 +1099,7 @@ const ROSTER = {
     stats:{atk:66, def:64, spd:62, int:36, cha:44, lead:44}, intro:'황건적 하의요.' },
   hwangso: { id:'hwangso', name:'황소', birth:150, deathReal:184, deathVirtual:240, kind:'flavor', affiliation:'군웅·후한',
     stats:{atk:66, def:64, spd:62, int:36, cha:44, lead:44}, intro:'황건적 황소요.' },
-  hwangbosung: { id:'hwangbosung', name:'황보숭', birth:140, deathReal:195, deathVirtual:230, kind:'flavor', affiliation:'군웅·후한',
+  hwangbosung: { id:'hwangbosung', name:'황보숭', birth:140, deathReal:195, deathVirtual:230, kind:'flavor', forceWarrior:true, affiliation:'군웅·후한',
     stats:{atk:44, def:42, spd:40, int:68, cha:55, lead:95}, intro:'황보숭이라 하오. 황건적 토벌은 이 한 몸에 맡겨주시오.' },
   juchun: { id:'juchun', name:'주준', birth:145, deathReal:195, deathVirtual:235, kind:'flavor', affiliation:'군웅·후한',
     stats:{atk:66, def:64, spd:62, int:62, cha:52, lead:95}, intro:'주준이라 하오. 황보숭 장군과 함께 나섰소.' },
@@ -1145,7 +1145,13 @@ const ROSTER = {
     stats:{atk:66, def:64, spd:62, int:36, cha:44, lead:74}, intro:'하내태수 장양이오. 여포와는 오랜 인연이 있소.' },
 };
 
-// 책사형(지력형) vs 무력형 판정 — 등용 경로가 갈리는 기준
+// 책사형(지력형) vs 무력형 판정 — 등용 경로가 갈리는 기준. 지력이 무력보다
+// 높아도 실제로는 "장수"(군세를 이끄는 쪽)로 다뤄야 하는 인물(조조·사마사·
+// 사마소·사마망·두예·왕준·위관·여범·육항·유표·장로·장각·황보숭·종회·양호·
+// 손권 — 지장/군주형이지만 개인 무력은 낮게 잡힌 경우)은 ROSTER 항목에
+// forceWarrior:true를 붙여 이 판정을 건너뛴다 - 그래야 실제 지력 수치를
+// 깎아내리지 않고도 무력형 등용 경로·부장 후보 제외 등이 정상 작동한다.
 function isScholarType(rd) {
+  if (rd && rd.forceWarrior) return false;
   return !!(rd && rd.stats && rd.stats.int > rd.stats.atk);
 }
