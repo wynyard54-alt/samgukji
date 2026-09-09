@@ -399,14 +399,6 @@ function interactNPC(id, context) {
   const rd = ROSTER[id];
   if (!rd) return;
   const st = GameState.npcStatus[id];
-  // 미축·미방·진규는 씬1에서 이미 등용되어 있을 수 있으므로, 하비 관청에서는
-  // 등용 여부와 무관하게 그냥 인사만 나눈다(진등은 별도의 모병 상호작용이
-  // 있어 아래에서 따로 처리한다). habi_camp 시점에는 도겸이 이미 죽어
-  // 넷 모두 실제로 등용된 뒤이므로 이 분기는 항상 유효하다.
-  if ((id === 'michuk' || id === 'mibang' || id === 'jingyu') && stage === 'habi_camp') {
-    Dialogue.show([{ speaker: rd.name, text: rd.intro }]);
-    return;
-  }
   // 미방은 이미 마음을 정한 상태라, 손건과 달리 친밀도를 쌓을 필요 없이
   // 서주에서 찾아가 인사만 나누면 곧바로 등용된다("찾아서 등용"). 미축·진규·
   // 진등은 도겸의 옛 신하라 도겸 생전에 곧바로 등용하면 모양새가 좋지 않으니
@@ -414,7 +406,7 @@ function interactNPC(id, context) {
   // 죽음과 함께(checkDeadlines의 dogyeom_death 처리) 한꺼번에 이뤄진다.
   if (SEOJU_INSTANT_JOIN_IDS.includes(id) && stage === 'seoju_free') {
     if (GameState.recruited.includes(id)) {
-      Dialogue.show([{ speaker: rd.name, text: rd.intro }]);
+      interactRecruitedGeneral(id);
       return;
     }
     const completesGreetQuest = SEOJU_GREET_IDS.includes(id) &&
@@ -431,7 +423,11 @@ function interactNPC(id, context) {
   // 진등은 씬1(서주 자유탐방)에서 이미 등용된 상태로 하비 관청에 들어올 수
   // 있으므로, 아래의 "이미 등용됨" 일괄 차단보다 먼저 확인해야 한다.
   if (id === 'jindeung' && stage === 'habi_camp') { handleJindeungRecruit(); return; }
-  if (st === 'recruited' && (stage === 'takhyeon_free' || stage === 'pyeongwon_free')) { interactRecruitedGeneral(id); return; }
+  // 등용된 지력형 장수의 모병 상호작용(interactRecruitedGeneral)은 챕터1
+  // 마을(탁현/평원)뿐 아니라 챕터2의 서주·하비 관청에서도 그대로 열려 있어야
+  // 한다 - 안 그러면 미축·미방·진규 같은 책사형 인물들이 등용된 뒤 그냥
+  // 인사만 나누는 장식으로만 남아버린다.
+  if (st === 'recruited' && (stage === 'takhyeon_free' || stage === 'pyeongwon_free' || stage === 'seoju_free' || stage === 'habi_camp')) { interactRecruitedGeneral(id); return; }
   if (st === 'recruited' || st === 'resolved' || st === 'dead' || st === 'fled') return;
 
   if (id === 'yubi' && stage === 'camp') {
