@@ -42,6 +42,7 @@ const StatusEffects = (function () {
     dmgDealtMult: '주는피해 배율', dmgTakenMult: '받는피해 배율', gradeBoost: '등급상승', evade: '회피', immune: '상태이상 면역',
     apMult: '행동력 배율', moveCostMult: '이동소모 배율', stratSuccessMult: '책략성공률 배율',
     moveMoraleCost: '이동시 사기감소', forceFirstStrike: '선제공격 확정', noCounter: '반격불가(1회)',
+    guaranteedCapture: '포박 확정',
   };
   const ALL_LABELS = Object.assign({}, ARMY_STATUS_LABELS, BUFF_LABELS);
   const DEBUFF_TYPES = new Set(Object.keys(ARMY_STATUS_LABELS));

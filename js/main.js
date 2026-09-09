@@ -330,7 +330,7 @@ function updateHUD() {
   document.getElementById('hud-date').textContent = gs.dateLabel();
   document.getElementById('hud-ap').textContent = `행동력 ${Math.min(gs.ap, effectiveApMax())}/${effectiveApMax()}`;
   document.getElementById('hud-gold').textContent = `금 ${gs.resources.gold}(+${scholarGoldIncome()})`;
-  document.getElementById('hud-rice').textContent = `쌀 ${gs.resources.rice}(+0)`;
+  document.getElementById('hud-rice').textContent = `쌀 ${gs.resources.rice.toLocaleString()}(+0)`;
   document.getElementById('hud-troop').textContent = `병사 ${gs.resources.troop}`;
   document.getElementById('hud-fame').textContent = `명성 ${gs.fame}`;
 
@@ -782,7 +782,28 @@ function getWarLock(id, ctx, enemyMoraleOverride) {
     enemyHit: fixedHitDamage(rd.troop || 1000, enemyArmyGrade(rd), enemyMoraleOverride != null ? enemyMoraleOverride : (rd.morale != null ? rd.morale : 100), false),
   };
   GameState.warLocks[id] = lock;
+  maybeEnemyCastsStrategy(rd, ctx); // 이 적과 처음 맞닥뜨리는 순간(교전 개시)에 한 번 확인한다
   return lock;
+}
+
+// 적 책사(advisorId)가 있고, 아직 못 쓴 "안전한" 책략을 갖고 있으면 자동으로
+// 한 번 걸어준다 - 어차피 책사 1명당 책략이 보통 1개뿐이라 복잡한 선택 판단이
+// 필요 없다("있으면 쓴다"). "안전한"이란 ROSTER[targetId].troop을 직접
+// 건드리지 않고 StatusEffects 버프/디버프만 targetId에 그대로 적용하는
+// 책략을 말한다 - 그 외(격려/견수처럼 "시전자 쪽"을 계산하거나, 병력을 직접
+// 깎는) 책략은 캐스터가 플레이어라고 가정하고 만들어져 있어 적이 쓰면 값이
+// 꼬인다. 이 목록을 넓히려면 그 책략들부터 "어느 쪽이 캐스터인지" 무관하게
+// 동작하도록 먼저 손봐야 한다.
+const ENEMY_CASTABLE_STRATEGIES = new Set(['hollan', 'dobal', 'heojangseongse', 'wibo', 'sugong']);
+function maybeEnemyCastsStrategy(rd, ctx) {
+  if (!rd.advisorId) return;
+  const advisor = ROSTER[rd.advisorId];
+  if (!advisor) return;
+  const sid = strategiesFor(rd.advisorId).find((s) => ENEMY_CASTABLE_STRATEGIES.has(s) && strategyIsUsable(s));
+  if (!sid) return;
+  const desc = STRATEGY_EFFECTS[sid](ctx.commanderId, rd.advisorId);
+  markStrategyUsed(sid);
+  toast(`${rd.name} 진영의 ${advisor.name}이(가) ${STRATEGIES[sid].name}을(를) 시전했다! ${desc}`);
 }
 
 // 이 적을 어느 편의 군세가 상대하는지 정한다 - 기본은 플레이어가 직접
@@ -958,13 +979,11 @@ function markStrategyUsed(sid) {
 }
 
 // 각 책략의 실제 효과 구현. (targetId, deputyId) -> 결과 서술 문자열(내레이션에 씀).
-// 아래 시스템이 아직 없어서 그에 의존하는 10개만 STRATEGY_EFFECTS에서
+// 아래 시스템이 아직 없어서 그에 의존하는 8개만 STRATEGY_EFFECTS에서
 // 빠져 있다 - 그 시스템들이 생기면 이어서 채운다. 나머지는 여기 없으면
 // castGenericStrategy(범용 약화 책략)로 대신 나간다.
 //  - 병종/사거리/성벽 내구도: 응변진, 철벽수성, 벽력거, 연노지휘, 야습
 //  - "적이 책략을 시전한다"는 시스템: 반계, 책략봉쇄, 간파
-//  - [전투]에 포획 판정 자체가 없음(일기토만 있음): 퇴로봉쇄
-//  - 적 진영은 군량을 추적하지 않음(플레이어 전용 자원): 군량차단
 const STRATEGY_EFFECTS = {
   // ---- S급 ----
   sinpung() {
@@ -1063,9 +1082,16 @@ const STRATEGY_EFFECTS = {
 
   // ---- B급 ----
   // (응변진/철벽수성/벽력거는 병종·사거리·성벽 내구도 시스템이 아직 없어
-  // 제외했고, 퇴로봉쇄는 [전투]에 포획 판정 자체가 없어서, 반계/책략봉쇄/
-  // 간파는 "적이 책략을 시전한다"는 시스템 자체가 없어서 아직 보류한다 -
-  // 이 넷은 STRATEGY_EFFECTS에 없어 castable 목록에서 자동으로 빠진다.)
+  // 제외했고, 반계/책략봉쇄/간파는 "적이 책략을 시전한다"는 시스템 자체가
+  // 없어서 아직 보류한다 - 이 셋은 STRATEGY_EFFECTS에 없어 castable
+  // 목록에서 자동으로 빠진다.)
+  // 퇴로봉쇄: [전투]는 원래 포획 판정 자체가 없었다(일기토의 압도적 승리
+  // 판정만 있었음) - guaranteedCapture 버프를 걸어두면 resolveArmyBattle의
+  // 적 격파 분기에서 그 판정을 대신하도록 새로 연결했다.
+  toerobongswae(targetId) {
+    StatusEffects.applyArmyStatus(targetId, 'guaranteedCapture', { turns: 2 });
+    return `${ROSTER[targetId].name}의 퇴로를 끊었다. 2턴 안에 무너뜨리면 반드시 포박할 수 있을 것이다.`;
+  },
   heosiljeonhwan(targetId) {
     const BUFF_TYPES = ['dmgDealtMult', 'dmgTakenMult', 'gradeBoost', 'evade', 'immune', 'apMult', 'moveCostMult', 'stratSuccessMult', 'moveMoraleCost'];
     const casterId = casterCommanderFor(targetId);
@@ -1111,6 +1137,12 @@ const STRATEGY_EFFECTS = {
   gullyangbogeup() {
     [GameState.army, GameState.allyArmy].filter(Boolean).forEach((a) => { a.rice = Math.round(a.rice * 1.5); });
     return '아군 군세의 군량이 크게 늘었다.';
+  },
+  gullyangchadan(targetId) {
+    const r = ROSTER[targetId];
+    ensureEnemyRice(r);
+    r.rice = Math.max(0, Math.round(r.rice * 0.7));
+    return `${r.name}의 군량 보급로를 끊어 군량이 크게 줄었다.`;
   },
   uibyeongmojip() {
     [GameState.army, GameState.allyArmy].filter(Boolean).forEach((a) => {
@@ -1379,6 +1411,9 @@ function resolveArmyBattle(id) {
   updateHUD();
   MapView.render();
 
+  // 퇴로봉쇄로 "2턴 내 격파시 반드시 포박"이 걸려 있었는지는 아래
+  // clearArmyStatus가 지우기 전에 미리 기억해둔다.
+  const wasGuaranteedCapture = enemyDown && StatusEffects.hasStatus(id, 'guaranteedCapture');
   Dialogue.show(lines, () => {
     if (!enemyDown && !playerDown) {
       toast('한 차례 접전이 끝났다. 계속하려면 다시 [전투]를 사용하자.');
@@ -1391,7 +1426,9 @@ function resolveArmyBattle(id) {
       resolveJangsunBattle({ winner: enemyDown ? 'player' : 'enemy', playerTroopsLeft: army.troop });
       return;
     }
-    if (enemyDown) {
+    if (enemyDown && wasGuaranteedCapture) {
+      captureCommander(id, () => { if (stage === 'warmap') checkWarmapClear(); });
+    } else if (enemyDown) {
       Dialogue.show([{ speaker: '내레이션', text: `${rd.name}의 군세가 완전히 무너졌다! (아군 병력 ${army.troop}명 남음)` }], () => {
         GameState.npcStatus[id] = 'resolved';
         MapView.removeNpc(id);
@@ -2183,7 +2220,7 @@ function goEnding() {
     `플레이 장수: ${ROSTER[GameState.mainHero].name}<br>` +
     `최종 날짜: ${GameState.dateLabel()}<br>` +
     `등용한 장수 (${GameState.recruited.length}명): ${list}<br>` +
-    `자원 — 쌀 ${GameState.resources.rice} · 금 ${GameState.resources.gold} · 병사 ${GameState.resources.troop}`;
+    `자원 — 쌀 ${GameState.resources.rice.toLocaleString()} · 금 ${GameState.resources.gold} · 병사 ${GameState.resources.troop}`;
 }
 
 // 일기토 승리(패배가 아닌 모든 종료)시 명성 +10 — 등용/메인퀘스트 명성과 별개로 항상 적용
@@ -2431,6 +2468,20 @@ const ARMY_MAX_GENERALS = 3;
 
 function armyMaxTroop(commanderRd) { return (commanderRd.stats.lead || 0) * ARMY_TROOP_PER_LEAD; }
 
+// 병사 100명이 한 달에 쌀 200석을 먹는다(1인당 월 2석) - 15000명 군세면 한
+// 달에 30000석, 10달이면 300000석을 소비한다. 아군·적 군세 모두 같은
+// 기준으로 계산한다.
+const RICE_PER_TROOP_PER_MONTH = 2;
+function monthlyRiceUpkeep(troop) { return Math.ceil(troop * RICE_PER_TROOP_PER_MONTH); }
+const ENEMY_RICE_MONTHS_BUFFER = 10; // 적 군세가 처음 등장할 때 자동으로 챙겨오는 군량(개월 수 기준)
+// 적 군세는 로스터 데이터에 미리 rice 값을 넣어두지 않는다 - 이걸 처음
+// 필요로 하는 순간(다음달 소모 계산이든, 군량차단 책략이든)에 자기 병력
+// 기준 10달치를 스스로 챙겨온 것으로 본다.
+function ensureEnemyRice(rd) {
+  if (rd.rice == null) rd.rice = monthlyRiceUpkeep(rd.troop) * ENEMY_RICE_MONTHS_BUFFER;
+  return rd.rice;
+}
+
 let armySelectedGenerals = [];
 let armySteppers = {};
 // 지금 편성 중인 군세가 누구 것인지(관우군/유비군)와, 이미 다른 군세에
@@ -2580,13 +2631,14 @@ function openArmyBox(onConfirm, opts) {
   const maxTroopByLead = armyMaxTroop(commanderRd);
   const troopMax = Math.min(maxTroopByLead, GameState.resources.troop);
   document.getElementById('army-troop-max').textContent = troopMax;
-  document.getElementById('army-rice-max').textContent = GameState.resources.rice;
+  document.getElementById('army-rice-max').textContent = GameState.resources.rice.toLocaleString();
   armySteppers = {
     'army-troop': makeArmyStepper('army-troop-value', 0, () => Math.min(maxTroopByLead, GameState.resources.troop), 100),
-    'army-rice': makeArmyStepper('army-rice-value', 0, () => GameState.resources.rice, 50),
+    'army-rice': makeArmyStepper('army-rice-value', 0, () => GameState.resources.rice, 1000),
   };
   armySteppers['army-troop'].set(troopMax);
-  armySteppers['army-rice'].set(Math.min(200, GameState.resources.rice));
+  // 기본값은 지금 고른 병력 기준 5달치 군량(1인당 월 2석) - 보유량이 부족하면 그만큼만.
+  armySteppers['army-rice'].set(Math.min(monthlyRiceUpkeep(troopMax) * 5, GameState.resources.rice));
   wireArmyStepperButtons();
   document.getElementById('army-hint').textContent = '';
   updateArmyPower();
@@ -3063,17 +3115,18 @@ function triggerBanditEvent() {
 
 function triggerMerchantEvent() {
   const rice = Math.random() < 0.5;
-  const amount = 20 + Math.floor(Math.random() * 41); // 20~60
+  const goldAmount = 20 + Math.floor(Math.random() * 41); // 20~60
+  const riceAmount = 200 + Math.floor(Math.random() * 201); // 200~400
   Dialogue.show([{ speaker: '떠돌이 상인', text: '마침 지나던 길이오. 필요한 물자가 있으면 나눠드리리다.' }], () => {
-    GameState.addResource(rice ? { rice: amount } : { gold: amount });
-    toast(`떠돌이 상인에게서 ${rice ? `쌀 ${amount}` : `금 ${amount}`}을(를) 얻었다.`);
+    GameState.addResource(rice ? { rice: riceAmount } : { gold: goldAmount });
+    toast(`떠돌이 상인에게서 ${rice ? `쌀 ${riceAmount}` : `금 ${goldAmount}`}을(를) 얻었다.`);
     updateHUD();
   });
 }
 
 function triggerHarvestEvent() {
   const good = Math.random() < 0.5;
-  const amount = 15 + Math.floor(Math.random() * 26); // 15~40
+  const amount = 200 + Math.floor(Math.random() * 201); // 200~400
   if (good) {
     GameState.addResource({ rice: amount });
     Dialogue.show([{ speaker: '내레이션', text: `이번 달은 날씨가 좋아 인근 농가에서 곡식을 나눠주었다. (쌀 +${amount})` }], () => updateHUD());
@@ -3245,8 +3298,8 @@ const AMBIENT_EVENTS = {
   thanks: {
     run: () => {
       Dialogue.show([{ speaker: '낯익은 백성', text: '나리, 항상 감사합니다. 이것 좀 받으십시오.' }], () => {
-        GameState.addResource({ rice: 20 });
-        toast('백성에게서 쌀 20을 받았다.');
+        GameState.addResource({ rice: 300 });
+        toast('백성에게서 쌀 300을 받았다.');
         updateHUD();
       });
     },
@@ -3287,7 +3340,7 @@ const AMBIENT_EVENTS = {
   },
   lostitem: {
     run: () => {
-      const rice = 10 + Math.floor(Math.random() * 16); // 10~25
+      const rice = 200 + Math.floor(Math.random() * 201); // 200~400
       Dialogue.show([{ speaker: '허둥대는 짐꾼', text: '아이고, 제가 방금 봇짐을 흘렸었나 봅니다... 아, 여기 있었군요! 감사합니다, 나리 덕에 찾았습니다.' }], () => {
         GameState.flags.helpedVillagerOnce = true;
         GameState.addResource({ rice });
@@ -3328,9 +3381,18 @@ document.getElementById('btn-nextmonth').onclick = () => {
     GameState.ap = Math.max(0, Math.floor(effectiveApMax() * apScale));
   }
   if (inCampaign && GameState.army) {
-    GameState.army.rice = Math.max(0, GameState.army.rice - Math.ceil(GameState.army.troop / 100));
+    GameState.army.rice = Math.max(0, GameState.army.rice - monthlyRiceUpkeep(GameState.army.troop));
     if (GameState.army.rice <= 0) GameState.changeMorale(-1); // 군량 고갈시 매턴 사기 하락
   }
+  // 적 군세도 아군과 같은 기준(1인당 월 2석)으로 군량을 소모한다 - 로스터
+  // 데이터에 미리 값을 넣어두는 대신, 이 전장에서 처음 맞닥뜨리는 순간
+  // 자기 병력 기준 10달치를 스스로 챙겨온 것으로 본다.
+  if (inCampaign) enemiesInScene().forEach((eid) => {
+    const rd = ROSTER[eid];
+    ensureEnemyRice(rd);
+    rd.rice = Math.max(0, rd.rice - monthlyRiceUpkeep(rd.troop));
+    if (rd.rice <= 0) StatusEffects.drainMorale(eid, 1); // 아군과 동일하게 고갈시 매턴 사기 하락
+  });
   // 책략 상태이상(혼란/공포/도발)의 "턴"은 이 1달 휴식 하나를 가리킨다 -
   // 공포의 사기 드레인도 여기서 함께 처리된다. 화염 타일은 지금 지도가
   // 전쟁맵일 때만(그 타일 위 군세가 실제로 존재할 때만) 의미가 있다.

@@ -4,7 +4,7 @@ const GameState = {
   month: 3,
   ap: 6,
   apMax: 6,
-  resources: { rice: 200, gold: 120, troop: 80 },
+  resources: { rice: 100000, gold: 120, troop: 80 },
   fame: 0, // 명성 (100당 최대 행동력 +1, 최대 1000)
   morale: 100, // 군세 사기 (기본 100, 일기토 승패 ±10, 군량 고갈시 매턴 -1, 0 이하면 붕괴)
   capturedCommanders: [], // 일기토 압도적 승리로 포획한 적 사령관 id 목록 (전쟁 종료 후 등용 제안)
@@ -33,7 +33,7 @@ const GameState = {
     this.mainHero = hero;
     this.year = 184; this.month = 3;
     this.ap = 6; this.apMax = 6;
-    this.resources = { rice: 200, gold: 120, troop: 80 };
+    this.resources = { rice: 100000, gold: 120, troop: 80 };
     this.fame = 0;
     this.morale = 100;
     this.capturedCommanders = [];
