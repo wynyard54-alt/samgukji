@@ -470,11 +470,11 @@ const SEOJU_AREA_LABELS = [
 })();
 
 // ---------------- 챕터2 (관우) : 하비성 관청 [장면2] ----------------
-// 실사용 하비 관청 실내 그림을 반영한다 - 가운데 대청(유비 집무실)을
-// 두 개의 굵은 기둥이 좌우 방(진규·진등의 방 / 미축·미방의 방)과 나누는
-// 구조라, 기둥은 막고 그 사이 복도(y=11~12, 최소 2칸)로만 세 공간이
-// 이어지게 했다. 남쪽 대문은 문 위 상인방(y=13)만 막고 문짝 사이
-// (x=11~17)는 그대로 열어 마당(y=14~19)과 연결한다.
+// 실사용 하비 관청 실내 그림을 반영한다 - 가운데 대청(유비 집무실, 유비·장비와
+// 함께 미축도 이 방에 있다)을 두 개의 굵은 기둥이 좌우 방(진규·진등의 방 /
+// 미방·조표의 방)과 나누는 구조라, 기둥은 막고 그 사이 복도(y=11~12, 최소
+// 2칸)로만 세 공간이 이어지게 했다. 남쪽 대문은 문 위 상인방(y=13)만 막고
+// 문짝 사이(x=11~17)는 그대로 열어 마당(y=14~19)과 연결한다.
 (function () {
   const w = 30, h = 20;
   const grid = makeGrid(w, h, 0);
@@ -499,15 +499,16 @@ const SEOJU_AREA_LABELS = [
     decor: [
       { type:'mapLabel', x:14.5, y:0.5, label:'유비 집무실' },
       { type:'mapLabel', x:4.5, y:0.5, label:'진규·진등의 방' },
-      { type:'mapLabel', x:24.5, y:0.5, label:'미축·미방의 방' },
+      { type:'mapLabel', x:24.5, y:0.5, label:'미방·조표의 방' },
     ],
     npcs: [
       { id:'yubi', x:15, y:7, label:'유비', fixed:true },
       { id:'jangbi', x:13, y:7, label:'장비', fixed:true },
+      { id:'michuk', x:17, y:7, label:'미축', fixed:true },
       { id:'jingyu', x:6, y:7, label:'진규', fixed:true },
       { id:'jindeung', x:4, y:7, label:'진등', fixed:true },
-      { id:'michuk', x:24, y:5, label:'미축', fixed:true },
       { id:'mibang', x:26, y:5, label:'미방', fixed:true },
+      { id:'jopyo', x:24, y:5, label:'조표', fixed:true },
     ],
   };
 })();
