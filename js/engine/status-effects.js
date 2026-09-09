@@ -1,28 +1,23 @@
-// 책략(전략) 상태이상 밑작업.
+// 책략(전략) 상태이상 - 혼란/공포/도발/화염/연환계.
 // 지금은 어떤 책략도 이 효과들을 실제로 걸지 않는다 - attemptStrategy 등에서
 // 나중에 이름 붙은 책략을 배정할 때 아래 함수(applyArmyStatus/igniteTile/
-// linkChain)를 호출하기만 하면, 이미 [전투] 교전 산식(main.js의
-// resolveArmyBattle)에 연결돼 있어 자동으로 반영된다.
+// linkChain)를 호출하기만 하면, 이미 전투 산식(main.js의 resolveArmyBattle/
+// attemptStrategy/attemptDuelChallenge, mapview.js의 runAiTurn/tryMove)에
+// 연결돼 있어 자동으로 반영된다.
 //
-// - 혼란/공포/도발: 군세 단위 디버프. GameState.armyStatus[id]에 쌓인다.
-// - 화염: 타일 단위 상태. GameState.tileEffects["mapId#x#y"]에 쌓이고,
-//   그 타일에 서 있는 군세가 교전마다 고정 피해를 입는다. 지도에는 불꽃
-//   이미지(있으면)나 절차적 불꽃(없으면)이 깔린다.
-// - 연환계: 여러 군세를 사슬로 묶어, 그중 하나가 입는 피해의 일부를
-//   나머지도 함께 입게 한다.
+// 세 군세 디버프의 실제 효과:
+// - 혼란: 이동 불가 / 이 군세를 노리는 책략은 100% 성공 / [전투]에서 반격 불가
+// - 공포: 걸려 있는 동안 매 교전(틱)마다 사기 -10
+// - 도발: 도발을 건 군세를 쫓아오게 됨 / 도발 상태인 상대에게 거는 일기토는 100% 발동
 const StatusEffects = (function () {
-  const ARMY_STATUS_DEFS = {
-    confuse: { label: '혼란', outMult: 0.7 },  // 공격이 흐트러져 위력 -30%
-    fear:    { label: '공포', forcedSecond: true }, // 겁을 먹어 이번 교전 선타를 놓친다
-    taunt:   { label: '도발', inMult: 1.2 },   // 도발에 넘어가 받는 피해 +20%
-  };
+  const ARMY_STATUS_LABELS = { confuse: '혼란', fear: '공포', taunt: '도발' };
 
   function list(id) {
     return GameState.armyStatus[id] || (GameState.armyStatus[id] = []);
   }
 
   function applyArmyStatus(id, type, opts) {
-    if (!ARMY_STATUS_DEFS[type]) return;
+    if (!ARMY_STATUS_LABELS[type]) return;
     const turns = (opts && opts.turns) || 3;
     const sourceId = opts && opts.sourceId;
     const arr = list(id);
@@ -39,26 +34,40 @@ const StatusEffects = (function () {
 
   function activeStatuses(id) { return GameState.armyStatus[id] || []; }
   function hasStatus(id, type) { return activeStatuses(id).some((s) => s.type === type); }
+  function statusEntry(id, type) { return activeStatuses(id).find((s) => s.type === type); }
 
-  // [전투] 교전 1회가 끝날 때마다 호출한다 - 지속시간을 깎고 만료된 효과를
-  // 정리하며, 이번 교전에 걸려 있던 효과 라벨 목록을 돌려준다(연출용).
+  function isConfused(id) { return hasStatus(id, 'confuse'); }
+  function isTaunted(id) { return hasStatus(id, 'taunt'); }
+  // 도발을 건 쪽의 id - 도발당한 군세가 지도에서 누구를 쫓아야 하는지에 쓰인다.
+  function tauntSourceId(id) {
+    const s = statusEntry(id, 'taunt');
+    return s ? s.sourceId : null;
+  }
+
+  // id가 플레이어가 직접 지휘하는 군세(본대 관우군이든, 따로 편성한 유비군이든)인지 -
+  // 두 경우 모두 같은 GameState.morale 하나를 공유해서 쓴다(getWarLock 참고).
+  function isPlayerCommander(id) {
+    return !!((GameState.army && GameState.army.commanderId === id) ||
+      (GameState.allyArmy && GameState.allyArmy.commanderId === id));
+  }
+  function drainMorale(id, amount) {
+    if (isPlayerCommander(id)) GameState.changeMorale(-amount);
+    else if (ROSTER[id]) ROSTER[id].morale = Math.max(0, (ROSTER[id].morale != null ? ROSTER[id].morale : 100) - amount);
+  }
+
+  // [전투] 교전 1회가 끝날 때마다 호출한다 - 공포는 틱마다 사기를 10 깎고,
+  // 모든 효과는 지속시간을 1씩 줄여 만료되면 제거한다. 이번 교전에 걸려
+  // 있던 효과 라벨 목록을 돌려준다(연출용).
   function tickArmyStatus(id) {
     const arr = GameState.armyStatus[id];
     if (!arr || !arr.length) return [];
-    const activeLabels = arr.map((s) => ARMY_STATUS_DEFS[s.type].label);
-    for (const s of arr) s.turnsLeft--;
+    const activeLabels = arr.map((s) => ARMY_STATUS_LABELS[s.type]);
+    for (const s of arr) {
+      if (s.type === 'fear') drainMorale(id, 10);
+      s.turnsLeft--;
+    }
     GameState.armyStatus[id] = arr.filter((s) => s.turnsLeft > 0);
     return activeLabels;
-  }
-
-  function outgoingMult(id) {
-    return activeStatuses(id).reduce((m, s) => m * (ARMY_STATUS_DEFS[s.type].outMult || 1), 1);
-  }
-  function incomingMult(id) {
-    return activeStatuses(id).reduce((m, s) => m * (ARMY_STATUS_DEFS[s.type].inMult || 1), 1);
-  }
-  function forcedSecond(id) {
-    return activeStatuses(id).some((s) => ARMY_STATUS_DEFS[s.type].forcedSecond);
   }
 
   // ---- 화염 타일 ----
@@ -120,9 +129,9 @@ const StatusEffects = (function () {
 
   return {
     applyArmyStatus, clearArmyStatus, activeStatuses, hasStatus, tickArmyStatus,
-    outgoingMult, incomingMult, forcedSecond,
+    isConfused, isTaunted, tauntSourceId,
     igniteTile, extinguishTile, fireTilesForMap, tickFireTiles,
     linkChain, unlinkChain, chainedWith, propagateDamage,
-    LABELS: Object.keys(ARMY_STATUS_DEFS).reduce((o, k) => { o[k] = ARMY_STATUS_DEFS[k].label; return o; }, {}),
+    LABELS: ARMY_STATUS_LABELS,
   };
 })();

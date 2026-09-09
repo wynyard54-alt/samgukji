@@ -823,8 +823,13 @@ function openWarCommandMenu(id) {
 // 화염/혼란/공포/도발/연환계 같은 이름 붙은 책략을 나중에 추가할 때는 여기서
 // StatusEffects.applyArmyStatus(id,'confuse'|'fear'|'taunt',{turns})나
 // StatusEffects.igniteTile(mapId,x,y,{dps,ticks}), StatusEffects.linkChain([ids])를
-// 호출하기만 하면 된다 - resolveArmyBattle이 이미 그 효과들을 반영하도록
-// 연결돼 있다 (js/engine/status-effects.js).
+// 호출하기만 하면 된다 - 이미 다음 효과들이 전투 산식에 연결돼 있다
+// (js/engine/status-effects.js):
+//  - 혼란: 이동 불가(mapview.js tryMove/runAiTurn) / 이 군세를 노리는 책략은
+//    100% 성공(attemptStrategy) / [전투]에서 반격 불가(resolveArmyBattle)
+//  - 공포: 걸려 있는 동안 [전투] 교전(틱)마다 사기 -10
+//  - 도발: 도발을 건 군세를 쫓아옴(원래 AI가 항상 플레이어를 쫓으므로 지금은
+//    자동으로 충족됨) / 도발당한 상대에게 거는 일기토는 100% 발동(attemptDuelChallenge)
 function strategySuccessChance(deputyGrade, enemyGrade) {
   const diff = GRADE_RANK[enemyGrade] - GRADE_RANK[deputyGrade]; // 양수면 내 책사가 우위
   return Math.max(10, Math.min(90, 50 + 10 * diff));
@@ -841,7 +846,8 @@ function attemptStrategy(id) {
     return;
   }
   const grade = gradeFor(deputy.stats.int, JIRYEOK_GRADES);
-  const chance = strategySuccessChance(grade, enemyJiryeokGrade(rd));
+  // 혼란에 빠진 적에게는 어떤 책략을 걸든 반드시 통한다.
+  const chance = StatusEffects.isConfused(id) ? 100 : strategySuccessChance(grade, enemyJiryeokGrade(rd));
   const roll = Math.random() * 100;
   if (roll < chance) {
     Dialogue.show([{ speaker: deputy.name, text: '계책이 통했습니다! 적진이 크게 흔들리고 있습니다.' }], () => {
@@ -871,7 +877,8 @@ function attemptDuelChallenge(id) {
   const ctx = resolveWarArmy(rd);
   const challengerGrade = ctx ? warArmyGrade(ctx) : 'D';
   const defenderGrade = enemyArmyGrade(rd);
-  const chance = duelAcceptChance(challengerGrade, defenderGrade);
+  // 도발에 걸린 상대에게 거는 일기토는 반드시 성사된다.
+  const chance = StatusEffects.isTaunted(id) ? 100 : duelAcceptChance(challengerGrade, defenderGrade);
   const roll = Math.random() * 100;
   if (roll < chance) {
     startFreeBattle(id, () => { if (stage === 'warmap') checkWarmapClear(); }, true);
@@ -923,10 +930,7 @@ function resolveArmyBattle(id) {
   const playerKey = ctx.commanderId;
 
   const lock = getWarLock(id, ctx);
-  // 공포(fear) 디버프에 걸린 쪽은 실제 속도와 무관하게 이번 교전 선타를 놓친다.
-  let playerFirst = warArmySpeed(ctx) >= rd.stats.spd;
-  if (StatusEffects.forcedSecond(playerKey) && !StatusEffects.forcedSecond(id)) playerFirst = false;
-  else if (StatusEffects.forcedSecond(id) && !StatusEffects.forcedSecond(playerKey)) playerFirst = true;
+  const playerFirst = warArmySpeed(ctx) >= rd.stats.spd;
   const lines = [{
     speaker: '내레이션',
     text: playerFirst ? `${commanderName}군이 더 빨라 선제공격!` : `${rd.name}의 군세가 더 빨라 선제공격!`,
@@ -943,7 +947,7 @@ function resolveArmyBattle(id) {
   }
 
   function playerStrikes() {
-    const dmg = Math.max(1, Math.round(lock.playerHit * StatusEffects.outgoingMult(playerKey) * StatusEffects.incomingMult(id)));
+    const dmg = lock.playerHit;
     rd.troop = Math.max(0, rd.troop - dmg);
     MapView.showDamageFloat(id, dmg);
     if (showOnMap) MapView.showAttackBump(GameState.mainHero);
@@ -952,7 +956,7 @@ function resolveArmyBattle(id) {
     if (rd.troop <= 0) enemyDown = true;
   }
   function enemyStrikes() {
-    const dmg = Math.max(1, Math.round(lock.enemyHit * StatusEffects.outgoingMult(id) * StatusEffects.incomingMult(playerKey)));
+    const dmg = lock.enemyHit;
     army.troop = Math.max(0, army.troop - dmg);
     if (showOnMap) MapView.showDamageFloat(GameState.mainHero, dmg);
     MapView.showAttackBump(id);
@@ -960,8 +964,20 @@ function resolveArmyBattle(id) {
     if (army.troop <= 0) playerDown = true;
   }
 
-  if (playerFirst) { playerStrikes(); if (!enemyDown) enemyStrikes(); }
-  else { enemyStrikes(); if (!playerDown) playerStrikes(); }
+  // 혼란에 걸린 쪽은 선타를 맞고도 반격하지 못한다.
+  if (playerFirst) {
+    playerStrikes();
+    if (!enemyDown) {
+      if (StatusEffects.isConfused(id)) lines.push({ speaker: '내레이션', text: `${rd.name}의 군세는 혼란에 빠져 반격하지 못했다!` });
+      else enemyStrikes();
+    }
+  } else {
+    enemyStrikes();
+    if (!playerDown) {
+      if (StatusEffects.isConfused(playerKey)) lines.push({ speaker: '내레이션', text: `${commanderName}군은 혼란에 빠져 반격하지 못했다!` });
+      else playerStrikes();
+    }
+  }
 
   StatusEffects.tickArmyStatus(playerKey);
   StatusEffects.tickArmyStatus(id);

@@ -713,6 +713,8 @@ const MapView = (function () {
 
   function tryMove(dx, dy) {
     if (!map || movementLocked) return;
+    // 혼란에 빠진 군세는(현재는 본대를 직접 조종하는 플레이어만 해당) 이동할 수 없다.
+    if (GameState.army && StatusEffects.isConfused(GameState.army.commanderId)) { render(); return; }
     const nx=player.x+dx, ny=player.y+dy;
     player.dir = dx<0?'left':dx>0?'right':dy<0?'up':'down';
     if (!isWalkable(nx,ny)) { render(); return; }
@@ -863,6 +865,11 @@ const MapView = (function () {
   const AI_STEP_MS = 160; // 한 칸 이동하는 데 걸리는 시간 - 순간이동처럼 보이지 않도록 한 칸씩 애니메이션한다
 
   // n0을 이번 턴에 플레이어 쪽으로 이동시킬 경로(칸 목록)를 미리 계산한다. n0 자체는 아직 움직이지 않는다.
+  // 도발(StatusEffects.isTaunted)에 걸린 군세도 "도발을 건 군세를 쫓아온다"는
+  // 별도 분기가 필요 없다 - 책략은 항상 플레이어가 직접 걸고, 적 AI는 원래도
+  // 항상 플레이어를 쫓아오기 때문에 이미 같은 동작이다. 나중에 플레이어 외의
+  // 대상(동맹군 등)이 도발을 걸 수 있게 되면 여기서 StatusEffects.tauntSourceId로
+  // 목적지를 바꿔주면 된다.
   function computeAiPath(n0) {
     const path = [];
     let cx = n0.x, cy = n0.y, steps = AI_MOVE_BUDGET;
@@ -901,7 +908,8 @@ const MapView = (function () {
     // 다시 시작 위치로 되돌려 전원이 동시에 애니메이션되도록 한다.
     const plans = hostiles.map((n0) => ({ n0, startX: n0.x, startY: n0.y, path: [] }));
     for (const plan of plans) {
-      plan.path = computeAiPath(plan.n0);
+      // 혼란에 빠진 군세는 제자리에서 움직이지 못한다(이미 인접해 있었다면 공격은 그대로 발동).
+      plan.path = StatusEffects.isConfused(plan.n0.id) ? [] : computeAiPath(plan.n0);
       if (plan.path.length) { const last = plan.path[plan.path.length - 1]; plan.n0.x = last.x; plan.n0.y = last.y; }
     }
     for (const plan of plans) { plan.n0.x = plan.startX; plan.n0.y = plan.startY; }
