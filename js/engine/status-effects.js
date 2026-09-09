@@ -224,7 +224,7 @@ const StatusEffects = (function () {
     applyArmyStatus, clearArmyStatus, activeStatuses, hasStatus, tickArmyStatus, tickAllArmyStatus,
     isConfused, isTaunted, tauntSourceId,
     dmgDealtMult, dmgTakenMult, gradeBoostAmount, hasImmunity, evadeChance, rollEvade,
-    apMult, moveCostMult, stratSuccessMult, moveMoraleCost, drainMorale,
+    apMult, moveCostMult, stratSuccessMult, moveMoraleCost, drainMorale, isPlayerCommander,
     canUseThisScene, markUsedThisScene, resetSceneUsage, canUseThisMonth, markUsedThisMonth,
     igniteTile, extinguishTile, fireTilesForMap, tickFireTiles,
     linkChain, unlinkChain, chainedWith, propagateDamage,

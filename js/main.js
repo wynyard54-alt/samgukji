@@ -786,21 +786,18 @@ function getWarLock(id, ctx, enemyMoraleOverride) {
   return lock;
 }
 
-// 적 책사(deputy)가 있고, 아직 못 쓴 "안전한" 책략을 갖고 있으면 자동으로
-// 한 번 걸어준다 - 어차피 책사 1명당 책략이 보통 1개뿐이라 복잡한 선택 판단이
-// 필요 없다("있으면 쓴다"). "안전한"이란 ROSTER[targetId].troop을 직접
-// 건드리지 않고 StatusEffects 버프/디버프만 적용하는 책략을 말한다 - "시전자
-// 쪽"에 적용되는 효과(격려/견수/기습/허실전환)는 STRATEGY_EFFECTS 호출부가
-// casterCommanderId를 직접 넘겨줘서 어느 쪽이 캐스터든 동일하게 동작하도록
-// 이미 고쳐뒀다. 아직 안 되는 건 "인스턴트 값(GameState.morale/GameState.ap
-// 처럼 플레이어 전용 전역값)을 직접 건드리는" 책략(고무/의병모집/질주 등,
-// 아군 전체용 S~D급 다수)과, 병종/사거리 등 다른 시스템이 필요한 것들이다.
-const ENEMY_CASTABLE_STRATEGIES = new Set(['hollan', 'dobal', 'heojangseongse', 'wibo', 'sugong', 'giseup', 'gyeongryeo', 'gyeonsu', 'heosiljeonhwan']);
+// 적 책사(deputy)가 있고, 아직 못 쓴 책략을 갖고 있으면 자동으로 한 번
+// 걸어준다 - 어차피 책사 1명당 책략이 보통 1개뿐이라 복잡한 선택 판단이
+// 필요 없다("있으면 쓴다"). STRATEGY_EFFECTS의 모든 효과는 alliesOf/
+// enemiesOf/armyFor/moraleOf로 "캐스터가 어느 쪽인지"를 실제로 구분해서
+// 동작하므로(main.js 상단 "군세 통합" 섹션 참고), 구현된 책략이면 전부
+// 적도 그대로 쓸 수 있다 - STRATEGY_EFFECTS에 없는 것(병종/사거리/성벽,
+// 적 책략시전이 필요한 반계·책략봉쇄·간파)만 자동으로 제외된다.
 function maybeEnemyCastsStrategy(rd, ctx) {
   if (!rd.deputy) return;
   const advisor = ROSTER[rd.deputy];
   if (!advisor) return;
-  const sid = strategiesFor(rd.deputy).find((s) => ENEMY_CASTABLE_STRATEGIES.has(s) && strategyIsUsable(s));
+  const sid = strategiesFor(rd.deputy).find((s) => STRATEGY_EFFECTS[s] && strategyIsUsable(s));
   if (!sid) return;
   const desc = STRATEGY_EFFECTS[sid](ctx.commanderId, rd.deputy, rd.id);
   markStrategyUsed(sid);
@@ -899,28 +896,96 @@ function castGenericStrategy(id, ctx, deputy) {
   }
 }
 
+// ---- 군세(army) 통합 ----
+// "군세"는 { commanderId, deputy, generals, troop, rice } 하나의 모양으로
+// 통일한다. 플레이어 군세는 원래대로 GameState.army/allyArmy 객체를 그대로
+// 쓰고(기존 코드가 다 이 객체를 직접 참조하므로 손대지 않는다), 적은 처음
+// 필요해지는 순간(전투 개시) rd.army에 "편성"해서 붙여준다 - troop/rice/
+// deputy/generals는 getter/setter로 rd.troop/rd.rice/rd.deputy/rd.generals를
+// 그대로 가리키는 프록시라, 지도 표시·데미지 계산 등 rd.troop을 직접 읽는
+// 기존 코드는 전혀 손대지 않아도 항상 같은 값을 본다. 이 덕분에 책략
+// 효과들이 "상대가 플레이어냐 적이냐"를 가리지 않고 armyFor(id) 하나로
+// 병력/군량/부장을 다룰 수 있다.
+function playerArmies() { return [GameState.army, GameState.allyArmy].filter(Boolean); }
+function composeEnemyArmy(rd) {
+  ensureEnemyRice(rd);
+  return {
+    commanderId: rd.id,
+    get deputy() { return rd.deputy || null; },
+    set deputy(v) { rd.deputy = v; },
+    get generals() { return rd.generals || []; },
+    set generals(v) { rd.generals = v; },
+    get troop() { return rd.troop; },
+    set troop(v) { rd.troop = v; },
+    get rice() { return rd.rice; },
+    set rice(v) { rd.rice = v; },
+  };
+}
+function armyFor(commanderId) {
+  const found = playerArmies().find((a) => a.commanderId === commanderId);
+  if (found) return found;
+  const rd = ROSTER[commanderId];
+  if (!rd) return null;
+  if (!rd.army) rd.army = composeEnemyArmy(rd);
+  return rd.army;
+}
+function isPlayerSide(commanderId) { return StatusEffects.isPlayerCommander(commanderId); }
+// 사기(morale) 조회 - 플레이어 쪽은 GameState.morale 하나를 관우군/유비군이
+// 같이 쓰고, 적은 각자 rd.morale을 따로 갖는다.
+function moraleOf(id) {
+  return isPlayerSide(id) ? (GameState.morale != null ? GameState.morale : 100) : (ROSTER[id].morale != null ? ROSTER[id].morale : 100);
+}
+// 사기는 "군세 하나하나"가 아니라 "진영 하나"가 공유하는 값이다(플레이어
+// 쪽 여러 군세는 GameState.morale 하나를 같이 쓴다) - 그래서 여러 id에
+// 그대로 반복 적용하면 플레이어 쪽에서 중복 적용되는 버그가 생긴다.
+// amount는 changeMorale과 같은 부호(양수=상승)로 받는다.
+function boostSideMorale(ids, amount) {
+  if (ids.some(isPlayerSide)) GameState.changeMorale(amount);
+  ids.filter((id) => !isPlayerSide(id)).forEach((id) => StatusEffects.drainMorale(id, -amount));
+}
+// 사기 "조회/조건 판정"이 필요한 반복(적 전체 중 사기 50 이하만 혼란 등)에서도
+// 같은 진영을 여러 번 세지 않도록, 플레이어 쪽이 섞여 있으면 대표 1개만 남긴다.
+function dedupeByMoralePool(ids) {
+  let sawPlayerSide = false;
+  const out = [];
+  for (const id of ids) {
+    if (isPlayerSide(id)) { if (sawPlayerSide) continue; sawPlayerSide = true; }
+    out.push(id);
+  }
+  return out;
+}
+
 // ---- 이름 붙은 책략(S~D급) ----
 // "적 전체/아군 전체"는 지금 전장(현재 지도) 안에 있는 군세 전체를 뜻한다 -
 // 회남 벌판처럼 아군이 관우군+유비군 둘 다 있으면 둘 다, 적이 원술 진영
 // 전부면 그 전부가 대상이다. 여러 군세를 동시에 편성/조작하는 구조를 그대로
-// 반영한다(main.js가 "플레이어 군세는 1개"라고 가정하지 않도록).
-function alliesInScene() {
-  const ids = [];
-  if (GameState.army) ids.push(GameState.army.commanderId);
-  if (GameState.allyArmy) ids.push(GameState.allyArmy.commanderId);
-  return ids;
-}
+// 반영한다(main.js가 "플레이어 군세는 1개"라고 가정하지 않도록 - playerArmies()
+// 하나만 고치면 나중에 세 번째 군세 슬롯이 생겨도 전부 따라간다).
+// 아래 두 함수는 "플레이어 시점" 원시 함수이고, 실제 책략 효과들은 대부분
+// 그 아래의 caster 상대적인 alliesOf/enemiesOf/alliedCastersOf를 쓴다 -
+// 적이 캐스터일 때는 "아군"과 "적"이 서로 뒤집혀야 하기 때문이다.
+function alliesInScene() { return playerArmies().map((a) => a.commanderId); }
 // 사령관뿐 아니라 부장(책사)까지 포함 - 신풍처럼 "아군 전체 지력 상승" 같은
 // 효과가 그 책사 본인의 책략 성공률에도 실제로 반영되게 하기 위함.
 function alliedCasterIds() {
   const ids = [];
-  if (GameState.army) { ids.push(GameState.army.commanderId); if (GameState.army.deputy) ids.push(GameState.army.deputy); }
-  if (GameState.allyArmy) { ids.push(GameState.allyArmy.commanderId); if (GameState.allyArmy.deputy) ids.push(GameState.allyArmy.deputy); }
+  playerArmies().forEach((a) => { ids.push(a.commanderId); if (a.deputy) ids.push(a.deputy); });
   return [...new Set(ids)];
 }
 function enemiesInScene() {
   return MapView.liveNpcIds.filter((nid) => { const r = ROSTER[nid]; return r && r.kind === 'enemy'; });
 }
+function enemyCasterIds() {
+  const ids = [];
+  enemiesInScene().forEach((eid) => { ids.push(eid); const rd = ROSTER[eid]; if (rd.deputy) ids.push(rd.deputy); });
+  return [...new Set(ids)];
+}
+// caster가 플레이어 쪽이면 원래 뜻 그대로, 적 쪽이면 뒤집는다 - 이제 모든
+// 책략 효과가 "내 편/상대 편"을 이 두 함수로만 물어보면 캐스터가 어느
+// 쪽이든 똑같이 동작한다.
+function alliesOf(casterId) { return isPlayerSide(casterId) ? alliesInScene() : enemiesInScene(); }
+function enemiesOf(casterId) { return isPlayerSide(casterId) ? enemiesInScene() : alliesInScene(); }
+function alliedCastersOf(casterId) { return isPlayerSide(casterId) ? alliedCasterIds() : enemyCasterIds(); }
 function npcMapPos(id) {
   const mapSpec = MAPS[MapView.currentMapId];
   const n = mapSpec && mapSpec.npcs.find((x) => x.id === id);
@@ -945,19 +1010,26 @@ function shuffled(arr) {
 // 로직 - maxAttackers가 없으면(이간계) 인접한 적 전부, 있으면(반목) 그
 // 수만큼만 무작위로 고른다. 서로 주고받는 피해는 기존 고정 데미지 산식
 // (fixedHitDamage)을 그대로 재사용한다(일기토가 아닌 군세간 교전이므로).
-function triggerEnemyInfighting(targetId, maxAttackers) {
+// targetId와 "같은 편"(캐스터의 반대 편)인 다른 군세가 targetId를 공격하게
+// 만든다 - pool은 enemiesOf(casterId)에서 구한다(캐스터가 적이면 이 pool은
+// 플레이어 쪽이 된다). 플레이어 군세는 지도 위에 개별 좌표가 없어서(유비군은
+// 별도 스프라이트가 없음) 인접 판정상 자연히 대상이 안 잡힐 수 있는데, 이는
+// 실제 버그가 아니라 "플레이어 쪽엔 아직 걸 일이 없다"는 뜻이다.
+function triggerEnemyInfighting(targetId, maxAttackers, casterId) {
   const pos = npcMapPos(targetId);
-  const pool = shuffled(enemiesInScene().filter((eid) => eid !== targetId && tileDist(npcMapPos(eid), pos) <= 1));
+  const pool = shuffled(enemiesOf(casterId).filter((eid) => eid !== targetId && tileDist(npcMapPos(eid), pos) <= 1));
   const attackers = maxAttackers ? pool.slice(0, maxAttackers) : pool;
-  const target = ROSTER[targetId];
-  if (!attackers.length) return `${target.name} 주변에 이간질할 다른 적이 없었다.`;
+  const target = armyFor(targetId);
+  const targetName = ROSTER[targetId].name;
+  if (!attackers.length) return `${targetName} 주변에 이간질할 다른 적이 없었다.`;
   const lines = attackers.map((eid) => {
-    const other = ROSTER[eid];
-    const dmgToTarget = fixedHitDamage(other.troop, enemyArmyGrade(other), other.morale != null ? other.morale : 100, false);
-    const dmgToOther = fixedHitDamage(target.troop, enemyArmyGrade(target), target.morale != null ? target.morale : 100, false);
+    const other = armyFor(eid);
+    const otherName = ROSTER[eid].name;
+    const dmgToTarget = fixedHitDamage(other.troop, enemyArmyGrade(ROSTER[eid]), moraleOf(eid), false);
+    const dmgToOther = fixedHitDamage(target.troop, enemyArmyGrade(ROSTER[targetId]), moraleOf(targetId), false);
     target.troop = Math.max(0, target.troop - dmgToTarget);
     other.troop = Math.max(0, other.troop - dmgToOther);
-    return `${other.name}이(가) ${target.name}을(를) 공격해 서로 ${dmgToTarget}/${dmgToOther}명의 피해를 주고받았다`;
+    return `${otherName}이(가) ${targetName}을(를) 공격해 서로 ${dmgToTarget}/${dmgToOther}명의 피해를 주고받았다`;
   });
   return lines.join('. ') + '.';
 }
@@ -984,11 +1056,15 @@ function markStrategyUsed(sid) {
 // castGenericStrategy(범용 약화 책략)로 대신 나간다.
 //  - 병종/사거리/성벽 내구도: 응변진, 철벽수성, 벽력거, 연노지휘, 야습
 //  - "적이 책략을 시전한다"는 시스템: 반계, 책략봉쇄, 간파
+// 아래 모든 효과는 caster가 플레이어든 적이든 동일하게 동작한다 - "아군/적"은
+// alliesOf(casterId)/enemiesOf(casterId)로, 병력·군량은 armyFor(id)로,
+// 사기는 moraleOf/boostSideMorale로 조회·적용해서 어느 쪽이 캐스터인지
+// 하드코딩하지 않는다.
 const STRATEGY_EFFECTS = {
   // ---- S급 ----
-  sinpung() {
-    alliedCasterIds().forEach((aid) => StatusEffects.applyArmyStatus(aid, 'gradeBoost', { turns: 5, magnitude: 1 }));
-    enemiesInScene().forEach((eid) => StatusEffects.drainMorale(eid, 20));
+  sinpung(targetId, deputyId, casterId) {
+    alliedCastersOf(casterId).forEach((aid) => StatusEffects.applyArmyStatus(aid, 'gradeBoost', { turns: 5, magnitude: 1 }));
+    boostSideMorale(enemiesOf(casterId), -20);
     return '아군 전체의 무력과 지력이 크게 오르고, 적 전체가 크게 동요했다.';
   },
   sinhwagye(targetId) {
@@ -999,84 +1075,86 @@ const STRATEGY_EFFECTS = {
     if (pos) StatusEffects.igniteTile(MapView.currentMapId, pos.x, pos.y, { dps: boosted ? 300 : 200, ticks: 3 });
     return `${target.name}의 진영에 불길이 치솟았다${boosted ? ' (이미 혼란/화염 상태라 피해가 50% 더 커졌다)' : ''}.`;
   },
-  sipmyeonmaebok(targetId) {
-    const enemies = enemiesInScene();
+  sipmyeonmaebok(targetId, deputyId, casterId) {
+    const enemies = enemiesOf(casterId);
     enemies.forEach((eid) => {
-      const r = ROSTER[eid];
-      r.troop = Math.max(0, Math.round(r.troop * 0.8));
+      const a = armyFor(eid);
+      a.troop = Math.max(0, Math.round(a.troop * 0.8));
       StatusEffects.applyArmyStatus(eid, 'apMult', { turns: 2, magnitude: 0.5 });
     });
     const confused = shuffled(enemies).slice(0, 2);
     confused.forEach((eid) => StatusEffects.applyArmyStatus(eid, 'confuse', { turns: 3 }));
     return `적 전체가 큰 피해를 입고 행동이 크게 굼떠졌으며, ${confused.map((eid) => ROSTER[eid].name).join(', ') || '일부'}의 군세가 혼란에 빠졌다.`;
   },
-  isagyeollyu() {
-    enemiesInScene().forEach((eid) => {
-      const r = ROSTER[eid];
-      r.troop = Math.max(0, Math.round(r.troop * 0.8));
+  isagyeollyu(targetId, deputyId, casterId) {
+    enemiesOf(casterId).forEach((eid) => {
+      const a = armyFor(eid);
+      a.troop = Math.max(0, Math.round(a.troop * 0.8));
       StatusEffects.applyArmyStatus(eid, 'apMult', { turns: 5, magnitude: 0.5 });
       StatusEffects.applyArmyStatus(eid, 'moveCostMult', { turns: 5, magnitude: 2 });
     });
     return '적 전체가 큰 피해를 입고, 앞으로 한동안 움직임이 크게 둔해졌다.';
   },
-  gyeonbyeokgeosu() {
-    alliedCasterIds().forEach((aid) => StatusEffects.applyArmyStatus(aid, 'dmgTakenMult', { turns: 3, magnitude: 0.7 }));
-    enemiesInScene().forEach((eid) => {
+  gyeonbyeokgeosu(targetId, deputyId, casterId) {
+    alliedCastersOf(casterId).forEach((aid) => StatusEffects.applyArmyStatus(aid, 'dmgTakenMult', { turns: 3, magnitude: 0.7 }));
+    enemiesOf(casterId).forEach((eid) => {
       StatusEffects.applyArmyStatus(eid, 'stratSuccessMult', { turns: 3, magnitude: 0.5 });
       StatusEffects.applyArmyStatus(eid, 'moveMoraleCost', { turns: 3, magnitude: 1 });
     });
     return '아군 전체가 굳게 방비를 갖췄다. 적이 섣불리 움직이면 사기가 떨어질 것이다.';
   },
-  jeonggunsuseup() {
-    [GameState.army, GameState.allyArmy].filter(Boolean).forEach((army) => {
-      const maxTroop = armyMaxTroop(ROSTER[army.commanderId]);
-      army.troop = Math.min(maxTroop, Math.round(army.troop * 1.4));
-      StatusEffects.clearArmyStatus(army.commanderId);
+  jeonggunsuseup(targetId, deputyId, casterId) {
+    alliesOf(casterId).forEach((aid) => {
+      const a = armyFor(aid);
+      const maxTroop = armyMaxTroop(ROSTER[aid]);
+      a.troop = Math.min(maxTroop, Math.round(a.troop * 1.4));
+      StatusEffects.clearArmyStatus(aid);
     });
     return '아군 군세 전원이 병력을 크게 수습하고, 온갖 이상 상태에서 벗어났다.';
   },
 
   // ---- A급 ----
-  palmungeumswaejin(targetId) {
+  palmungeumswaejin(targetId, deputyId, casterId) {
     const pos = npcMapPos(targetId);
-    const affected = enemiesInScene().filter((eid) => tileDist(npcMapPos(eid), pos) <= 3);
+    const affected = enemiesOf(casterId).filter((eid) => tileDist(npcMapPos(eid), pos) <= 3);
     affected.forEach((eid) => {
       StatusEffects.applyArmyStatus(eid, 'gradeBoost', { turns: 3, magnitude: -1 });
       StatusEffects.applyArmyStatus(eid, 'stratSuccessMult', { turns: 3, magnitude: 0.5 });
     });
     return `${ROSTER[targetId].name} 주변 적 군세 ${affected.length}개의 기세와 계책이 크게 꺾였다.`;
   },
-  yeonhwangye() {
-    const chained = enemiesInScene().slice(0, 5);
+  yeonhwangye(targetId, deputyId, casterId) {
+    const chained = enemiesOf(casterId).slice(0, 5);
     if (chained.length >= 2) StatusEffects.linkChain(chained, 0.3);
     return `적 군세 ${chained.length}개가 쇠사슬로 묶여 서로의 피해를 나눠 받게 되었다.`;
   },
   // 인접한 적 "전부"가 대상 - 반목(B급)은 같은 로직에서 1명만 고른다.
-  igangye(targetId) { return triggerEnemyInfighting(targetId, null); },
-  ildaeilro() {
-    alliesInScene().forEach((aid) => {
+  igangye(targetId, deputyId, casterId) { return triggerEnemyInfighting(targetId, null, casterId); },
+  ildaeilro(targetId, deputyId, casterId) {
+    alliesOf(casterId).forEach((aid) => {
       StatusEffects.applyArmyStatus(aid, 'evade', { turns: 1, magnitude: 0.5 });
       StatusEffects.applyArmyStatus(aid, 'dmgDealtMult', { turns: 1, magnitude: 1.5 });
     });
     return '아군 전체가 회피 태세에 들어갔다. 회피에 성공하면 다음 공격이 더욱 매서워질 것이다.';
   },
-  baesujin() {
-    alliesInScene().forEach((aid) => {
-      const morale = GameState.morale != null ? GameState.morale : 100;
+  baesujin(targetId, deputyId, casterId) {
+    alliesOf(casterId).forEach((aid) => {
+      const morale = moraleOf(aid);
       const lowMoraleBoost = Math.max(1, 100 / Math.max(1, morale));
       StatusEffects.applyArmyStatus(aid, 'dmgDealtMult', { turns: 3, magnitude: 1.2 * lowMoraleBoost });
       StatusEffects.applyArmyStatus(aid, 'dmgTakenMult', { turns: 3, magnitude: 1.1 });
     });
     return '아군이 물러설 곳 없는 배수진을 쳤다. 사기가 낮을수록 오히려 더 거세게 맞받아칠 것이다.';
   },
-  gunsimjangak() {
-    alliesInScene().forEach((aid) => {
+  gunsimjangak(targetId, deputyId, casterId) {
+    const allies = alliesOf(casterId);
+    allies.forEach((aid) => {
       StatusEffects.clearArmyStatus(aid, 'confuse');
       StatusEffects.clearArmyStatus(aid, 'fear');
       StatusEffects.clearArmyStatus(aid, 'taunt');
       StatusEffects.applyArmyStatus(aid, 'immune', { turns: 3 });
     });
-    GameState.changeMorale(40);
+    boostSideMorale(allies, 40);
     return '아군 전체의 사기가 크게 오르고, 혼란·공포·도발에서 벗어나 당분간 그 어떤 것도 통하지 않게 되었다.';
   },
 
@@ -1085,9 +1163,10 @@ const STRATEGY_EFFECTS = {
   // 제외했고, 반계/책략봉쇄/간파는 "적이 책략을 시전한다"는 시스템 자체가
   // 없어서 아직 보류한다 - 이 셋은 STRATEGY_EFFECTS에 없어 castable
   // 목록에서 자동으로 빠진다.)
-  // 퇴로봉쇄: [전투]는 원래 포획 판정 자체가 없었다(일기토의 압도적 승리
-  // 판정만 있었음) - guaranteedCapture 버프를 걸어두면 resolveArmyBattle의
-  // 적 격파 분기에서 그 판정을 대신하도록 새로 연결했다.
+  // 퇴로봉쇄: [전투]의 "적 격파" 분기에는 guaranteedCapture를 확인해 포획을
+  // 강제하도록 연결해뒀지만, "플레이어가 격파당하는" 분기에는 대응하는
+  // 포획 판정 자체가 없다(그런 개념 자체가 아직 없음) - 그래서 적이 이걸
+  // 플레이어에게 걸어도 위험하지 않고, 그냥 아직은 효과가 없을 뿐이다.
   toerobongswae(targetId) {
     StatusEffects.applyArmyStatus(targetId, 'guaranteedCapture', { turns: 2 });
     return `${ROSTER[targetId].name}의 퇴로를 끊었다. 2턴 안에 무너뜨리면 반드시 포박할 수 있을 것이다.`;
@@ -1103,52 +1182,65 @@ const STRATEGY_EFFECTS = {
       ? `${ROSTER[targetId].name}의 버프를 모두 빼앗아 아군에게 옮겨왔다.`
       : `${ROSTER[targetId].name}에게는 빼앗을 버프가 없었다.`;
   },
-  yueonbieo() {
+  yueonbieo(targetId, deputyId, casterId) {
+    const enemies = enemiesOf(casterId);
+    boostSideMorale(enemies, -10);
     const confused = [];
-    enemiesInScene().forEach((eid) => {
-      StatusEffects.drainMorale(eid, 10);
-      const morale = ROSTER[eid].morale != null ? ROSTER[eid].morale : 100;
-      if (morale <= 50) { StatusEffects.applyArmyStatus(eid, 'confuse', { turns: 2 }); confused.push(ROSTER[eid].name); }
+    dedupeByMoralePool(enemies).forEach((eid) => {
+      if (moraleOf(eid) <= 50) {
+        // 사기 풀을 공유하는 쪽(플레이어 쪽)이면 그 풀의 모든 군세에 함께 건다.
+        (isPlayerSide(eid) ? enemies.filter(isPlayerSide) : [eid]).forEach((id) => StatusEffects.applyArmyStatus(id, 'confuse', { turns: 2 }));
+        confused.push(ROSTER[eid].name);
+      }
     });
     return `적 전체의 사기가 크게 흔들렸다${confused.length ? `. ${confused.join(', ')}의 군세가 혼란에 빠졌다` : ''}.`;
   },
-  gongsimgye() {
+  gongsimgye(targetId, deputyId, casterId) {
+    const enemies = enemiesOf(casterId);
+    boostSideMorale(enemies, -10);
     const fled = [];
-    enemiesInScene().forEach((eid) => {
-      StatusEffects.drainMorale(eid, 10);
-      const morale = ROSTER[eid].morale != null ? ROSTER[eid].morale : 100;
-      if (morale <= 20) { GameState.npcStatus[eid] = 'fled'; MapView.removeNpc(eid); fled.push(ROSTER[eid].name); }
+    dedupeByMoralePool(enemies).forEach((eid) => {
+      if (moraleOf(eid) <= 20 && !isPlayerSide(eid)) { // 플레이어 쪽 퇴각(패주) 개념은 아직 없다
+        GameState.npcStatus[eid] = 'fled';
+        MapView.removeNpc(eid);
+        fled.push(ROSTER[eid].name);
+      }
     });
     return `적 전체의 사기가 크게 흔들렸다${fled.length ? `. ${fled.join(', ')}의 군세는 그대로 퇴각했다` : ''}.`;
   },
-  gomu() {
-    GameState.changeMorale(20);
+  gomu(targetId, deputyId, casterId) {
+    boostSideMorale(alliesOf(casterId), 20);
     return '아군 전체의 사기가 크게 올랐다.';
   },
   // 반목: 이간계와 같은 로직이지만 인접한 적 1명만 무작위로 고른다.
-  banmok(targetId) { return triggerEnemyInfighting(targetId, 1); },
+  banmok(targetId, deputyId, casterId) { return triggerEnemyInfighting(targetId, 1, casterId); },
   heobo(targetId) {
     const target = ROSTER[targetId];
+    // 플레이어 쪽엔 "지도에서 퇴각시킨다"는 개념 자체가 없다(포획과 마찬가지로
+    // 아직 플레이어가 패배하는 경로가 안 만들어져 있음) - 적이 이걸 걸어도
+    // 안전하게 아무 일도 없을 뿐, 위험하지 않다.
+    if (isPlayerSide(targetId)) return `${target.name}이(가) 겁을 먹었지만, 물러날 곳이 없어 그 자리를 지켰다.`;
     GameState.npcStatus[targetId] = 'fled';
     MapView.removeNpc(targetId);
     return `${target.name}의 군세가 겁을 먹고 그대로 퇴각했다.`;
   },
-  gullyangbogeup() {
-    [GameState.army, GameState.allyArmy].filter(Boolean).forEach((a) => { a.rice = Math.round(a.rice * 1.5); });
+  gullyangbogeup(targetId, deputyId, casterId) {
+    alliesOf(casterId).forEach((aid) => { const a = armyFor(aid); a.rice = Math.round(a.rice * 1.5); });
     return '아군 군세의 군량이 크게 늘었다.';
   },
   gullyangchadan(targetId) {
-    const r = ROSTER[targetId];
-    ensureEnemyRice(r);
-    r.rice = Math.max(0, Math.round(r.rice * 0.7));
-    return `${r.name}의 군량 보급로를 끊어 군량이 크게 줄었다.`;
+    const a = armyFor(targetId);
+    a.rice = Math.max(0, Math.round(a.rice * 0.7));
+    return `${ROSTER[targetId].name}의 군량 보급로를 끊어 군량이 크게 줄었다.`;
   },
-  uibyeongmojip() {
-    [GameState.army, GameState.allyArmy].filter(Boolean).forEach((a) => {
-      const maxTroop = armyMaxTroop(ROSTER[a.commanderId]);
+  uibyeongmojip(targetId, deputyId, casterId) {
+    const allies = alliesOf(casterId);
+    allies.forEach((aid) => {
+      const a = armyFor(aid);
+      const maxTroop = armyMaxTroop(ROSTER[aid]);
       a.troop = Math.min(maxTroop, Math.round(a.troop * 1.2));
     });
-    GameState.changeMorale(10);
+    boostSideMorale(allies, 10);
     return '의병이 모여들어 아군 병력이 늘고 사기도 올랐다.';
   },
 
@@ -1190,7 +1282,7 @@ const STRATEGY_EFFECTS = {
   },
   gyeongryeo(targetId, deputyId, casterId) {
     StatusEffects.applyArmyStatus(casterId, 'dmgDealtMult', { turns: 2, magnitude: 1.1 });
-    StatusEffects.drainMorale(casterId, -15); // 음수 = 사기 상승(누가 캐스터든 자기 편 사기가 오른다)
+    boostSideMorale([casterId], 15);
     return '아군의 사기가 오르고 다음 공격이 더 매서워질 것이다.';
   },
   gyeonsu(targetId, deputyId, casterId) {
@@ -1202,38 +1294,48 @@ const STRATEGY_EFFECTS = {
     StatusEffects.applyArmyStatus(targetId, 'stratSuccessMult', { turns: 3, magnitude: 0.85 });
     return `${ROSTER[targetId].name}의 공격력과 지략이 둔해졌다.`;
   },
-  chiryo() {
-    [GameState.army, GameState.allyArmy].filter(Boolean).forEach((a) => {
-      const maxTroop = armyMaxTroop(ROSTER[a.commanderId]);
+  chiryo(targetId, deputyId, casterId) {
+    alliesOf(casterId).forEach((aid) => {
+      const a = armyFor(aid);
+      const maxTroop = armyMaxTroop(ROSTER[aid]);
       a.troop = Math.min(maxTroop, Math.round(a.troop * 1.1));
     });
     return '아군이 병력을 수습했다.';
   },
   seondong(targetId) {
-    const r = ROSTER[targetId];
-    r.troop = Math.max(0, Math.round(r.troop * 0.9));
-    StatusEffects.drainMorale(targetId, 10);
-    return `${r.name}의 군세에서 동요가 일어나 병력이 줄고 사기가 떨어졌다.`;
+    const a = armyFor(targetId);
+    a.troop = Math.max(0, Math.round(a.troop * 0.9));
+    boostSideMorale([targetId], -10);
+    return `${ROSTER[targetId].name}의 군세에서 동요가 일어나 병력이 줄고 사기가 떨어졌다.`;
   },
-  // 질주: 행동 게이지(행동력)를 다음달까지 기다리지 않고 그 자리에서 즉시 늘려준다.
-  jilju() {
-    const bonus = Math.round(effectiveApMax() * 0.5);
-    GameState.ap += bonus;
-    return `아군의 행동력이 즉시 ${bonus} 늘었다.`;
+  // 질주: 플레이어는 행동력(GameState.ap)을 그 자리에서 즉시 늘려준다 - 적은
+  // 이런 "당장 쓸 수 있는 포인트 자원" 개념이 없고 매달 계산되는 이동 예산
+  // (apMult)만 있어서, 대신 그 예산에 1턴짜리 배율 버프를 걸어준다(다음
+  // AI 이동에 바로 반영됨). 두 자원 모델 자체가 달라 완전히 같은 방식으로
+  // 만들 수는 없지만, "이번 기회에 더 많이 움직인다"는 효과는 동일하다.
+  jilju(targetId, deputyId, casterId) {
+    if (isPlayerSide(casterId)) {
+      const bonus = Math.round(effectiveApMax() * 0.5);
+      GameState.ap += bonus;
+      return `아군의 행동력이 즉시 ${bonus} 늘었다.`;
+    }
+    StatusEffects.applyArmyStatus(casterId, 'apMult', { turns: 1, magnitude: 1.5 });
+    return `${ROSTER[casterId].name}의 군세가 크게 빨라졌다.`;
   },
 
   // ---- D급 ----
-  gyeongmun() {
-    enemiesInScene().forEach((eid) => StatusEffects.drainMorale(eid, 5));
+  gyeongmun(targetId, deputyId, casterId) {
+    boostSideMorale(enemiesOf(casterId), -5);
     return '적 전체의 사기가 소폭 떨어졌다.';
   },
-  eungwon() {
-    GameState.changeMorale(10);
+  eungwon(targetId, deputyId, casterId) {
+    boostSideMorale([casterId], 10);
     return '아군의 사기가 소폭 올랐다.';
   },
-  eunggeupcheochi() {
-    [GameState.army, GameState.allyArmy].filter(Boolean).forEach((a) => {
-      const maxTroop = armyMaxTroop(ROSTER[a.commanderId]);
+  eunggeupcheochi(targetId, deputyId, casterId) {
+    alliesOf(casterId).forEach((aid) => {
+      const a = armyFor(aid);
+      const maxTroop = armyMaxTroop(ROSTER[aid]);
       a.troop = Math.min(maxTroop, Math.round(a.troop * 1.05));
     });
     return '아군이 병력을 소폭 회복했다.';
@@ -1400,7 +1502,10 @@ function resolveArmyBattle(id) {
     enemyStrikes();
     if (!playerDown) {
       if (StatusEffects.isConfused(playerKey)) lines.push({ speaker: '내레이션', text: `${commanderName}군은 혼란에 빠져 반격하지 못했다!` });
-      else playerStrikes();
+      else if (StatusEffects.hasStatus(playerKey, 'noCounter')) {
+        lines.push({ speaker: '내레이션', text: `매복에 당한 ${commanderName}군이 반격하지 못했다!` });
+        StatusEffects.clearArmyStatus(playerKey, 'noCounter');
+      } else playerStrikes();
     }
   }
 
