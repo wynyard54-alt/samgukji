@@ -599,6 +599,7 @@ const SEOJU_AREA_LABELS = [
     ],
     npcs: [
       { id:'giryeong', x:9, y:7, label:'기령 군세', fixed:true },
+      { id:'yanghong', x:11, y:7, label:'양홍', fixed:true },
       { id:'gyoyu', x:9, y:18, label:'교유 군세', fixed:true, warArmy:'ally' },
       { id:'wonsul', x:17, y:12, label:'원술 군세', fixed:true },
       { id:'noebak', x:12, y:10, label:'뇌박 군세', fixed:true },
