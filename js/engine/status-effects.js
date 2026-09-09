@@ -24,6 +24,12 @@
 //                  최종적으로 병력에 반영되기 직전 마지막 관문으로 판정한다.
 //                  (일기토가 아니라 군세간 [전투]에서만 쓰는 개념이다.)
 //   immune       : 혼란/공포/도발이 걸리지 않는다.
+//   apMult       : 이 군세의 행동력(AP)에 곱하는 배율 - 적 AI는 매달 이동에
+//                  쓸 수 있는 행동력(mapview.js의 AI_MOVE_BUDGET)을, 플레이어는
+//                  "다음달" 행동력 재보급량을 이 배율만큼 줄이거나 늘린다.
+//   moveCostMult : 타일 1칸 이동에 드는 행동력 소모량에 곱하는 배율(예: 2 = 2배).
+//   stratSuccessMult : 이 대상(책사)이 책략을 시전할 때, 이미 계산된 성공률에
+//                  마지막으로 곱하는 배율(예: 60% 성공률에 0.5를 곱하면 30%).
 //
 // S급 책략처럼 "전투당(그 전장 씬) 1회"인 것과 A급처럼 "이 달 1회"인 것은
 // canUseThisScene/canUseThisMonth로 확인하고 markUsedThis*로 기록한다 -
@@ -32,7 +38,10 @@
 // 초기화한다.
 const StatusEffects = (function () {
   const ARMY_STATUS_LABELS = { confuse: '혼란', fear: '공포', taunt: '도발' };
-  const BUFF_LABELS = { dmgDealtMult: '주는피해 배율', dmgTakenMult: '받는피해 배율', gradeBoost: '등급상승', evade: '회피', immune: '상태이상 면역' };
+  const BUFF_LABELS = {
+    dmgDealtMult: '주는피해 배율', dmgTakenMult: '받는피해 배율', gradeBoost: '등급상승', evade: '회피', immune: '상태이상 면역',
+    apMult: '행동력 배율', moveCostMult: '이동소모 배율', stratSuccessMult: '책략성공률 배율',
+  };
   const ALL_LABELS = Object.assign({}, ARMY_STATUS_LABELS, BUFF_LABELS);
   const DEBUFF_TYPES = new Set(Object.keys(ARMY_STATUS_LABELS));
 
@@ -91,6 +100,20 @@ const StatusEffects = (function () {
   function rollEvade(id) {
     const chance = evadeChance(id);
     return chance > 0 && Math.random() < chance;
+  }
+  // 행동력(AP) 배율 - 적 AI의 이번 달 이동 예산과 플레이어의 "다음달" 행동력
+  // 재보급량에 곱한다(mapview.js runAiTurn/computeAiPath, main.js #btn-nextmonth).
+  function apMult(id) {
+    return activeStatuses(id).filter((s) => s.type === 'apMult').reduce((m, s) => m * (s.magnitude || 1), 1);
+  }
+  // 타일 1칸당 필요 행동력 배율 - mapview.js의 tryMove/computeAiPath에서 쓴다.
+  function moveCostMult(id) {
+    return activeStatuses(id).filter((s) => s.type === 'moveCostMult').reduce((m, s) => m * (s.magnitude || 1), 1);
+  }
+  // 책략 성공률 배율 - main.js attemptStrategy에서 이미 계산된 성공률의
+  // 마지막 단계에서 곱한다.
+  function stratSuccessMult(id) {
+    return activeStatuses(id).filter((s) => s.type === 'stratSuccessMult').reduce((m, s) => m * (s.magnitude || 1), 1);
   }
 
   // ---- 책략 사용 횟수 제한 ----
@@ -194,6 +217,7 @@ const StatusEffects = (function () {
     applyArmyStatus, clearArmyStatus, activeStatuses, hasStatus, tickArmyStatus, tickAllArmyStatus,
     isConfused, isTaunted, tauntSourceId,
     dmgDealtMult, dmgTakenMult, gradeBoostAmount, hasImmunity, evadeChance, rollEvade,
+    apMult, moveCostMult, stratSuccessMult,
     canUseThisScene, markUsedThisScene, resetSceneUsage, canUseThisMonth, markUsedThisMonth,
     igniteTile, extinguishTile, fireTilesForMap, tickFireTiles,
     linkChain, unlinkChain, chainedWith, propagateDamage,

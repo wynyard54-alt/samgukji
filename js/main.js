@@ -862,8 +862,11 @@ function attemptStrategy(id) {
     return;
   }
   const grade = gradeFor(deputy.stats.int, JIRYEOK_GRADES);
-  // 혼란에 빠진 적에게는 어떤 책략을 걸든 반드시 통한다.
-  const chance = StatusEffects.isConfused(id) ? 100 : strategySuccessChance(grade, enemyJiryeokGrade(rd));
+  // 혼란에 빠진 적에게는 어떤 책략을 걸든 반드시 통한다. 견벽거수/팔문금쇄진
+  // 같은 "적 책사 성공률 감소" 효과는 이미 계산된 성공률의 마지막 단계에서
+  // stratSuccessMult로 한 번 더 곱한다(받는피해 배율과 같은 방식).
+  const baseChance = strategySuccessChance(grade, enemyJiryeokGrade(rd));
+  const chance = StatusEffects.isConfused(id) ? 100 : Math.max(0, Math.min(100, baseChance * StatusEffects.stratSuccessMult(deputyId)));
   const roll = Math.random() * 100;
   if (roll < chance) {
     Dialogue.show([{ speaker: deputy.name, text: '계책이 통했습니다! 적진이 크게 흔들리고 있습니다.' }], () => {
@@ -2920,7 +2923,13 @@ document.getElementById('btn-nextmonth').onclick = () => {
   // 장순의 난: 군세로 전환된 뒤에는 어양이라도 warmap처럼 매달 행동력을 재보급받는다.
   const inJangsunMarch = stage === 'pyeongwon_free' && MAPS.pyeongwon.apMovement && !!GameState.army;
   GameState.heroHp = null;
-  if (inCampaign || inJangsunMarch) GameState.ap = effectiveApMax();
+  if (inCampaign || inJangsunMarch) {
+    // 십면매복/이사결류 같은 행동력 디버프가 걸려 있으면(apMult) 이번 달
+    // 재보급량 자체가 그만큼 줄어든다 - 적 AI의 이동 예산(mapview.js
+    // computeAiPath)과 완전히 동일한 배율 방식이다.
+    const apScale = GameState.army ? StatusEffects.apMult(GameState.army.commanderId) : 1;
+    GameState.ap = Math.max(0, Math.floor(effectiveApMax() * apScale));
+  }
   if (inCampaign && GameState.army) {
     GameState.army.rice = Math.max(0, GameState.army.rice - Math.ceil(GameState.army.troop / 100));
     if (GameState.army.rice <= 0) GameState.changeMorale(-1); // 군량 고갈시 매턴 사기 하락

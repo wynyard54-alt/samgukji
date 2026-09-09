@@ -721,7 +721,11 @@ const MapView = (function () {
     const npc=npcAt(nx,ny);
     if (npc) { interact(npc,false); return; } // 인접칸으로 다가가 공격하는 행동엔 행동력을 소모하지 않는다
     if (map.apMovement) {
-      const cost = tileMoveCost(nx,ny);
+      // 적 AI 행동력(computeAiPath)과 동일한 moveCostMult 배율을 플레이어
+      // 이동에도 적용한다 - 나중에 적 책사가 플레이어 쪽에 이 디버프를
+      // 걸어도(반대로) 같은 함수로 처리되도록.
+      const commanderId = GameState.army && GameState.army.commanderId;
+      const cost = tileMoveCost(nx,ny) * (commanderId ? StatusEffects.moveCostMult(commanderId) : 1);
       if (!GameState.spendAP(cost)) { if (onApBlocked) onApBlocked(); render(); return; }
       if (onApSpent) onApSpent();
     } else if (footTileCount + 1 >= FOOT_TILES_PER_AP) {
@@ -870,9 +874,16 @@ const MapView = (function () {
   // 항상 플레이어를 쫓아오기 때문에 이미 같은 동작이다. 나중에 플레이어 외의
   // 대상(동맹군 등)이 도발을 걸 수 있게 되면 여기서 StatusEffects.tauntSourceId로
   // 목적지를 바꿔주면 된다.
+  // AI_MOVE_BUDGET이 곧 적 군세의 "행동력"이다 - 십면매복/이사결류 같은 책략의
+  // 행동력 디버프(apMult)가 걸리면 그만큼 줄어들고, 이사결류의 "타일이동시
+  // 필요 행동력 2배" 같은 효과는 moveCostMult로 타일당 소모량에 곱해진다.
+  // 플레이어의 행동력(GameState.ap)과 동일한 배율 방식이라, 나중에 어느
+  // 쪽에 걸리든(플레이어 상대 진영도) 같은 함수로 처리된다.
   function computeAiPath(n0) {
     const path = [];
-    let cx = n0.x, cy = n0.y, steps = AI_MOVE_BUDGET;
+    const apScale = StatusEffects.apMult(n0.id);
+    const costScale = StatusEffects.moveCostMult(n0.id);
+    let cx = n0.x, cy = n0.y, steps = Math.max(0, Math.floor(AI_MOVE_BUDGET * apScale));
     if (Math.abs(cx-player.x)+Math.abs(cy-player.y) <= 1) return path; // 이미 사거리 - 이동 없이 대기 후 공격
     while (steps > 0) {
       const dist = Math.abs(cx-player.x)+Math.abs(cy-player.y);
@@ -887,7 +898,7 @@ const MapView = (function () {
         if (!isWalkable(tx,ty)) continue;
         if (tx===player.x && ty===player.y) continue; // 플레이어 타일로는 이동하지 않는다
         if (npcAt(tx,ty)) continue;
-        const cost = tileMoveCost(tx,ty);
+        const cost = tileMoveCost(tx,ty) * costScale;
         if (cost > steps) continue;
         cx=tx; cy=ty; steps-=cost; moved=true; path.push({x:cx,y:cy}); break;
       }
