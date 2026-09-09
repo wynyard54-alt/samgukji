@@ -50,11 +50,14 @@ const STRATEGIES = {
   hwagong: { name: '화공', grade: 'C', desc: '지정한 적 군세 타일을 화염화', characters: ['jangon', 'nakthong', 'ochan', 'hwahaek', 'juyu', 'yukson'] },
   hollan: { name: '혼란', grade: 'C', desc: '2턴간 타겟 적 혼란 상태', characters: ['wangyun', 'yangsong', 'jingyu', 'wanghae', 'heosa', 'hwanbeom'] },
   dobal: { name: '도발', grade: 'C', desc: '2턴간 타겟 적 도발 상태', characters: ['wangrang', 'yehyeong', 'imak', 'wangru', 'jinbok'] },
-  heojangseongse: { name: '허장성세', grade: 'C', desc: '2턴간 타겟 적 공포 상태', characters: ['eompo', 'sunsim', 'jangsong', 'gabeom', 'yunjik', 'gachung'] },
+  // 공성계(空城計) - 서성에서 사마의를 상대로 성문을 열어두고 거문고를 탄
+  // 일화를 반영해 제갈량에게도 배정한다(신풍(S) 보너스 - chaeryakbongswae는
+  // 아직 구현 불가라 이걸로 교체).
+  heojangseongse: { name: '허장성세', grade: 'C', desc: '2턴간 타겟 적 공포 상태', characters: ['eompo', 'sunsim', 'jangsong', 'gabeom', 'yunjik', 'gachung', 'jegallyang'] },
   maebok: { name: '매복', grade: 'C', desc: '다음 턴 공격에 적 반격 없음', characters: ['goeryang', 'busun', 'nugyu', 'sinpyeong', 'isuk', 'jeonju', 'jeongwook'] },
   gyeongryeo: { name: '격려', grade: 'C', desc: '아군 1명의 주는 데미지 10% 증가 + 사기 15 상승, 2턴', characters: ['ijeok', 'ganong', 'songgeon', 'michuk', 'dongyun', 'goong', 'deungyun', 'jobi'] },
   gyeonsu: { name: '견수', grade: 'C', desc: '아군 1명의 방어력 35% 증가, 2턴', characters: ['donghwa', 'dugi', 'yubok', 'goyu', 'wangryeon', 'yangui', 'samaui'] },
-  chaeryakbongswae: { name: '책략봉쇄', grade: 'C', desc: '적 책사 1명이 2턴간 책략 사용 불가', characters: ['mogae', 'choeyeom', 'hwaheum', 'sinbi', 'jangje_wi', 'jingyo', 'jegallyang'] },
+  chaeryakbongswae: { name: '책략봉쇄', grade: 'C', desc: '적 책사 1명이 2턴간 책략 사용 불가', characters: ['mogae', 'choeyeom', 'hwaheum', 'sinbi', 'jangje_wi', 'jingyo'] },
   wibo: { name: '위보', grade: 'C', desc: '적 1명의 공격력·지력 15% 감소, 3턴', characters: ['yeomsang', 'yanghong', 'paengyang', 'yupa', 'wonhwan', 'jubi'] },
   chiryo: { name: '치료', grade: 'C', desc: '아군 현재 병력 10% 회복', characters: ['yeoye', 'eomjun', 'dumi', 'jangye', 'wangryeol', 'sunyu'] },
   seondong: { name: '선동', grade: 'C', desc: '적 병력 일부 감소, 사기 -10 감소', characters: ['jinrim', 'chaeong', 'heoso', 'yangbu', 'sasonseo'] },
