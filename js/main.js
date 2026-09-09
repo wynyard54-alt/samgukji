@@ -850,23 +850,16 @@ function strategySuccessChance(deputyGrade, enemyGrade) {
   const diff = GRADE_RANK[enemyGrade] - GRADE_RANK[deputyGrade]; // 양수면 내 책사가 우위
   return Math.max(10, Math.min(90, 50 + 10 * diff));
 }
-function attemptStrategy(id) {
+// 이름 붙은 책략이 아직 없는(또는 아직 효과가 구현되지 않은) 책사가 쓰는
+// 범용 책략 - 지력 등급차 기반 성공률로 적의 이번 교전 고정 피해량을 30% 깎는다.
+function castGenericStrategy(id, ctx, deputy) {
   const rd = ROSTER[id];
-  const ctx = resolveWarArmy(rd);
-  if (!ctx) { toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`); return; }
-  const deputyId = ctx.army.deputy;
-  const deputy = deputyId ? ROSTER[deputyId] : null;
-  if (!deputy) {
-    toast('책략을 쓰려면 군세 편성에서 책사를 부장으로 등용해야 합니다.');
-    openWarCommandMenu(id);
-    return;
-  }
-  const grade = gradeFor(deputy.stats.int, JIRYEOK_GRADES);
+  const grade = shiftGrade(gradeFor(deputy.stats.int, JIRYEOK_GRADES), StatusEffects.gradeBoostAmount(deputy.id));
   // 혼란에 빠진 적에게는 어떤 책략을 걸든 반드시 통한다. 견벽거수/팔문금쇄진
   // 같은 "적 책사 성공률 감소" 효과는 이미 계산된 성공률의 마지막 단계에서
   // stratSuccessMult로 한 번 더 곱한다(받는피해 배율과 같은 방식).
   const baseChance = strategySuccessChance(grade, enemyJiryeokGrade(rd));
-  const chance = StatusEffects.isConfused(id) ? 100 : Math.max(0, Math.min(100, baseChance * StatusEffects.stratSuccessMult(deputyId)));
+  const chance = StatusEffects.isConfused(id) ? 100 : Math.max(0, Math.min(100, baseChance * StatusEffects.stratSuccessMult(deputy.id)));
   const roll = Math.random() * 100;
   if (roll < chance) {
     Dialogue.show([{ speaker: deputy.name, text: '계책이 통했습니다! 적진이 크게 흔들리고 있습니다.' }], () => {
@@ -878,10 +871,203 @@ function attemptStrategy(id) {
     });
   } else {
     Dialogue.show([{ speaker: deputy.name, text: '송구합니다, 적이 계책을 미리 간파한 듯합니다...' }], () => {
-      toast(`책략이 실패했다. (성공 확률 ${chance}%)`);
+      toast(`책략이 실패했다. (성공 확률 ${Math.round(chance)}%)`);
       openWarCommandMenu(id);
     });
   }
+}
+
+// ---- 이름 붙은 책략(S~D급) ----
+// "적 전체/아군 전체"는 지금 전장(현재 지도) 안에 있는 군세 전체를 뜻한다 -
+// 회남 벌판처럼 아군이 관우군+유비군 둘 다 있으면 둘 다, 적이 원술 진영
+// 전부면 그 전부가 대상이다. 여러 군세를 동시에 편성/조작하는 구조를 그대로
+// 반영한다(main.js가 "플레이어 군세는 1개"라고 가정하지 않도록).
+function alliesInScene() {
+  const ids = [];
+  if (GameState.army) ids.push(GameState.army.commanderId);
+  if (GameState.allyArmy) ids.push(GameState.allyArmy.commanderId);
+  return ids;
+}
+// 사령관뿐 아니라 부장(책사)까지 포함 - 신풍처럼 "아군 전체 지력 상승" 같은
+// 효과가 그 책사 본인의 책략 성공률에도 실제로 반영되게 하기 위함.
+function alliedCasterIds() {
+  const ids = [];
+  if (GameState.army) { ids.push(GameState.army.commanderId); if (GameState.army.deputy) ids.push(GameState.army.deputy); }
+  if (GameState.allyArmy) { ids.push(GameState.allyArmy.commanderId); if (GameState.allyArmy.deputy) ids.push(GameState.allyArmy.deputy); }
+  return [...new Set(ids)];
+}
+function enemiesInScene() {
+  return MapView.liveNpcIds.filter((nid) => { const r = ROSTER[nid]; return r && r.kind === 'enemy'; });
+}
+function npcMapPos(id) {
+  const mapSpec = MAPS[MapView.currentMapId];
+  const n = mapSpec && mapSpec.npcs.find((x) => x.id === id);
+  return n ? { x: n.x, y: n.y } : null;
+}
+function tileDist(a, b) {
+  return (a && b) ? Math.abs(a.x - b.x) + Math.abs(a.y - b.y) : Infinity;
+}
+function shuffled(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+// S급은 "전투당(그 전장 씬) 1회", A급은 "이번 달 1회" - B~D급은 별도 제한이
+// 명시되지 않아 자유롭게 쓸 수 있다(행동력 소모로만 자연히 제한됨).
+function strategyIsUsable(sid) {
+  const grade = STRATEGIES[sid].grade;
+  if (grade === 'S') return StatusEffects.canUseThisScene(sid);
+  if (grade === 'A') return StatusEffects.canUseThisMonth(sid);
+  return true;
+}
+function markStrategyUsed(sid) {
+  const grade = STRATEGIES[sid].grade;
+  if (grade === 'S') StatusEffects.markUsedThisScene(sid);
+  else if (grade === 'A') StatusEffects.markUsedThisMonth(sid);
+}
+
+// 각 책략의 실제 효과 구현. (targetId) -> 결과 서술 문자열(내레이션에 씀).
+// S급 6개·A급 6개는 이 세션에서 여러 차례 확인받은 최종 사양대로 완전히
+// 구현되어 있다. B~D급은 아직 카탈로그(이름/설명/보유자)만 있고 여기 없는
+// 것들은 castGenericStrategy로 대신 나간다 - 순차적으로 이어서 채운다.
+const STRATEGY_EFFECTS = {
+  // ---- S급 ----
+  sinpung() {
+    alliedCasterIds().forEach((aid) => StatusEffects.applyArmyStatus(aid, 'gradeBoost', { turns: 5, magnitude: 1 }));
+    enemiesInScene().forEach((eid) => StatusEffects.drainMorale(eid, 20));
+    return '아군 전체의 무력과 지력이 크게 오르고, 적 전체가 크게 동요했다.';
+  },
+  sinhwagye(targetId) {
+    const target = ROSTER[targetId];
+    const pos = npcMapPos(targetId);
+    const boosted = StatusEffects.isConfused(targetId) ||
+      StatusEffects.fireTilesForMap(MapView.currentMapId).some((t) => pos && t.x === pos.x && t.y === pos.y);
+    if (pos) StatusEffects.igniteTile(MapView.currentMapId, pos.x, pos.y, { dps: boosted ? 300 : 200, ticks: 3 });
+    return `${target.name}의 진영에 불길이 치솟았다${boosted ? ' (이미 혼란/화염 상태라 피해가 50% 더 커졌다)' : ''}.`;
+  },
+  sipmyeonmaebok(targetId) {
+    const enemies = enemiesInScene();
+    enemies.forEach((eid) => {
+      const r = ROSTER[eid];
+      r.troop = Math.max(0, Math.round(r.troop * 0.8));
+      StatusEffects.applyArmyStatus(eid, 'apMult', { turns: 2, magnitude: 0.5 });
+    });
+    const confused = shuffled(enemies).slice(0, 2);
+    confused.forEach((eid) => StatusEffects.applyArmyStatus(eid, 'confuse', { turns: 3 }));
+    return `적 전체가 큰 피해를 입고 행동이 크게 굼떠졌으며, ${confused.map((eid) => ROSTER[eid].name).join(', ') || '일부'}의 군세가 혼란에 빠졌다.`;
+  },
+  isagyeollyu() {
+    enemiesInScene().forEach((eid) => {
+      const r = ROSTER[eid];
+      r.troop = Math.max(0, Math.round(r.troop * 0.8));
+      StatusEffects.applyArmyStatus(eid, 'apMult', { turns: 5, magnitude: 0.5 });
+      StatusEffects.applyArmyStatus(eid, 'moveCostMult', { turns: 5, magnitude: 2 });
+    });
+    return '적 전체가 큰 피해를 입고, 앞으로 한동안 움직임이 크게 둔해졌다.';
+  },
+  gyeonbyeokgeosu() {
+    alliedCasterIds().forEach((aid) => StatusEffects.applyArmyStatus(aid, 'dmgTakenMult', { turns: 3, magnitude: 0.7 }));
+    enemiesInScene().forEach((eid) => {
+      StatusEffects.applyArmyStatus(eid, 'stratSuccessMult', { turns: 3, magnitude: 0.5 });
+      StatusEffects.applyArmyStatus(eid, 'moveMoraleCost', { turns: 3, magnitude: 1 });
+    });
+    return '아군 전체가 굳게 방비를 갖췄다. 적이 섣불리 움직이면 사기가 떨어질 것이다.';
+  },
+  jeonggunsuseup() {
+    [GameState.army, GameState.allyArmy].filter(Boolean).forEach((army) => {
+      const maxTroop = armyMaxTroop(ROSTER[army.commanderId]);
+      army.troop = Math.min(maxTroop, Math.round(army.troop * 1.4));
+      StatusEffects.clearArmyStatus(army.commanderId);
+    });
+    return '아군 군세 전원이 병력을 크게 수습하고, 온갖 이상 상태에서 벗어났다.';
+  },
+
+  // ---- A급 ----
+  palmungeumswaejin(targetId) {
+    const pos = npcMapPos(targetId);
+    const affected = enemiesInScene().filter((eid) => tileDist(npcMapPos(eid), pos) <= 3);
+    affected.forEach((eid) => {
+      StatusEffects.applyArmyStatus(eid, 'gradeBoost', { turns: 3, magnitude: -1 });
+      StatusEffects.applyArmyStatus(eid, 'stratSuccessMult', { turns: 3, magnitude: 0.5 });
+    });
+    return `${ROSTER[targetId].name} 주변 적 군세 ${affected.length}개의 기세와 계책이 크게 꺾였다.`;
+  },
+  yeonhwangye() {
+    const chained = enemiesInScene().slice(0, 5);
+    if (chained.length >= 2) StatusEffects.linkChain(chained, 0.3);
+    return `적 군세 ${chained.length}개가 쇠사슬로 묶여 서로의 피해를 나눠 받게 되었다.`;
+  },
+  igangye(targetId) {
+    const pos = npcMapPos(targetId);
+    const neighbor = shuffled(enemiesInScene().filter((eid) => eid !== targetId && tileDist(npcMapPos(eid), pos) <= 1))[0];
+    if (!neighbor) return `${ROSTER[targetId].name} 주변에 이간질할 다른 적이 없었다.`;
+    const target = ROSTER[targetId];
+    const other = ROSTER[neighbor];
+    const dmgToTarget = fixedHitDamage(other.troop, enemyArmyGrade(other), other.morale != null ? other.morale : 100, false);
+    const dmgToOther = fixedHitDamage(target.troop, enemyArmyGrade(target), target.morale != null ? target.morale : 100, false);
+    target.troop = Math.max(0, target.troop - dmgToTarget);
+    other.troop = Math.max(0, other.troop - dmgToOther);
+    return `이간질에 넘어간 ${other.name}이(가) ${target.name}을(를) 공격해 서로 ${dmgToTarget}/${dmgToOther}명의 피해를 주고받았다.`;
+  },
+  ildaeilro() {
+    alliesInScene().forEach((aid) => {
+      StatusEffects.applyArmyStatus(aid, 'evade', { turns: 1, magnitude: 0.5 });
+      StatusEffects.applyArmyStatus(aid, 'dmgDealtMult', { turns: 1, magnitude: 1.5 });
+    });
+    return '아군 전체가 회피 태세에 들어갔다. 회피에 성공하면 다음 공격이 더욱 매서워질 것이다.';
+  },
+  baesujin() {
+    alliesInScene().forEach((aid) => {
+      const morale = GameState.morale != null ? GameState.morale : 100;
+      const lowMoraleBoost = Math.max(1, 100 / Math.max(1, morale));
+      StatusEffects.applyArmyStatus(aid, 'dmgDealtMult', { turns: 3, magnitude: 1.2 * lowMoraleBoost });
+      StatusEffects.applyArmyStatus(aid, 'dmgTakenMult', { turns: 3, magnitude: 1.1 });
+    });
+    return '아군이 물러설 곳 없는 배수진을 쳤다. 사기가 낮을수록 오히려 더 거세게 맞받아칠 것이다.';
+  },
+  gunsimjangak() {
+    alliesInScene().forEach((aid) => {
+      StatusEffects.clearArmyStatus(aid, 'confuse');
+      StatusEffects.clearArmyStatus(aid, 'fear');
+      StatusEffects.clearArmyStatus(aid, 'taunt');
+      StatusEffects.applyArmyStatus(aid, 'immune', { turns: 3 });
+    });
+    GameState.changeMorale(40);
+    return '아군 전체의 사기가 크게 오르고, 혼란·공포·도발에서 벗어나 당분간 그 어떤 것도 통하지 않게 되었다.';
+  },
+};
+
+function castNamedStrategy(sid, targetId, deputyId) {
+  const desc = STRATEGY_EFFECTS[sid](targetId, deputyId);
+  markStrategyUsed(sid);
+  Dialogue.show([{ speaker: ROSTER[deputyId].name, text: `${STRATEGIES[sid].name}!` }, { speaker: '내레이션', text: desc }], () => {
+    updateHUD();
+    openWarCommandMenu(targetId);
+  });
+}
+
+function attemptStrategy(id) {
+  const rd = ROSTER[id];
+  const ctx = resolveWarArmy(rd);
+  if (!ctx) { toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`); return; }
+  const deputyId = ctx.army.deputy;
+  const deputy = deputyId ? ROSTER[deputyId] : null;
+  if (!deputy) {
+    toast('책략을 쓰려면 군세 편성에서 책사를 부장으로 등용해야 합니다.');
+    openWarCommandMenu(id);
+    return;
+  }
+  // 실제 효과가 구현된 책략 중, 지금 쓸 수 있는(전투당/월 1회 제한에 걸리지
+  // 않은) 것만 골라 선택지로 보여준다 - 없으면 기존 범용 책략으로 바로 나간다.
+  const castable = strategiesFor(deputyId).filter((sid) => STRATEGY_EFFECTS[sid] && strategyIsUsable(sid));
+  if (!castable.length) { castGenericStrategy(id, ctx, deputy); return; }
+  const options = castable.map((sid) => ({
+    label: `${STRATEGIES[sid].name}(${STRATEGIES[sid].grade}급)`,
+    cb: () => castNamedStrategy(sid, id, deputyId),
+  }));
+  options.push({ label: '기본 계책 (적 공격력 약화)', cb: () => castGenericStrategy(id, ctx, deputy) });
+  showChoice(`${deputy.name}의 책략 - 무엇을 쓰시겠습니까?`, options);
 }
 
 function attemptDuelChallenge(id) {
@@ -1992,9 +2178,34 @@ function renderRosterPanel() {
     const statsLine = rd.stats
       ? `<div class="roster-stats">${formatStatLine(rd.stats)}</div>`
       : '';
-    div.innerHTML = `<div class="roster-row-main"><span class="roster-role${scholar ? ' scholar' : ''}">${label}</span><span class="roster-name">${rd.name}</span></div>${statsLine}`;
+    const sids = strategiesFor(id);
+    const strategyLine = sids.length
+      ? `<div class="roster-strategy">책략: ${sids.map((sid) => `${STRATEGIES[sid].name}(${STRATEGIES[sid].grade})`).join(', ')}</div>`
+      : '';
+    div.innerHTML = `<div class="roster-row-main"><span class="roster-role${scholar ? ' scholar' : ''}">${label}</span><span class="roster-name">${rd.name}</span></div>${statsLine}${strategyLine}`;
+    div.onclick = () => openHeroDetail(id, label);
     wrap.appendChild(div);
   });
+}
+
+// 장수 상세보기 - [장수] 목록에서 인물 하나를 탭하면 뜨는 간략 정보 카드.
+// "이 사람이 누구야?"에 바로 답할 수 있는 정도로만(소속/한 줄 업적/결말),
+// 장황한 설명은 넣지 않는다.
+function openHeroDetail(id, label) {
+  const rd = ROSTER[id];
+  if (!rd) return;
+  document.getElementById('hero-detail-name').textContent = rd.name;
+  document.getElementById('hero-detail-role').textContent = label;
+  document.getElementById('hero-detail-bio').textContent = rd.bio || '아직 소개 문구가 준비되지 않았습니다.';
+  const skillLines = [];
+  if (rd.skills && rd.skills.length) {
+    skillLines.push(...rd.skills.map((sid) => SKILL_POOL[sid]).filter(Boolean).map((s) => `필살기: ${s.name} - ${s.desc}`));
+  }
+  const sids = strategiesFor(id);
+  skillLines.push(...sids.map((sid) => `책략: ${STRATEGIES[sid].name}(${STRATEGIES[sid].grade}급) - ${STRATEGIES[sid].desc}`));
+  const skillsEl = document.getElementById('hero-detail-skills');
+  skillsEl.innerHTML = skillLines.length ? skillLines.map((l) => `<div>${l}</div>`).join('') : '';
+  document.getElementById('hero-detail-box').classList.remove('hidden');
 }
 
 // ---- 가방(인벤토리) ----
@@ -2230,6 +2441,9 @@ function closeRosterPanel() {
 }
 
 document.getElementById('roster-close').onclick = closeRosterPanel;
+document.getElementById('hero-detail-close').onclick = () => {
+  document.getElementById('hero-detail-box').classList.add('hidden');
+};
 window.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape' && !document.getElementById('roster-box').classList.contains('hidden')) {
     closeRosterPanel();

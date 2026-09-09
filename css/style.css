@@ -367,9 +367,10 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #roster-title{ font-family:"Song Myung",serif; font-size:18px; margin-bottom:14px; }
 #roster-list{ display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
 .roster-row{
-  display:flex; flex-direction:column; gap:5px; padding:8px 10px;
+  display:flex; flex-direction:column; gap:5px; padding:8px 10px; cursor:pointer;
   background:#fff8ea; border:1px solid var(--panel-border); border-radius:8px;
 }
+.roster-row:hover{ border-color:var(--accent); background:#fff2d9; }
 .roster-row-main{ display:flex; align-items:center; gap:10px; }
 .roster-role{
   font-size:11px; font-weight:700; color:#fff8ea; background:var(--accent);
@@ -380,6 +381,29 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .roster-name{ font-size:14px; font-weight:600; }
 .roster-sub{ font-size:11.5px; color:var(--ink-soft); margin-left:auto; }
 .roster-stats{ font-size:11.5px; color:var(--ink-soft); padding-left:44px; }
+.roster-strategy{ font-size:11.5px; color:var(--accent-strong); padding-left:44px; }
+
+/* 장수 상세보기 */
+#hero-detail-box{
+  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:min(380px,90vw); max-height:80vh; overflow-y:auto;
+  background:var(--panel); border:1px solid var(--panel-border);
+  border-radius:12px; padding:20px; box-shadow:0 12px 30px rgba(43,38,32,0.35); z-index:70;
+}
+#hero-detail-box.hidden{ display:none; }
+#hero-detail-close{
+  position:absolute; top:12px; right:14px; width:28px; height:28px; border-radius:50%;
+  border:1px solid var(--panel-border); background:#fff8ea; color:var(--ink);
+  font-size:14px; line-height:1; cursor:pointer;
+}
+#hero-detail-close:hover{ background:var(--accent); color:#fff8ea; }
+#hero-detail-role{ display:inline-block; margin-bottom:8px; }
+#hero-detail-name{ font-family:"Song Myung",serif; font-size:19px; margin-bottom:10px; padding-right:24px; }
+#hero-detail-bio{ font-size:13.5px; line-height:1.6; color:var(--ink); margin-bottom:12px; }
+#hero-detail-skills{ font-size:12.5px; line-height:1.7; color:var(--ink-soft); display:flex; flex-direction:column; gap:4px; }
+@media (orientation:portrait) and (max-width:1024px){
+  #hero-detail-box{ width:min(380px,80vh); max-height:min(86vw,480px); padding:16px; }
+}
 
 /* 군세 편성 */
 #army-box{

@@ -41,6 +41,7 @@ const StatusEffects = (function () {
   const BUFF_LABELS = {
     dmgDealtMult: '주는피해 배율', dmgTakenMult: '받는피해 배율', gradeBoost: '등급상승', evade: '회피', immune: '상태이상 면역',
     apMult: '행동력 배율', moveCostMult: '이동소모 배율', stratSuccessMult: '책략성공률 배율',
+    moveMoraleCost: '이동시 사기감소',
   };
   const ALL_LABELS = Object.assign({}, ARMY_STATUS_LABELS, BUFF_LABELS);
   const DEBUFF_TYPES = new Set(Object.keys(ARMY_STATUS_LABELS));
@@ -109,6 +110,11 @@ const StatusEffects = (function () {
   // 타일 1칸당 필요 행동력 배율 - mapview.js의 tryMove/computeAiPath에서 쓴다.
   function moveCostMult(id) {
     return activeStatuses(id).filter((s) => s.type === 'moveCostMult').reduce((m, s) => m * (s.magnitude || 1), 1);
+  }
+  // 이동 1칸당 사기 감소량 - 견벽거수(사마의)처럼 "움직이면 손해"를 주는
+  // 책략용. 실제 이동이 일어난 칸 수만큼만 mapview.js runAiTurn에서 호출한다.
+  function moveMoraleCost(id) {
+    return activeStatuses(id).filter((s) => s.type === 'moveMoraleCost').reduce((sum, s) => sum + (s.magnitude || 0), 0);
   }
   // 책략 성공률 배율 - main.js attemptStrategy에서 이미 계산된 성공률의
   // 마지막 단계에서 곱한다.
@@ -217,7 +223,7 @@ const StatusEffects = (function () {
     applyArmyStatus, clearArmyStatus, activeStatuses, hasStatus, tickArmyStatus, tickAllArmyStatus,
     isConfused, isTaunted, tauntSourceId,
     dmgDealtMult, dmgTakenMult, gradeBoostAmount, hasImmunity, evadeChance, rollEvade,
-    apMult, moveCostMult, stratSuccessMult,
+    apMult, moveCostMult, stratSuccessMult, moveMoraleCost, drainMorale,
     canUseThisScene, markUsedThisScene, resetSceneUsage, canUseThisMonth, markUsedThisMonth,
     igniteTile, extinguishTile, fireTilesForMap, tickFireTiles,
     linkChain, unlinkChain, chainedWith, propagateDamage,

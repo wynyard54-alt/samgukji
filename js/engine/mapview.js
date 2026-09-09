@@ -922,6 +922,10 @@ const MapView = (function () {
       // 혼란에 빠진 군세는 제자리에서 움직이지 못한다(이미 인접해 있었다면 공격은 그대로 발동).
       plan.path = StatusEffects.isConfused(plan.n0.id) ? [] : computeAiPath(plan.n0);
       if (plan.path.length) { const last = plan.path[plan.path.length - 1]; plan.n0.x = last.x; plan.n0.y = last.y; }
+      // 견벽거수처럼 "이동하면 사기 감소" 디버프가 걸려 있으면, 실제로 움직인
+      // 칸 수만큼 사기를 깎는다 - 얌전히 있으면(경로 길이 0) 손해가 없다.
+      const moraleCost = StatusEffects.moveMoraleCost(plan.n0.id);
+      if (moraleCost > 0 && plan.path.length) StatusEffects.drainMorale(plan.n0.id, moraleCost * plan.path.length);
     }
     for (const plan of plans) { plan.n0.x = plan.startX; plan.n0.y = plan.startY; }
     render();
