@@ -724,16 +724,28 @@ function duelAcceptChance(challengerGrade, defenderGrade) {
   return Math.max(0, 100 - 20 * diff);
 }
 
+// 등급상승(gradeBoost) 책략을 반영해 등급을 boost단계만큼 끌어올린다(S가
+// 상한). boost가 0/없으면 원래 등급 그대로다.
+function shiftGrade(grade, boost) {
+  if (!boost) return grade;
+  const ranks = ['S', 'A', 'B', 'C', 'D'];
+  const idx = ranks.indexOf(grade);
+  if (idx < 0) return grade;
+  return ranks[Math.max(0, Math.min(ranks.length - 1, idx - boost))];
+}
+
 // 일기토에서 군세장이 포로로 잡혔는데 그 군세에 책사(advisorId)가 있었다면,
 // 지휘를 이어받은 책사의 무력으로 등급을 다시 매긴다(대개 훨씬 낮아 사실상
 // 와해 수준으로 약해진다) - captureCommander 참고.
 function enemyArmyGrade(rd) {
-  if (rd.commanderCaptured && rd.advisorId && ROSTER[rd.advisorId]) {
-    return gradeFor(armyMuryeokValue(ROSTER[rd.advisorId], []), MURYEOK_GRADES);
-  }
-  return gradeFor(armyMuryeokValue(rd, []), MURYEOK_GRADES);
+  const base = (rd.commanderCaptured && rd.advisorId && ROSTER[rd.advisorId])
+    ? gradeFor(armyMuryeokValue(ROSTER[rd.advisorId], []), MURYEOK_GRADES)
+    : gradeFor(armyMuryeokValue(rd, []), MURYEOK_GRADES);
+  return shiftGrade(base, StatusEffects.gradeBoostAmount(rd.id));
 }
-function enemyJiryeokGrade(rd) { return gradeFor(rd.stats.int, JIRYEOK_GRADES); }
+function enemyJiryeokGrade(rd) {
+  return shiftGrade(gradeFor(rd.stats.int, JIRYEOK_GRADES), StatusEffects.gradeBoostAmount(rd.id));
+}
 
 function npcOnGateTile(id) {
   // 현재 챕터1 지도에는 관문/요새 타일에 서있는 적 군세가 없다 - 향후 지도 확장을 위한 훅
@@ -789,7 +801,8 @@ function resolveWarArmy(rd) {
 }
 
 function warArmyGrade(ctx) {
-  return gradeFor(armyMuryeokValue(ROSTER[ctx.commanderId], ctx.army.generals), MURYEOK_GRADES);
+  const base = gradeFor(armyMuryeokValue(ROSTER[ctx.commanderId], ctx.army.generals), MURYEOK_GRADES);
+  return shiftGrade(base, StatusEffects.gradeBoostAmount(ctx.commanderId));
 }
 function warArmySpeed(ctx) {
   return armySpeedValue(ROSTER[ctx.commanderId], ctx.army.generals);
@@ -949,21 +962,30 @@ function resolveArmyBattle(id) {
     lines.push({ speaker: '내레이션', text: `연환계로 묶인 ${other.name}의 군세에도 ${amount}명 피해가 전이되었다.` });
   }
 
+  // 책략 버프(주는/받는피해 배율)는 새 시스템을 안 만들고 이 마지막 계산
+  // 단계에서 고정 피해량에 배율만 곱해서 반영한다. 회피는 그 배율까지 다
+  // 적용한 다음, 병력에 실제로 반영되기 직전 마지막 관문으로 판정한다
+  // (일기토가 아니라 군세간 [전투]이므로 이 순서가 맞다).
+  function finalDamage(baseDmg, attackerId, defenderId) {
+    const withMult = Math.max(1, Math.round(baseDmg * StatusEffects.dmgDealtMult(attackerId) * StatusEffects.dmgTakenMult(defenderId)));
+    return StatusEffects.rollEvade(defenderId) ? 0 : withMult;
+  }
+
   function playerStrikes() {
-    const dmg = lock.playerHit;
+    const dmg = finalDamage(lock.playerHit, playerKey, id);
     rd.troop = Math.max(0, rd.troop - dmg);
     MapView.showDamageFloat(id, dmg);
     if (showOnMap) MapView.showAttackBump(GameState.mainHero);
-    lines.push({ speaker: '내레이션', text: `${commanderName}군의 공격! ${rd.name}의 군세에 ${dmg}명 피해.` });
-    StatusEffects.propagateDamage(id, dmg, chainDamage);
+    lines.push({ speaker: '내레이션', text: dmg > 0 ? `${commanderName}군의 공격! ${rd.name}의 군세에 ${dmg}명 피해.` : `${commanderName}군의 공격! ${rd.name}의 군세가 완전히 회피했다.` });
+    if (dmg > 0) StatusEffects.propagateDamage(id, dmg, chainDamage);
     if (rd.troop <= 0) enemyDown = true;
   }
   function enemyStrikes() {
-    const dmg = lock.enemyHit;
+    const dmg = finalDamage(lock.enemyHit, id, playerKey);
     army.troop = Math.max(0, army.troop - dmg);
     if (showOnMap) MapView.showDamageFloat(GameState.mainHero, dmg);
     MapView.showAttackBump(id);
-    lines.push({ speaker: '내레이션', text: `${rd.name}의 군세가 공격! ${commanderName}군이 ${dmg}명 피해를 입었다.` });
+    lines.push({ speaker: '내레이션', text: dmg > 0 ? `${rd.name}의 군세가 공격! ${commanderName}군이 ${dmg}명 피해를 입었다.` : `${rd.name}의 군세가 공격! ${commanderName}군이 완전히 회피했다.` });
     if (army.troop <= 0) playerDown = true;
   }
 
@@ -2192,6 +2214,7 @@ function openArmyBox(onConfirm, opts) {
     if (targetField === 'army') {
       GameState.morale = 100; // 출정시 사기 초기화 (유비군 등 보조 군세는 별도 사기를 추적하지 않는다)
       GameState.capturedCommanders = [];
+      StatusEffects.resetSceneUsage(); // S급 책략의 "전투당 1회" 제한도 새 전장 씬 시작으로 초기화한다
     }
     document.getElementById('army-box').classList.add('hidden');
     updateHUD();

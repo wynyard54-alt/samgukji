@@ -18,6 +18,8 @@ const GameState = {
   armyStatus: {}, // id(사령관/commanderId) -> [{type, turnsLeft, sourceId}] - 혼란/공포/도발 등 책략 디버프 (js/engine/status-effects.js)
   warChains: {}, // id -> {members:[id,...], ratio} - 연환계로 묶인 군세끼리 피해를 나눠 받는 사슬
   tileEffects: {}, // "mapId#x#y" -> {type:'fire', x, y, ticksLeft, dps} - 화염 등 타일에 붙는 상태이상
+  strategyUsedInScene: {}, // skillId -> true - S급 책략처럼 "전투당(그 전장 씬) 1회"인 책략을 이번 군세 편성 이후 이미 썼는지
+  strategyUsedInMonth: {}, // skillId -> true - A급 책략처럼 "이번 달 1회"인 책략을 이미 썼는지 (다음달이 되면 초기화)
   trainingEv: 0, // 훈련 노력치 (100마다 스텟 1 상승)
   combatStatUps: 0, // 공/방/속 상승 누적 횟수 (skillThreshold 도달시 필살공격 습득)
   skillThreshold: 2 + Math.floor(Math.random() * 2), // 2 또는 3
@@ -45,6 +47,8 @@ const GameState = {
     this.armyStatus = {};
     this.warChains = {};
     this.tileEffects = {};
+    this.strategyUsedInScene = {};
+    this.strategyUsedInMonth = {};
     this.trainingEv = 0;
     this.combatStatUps = 0;
     this.skillThreshold = 2 + Math.floor(Math.random() * 2);
@@ -67,6 +71,7 @@ const GameState = {
     this.month++;
     if (this.month > 12) { this.month = 1; this.year++; }
     this.ap = this.apMax;
+    this.strategyUsedInMonth = {}; // A급 책략의 "월 1회" 제한을 매달 초기화한다
   },
 
   dateLabel() { return `${this.year}년 ${this.month}월`; },

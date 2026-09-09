@@ -1,4 +1,5 @@
-// 책략(전략) 상태이상 - 혼란/공포/도발/화염/연환계.
+// 책략(전략) 상태이상 - 혼란/공포/도발/화염/연환계 + 버프(주는/받는피해 배율,
+// 등급상승, 면역, 회피).
 // 지금은 어떤 책략도 이 효과들을 실제로 걸지 않는다 - attemptStrategy 등에서
 // 나중에 이름 붙은 책략을 배정할 때 아래 함수(applyArmyStatus/igniteTile/
 // linkChain)를 호출하기만 하면, 이미 전투 산식(main.js의 resolveArmyBattle/
@@ -9,21 +10,48 @@
 // - 혼란: 이동 불가 / 이 군세를 노리는 책략은 100% 성공 / [전투]에서 반격 불가
 // - 공포: 걸려 있는 동안 매 턴(다음달)마다 사기 -10
 // - 도발: 도발을 건 군세를 쫓아오게 됨 / 도발 상태인 상대에게 거는 일기토는 100% 발동
+// - 면역(immune) 상태인 대상에게는 혼란/공포/도발이 걸리지 않는다.
+//
+// 버프(지정 턴간 지속되는 "지속효과")와 즉시효과(사기/병력/식량처럼 한 번
+// 반영되면 끝나는 것)는 구분한다 - 즉시효과는 이 모듈을 거치지 않고
+// GameState/rd 값을 그 자리에서 바로 바꾸면 된다(별도 시스템 불필요).
+// 버프 4종은 전부 "최종 데미지 계산의 마지막 단계에서 배율/판정으로만
+// 적용"하는 방식이라 별도의 전투 시스템 추가가 필요 없다:
+//   dmgDealtMult : 이 군세가 주는 피해에 곱하는 배율(예: 1.2 = +20%)
+//   dmgTakenMult : 이 군세가 받는 피해에 곱하는 배율(예: 0.7 = -30%)
+//   gradeBoost   : 무력/지력 등급을 이 수만큼 올려서 계산(1이면 한 단계)
+//   evade        : 공격을 완전히 무효화할 확률(0~1) - 데미지 배율 적용 뒤,
+//                  최종적으로 병력에 반영되기 직전 마지막 관문으로 판정한다.
+//                  (일기토가 아니라 군세간 [전투]에서만 쓰는 개념이다.)
+//   immune       : 혼란/공포/도발이 걸리지 않는다.
+//
+// S급 책략처럼 "전투당(그 전장 씬) 1회"인 것과 A급처럼 "이 달 1회"인 것은
+// canUseThisScene/canUseThisMonth로 확인하고 markUsedThis*로 기록한다 -
+// Scene 쪽은 군세 편성(전투 시작) 시점에 main.js가 resetSceneUsage()를
+// 불러 초기화하고, Month 쪽은 "다음달"마다 GameState.nextMonth()가 자동
+// 초기화한다.
 const StatusEffects = (function () {
   const ARMY_STATUS_LABELS = { confuse: '혼란', fear: '공포', taunt: '도발' };
+  const BUFF_LABELS = { dmgDealtMult: '주는피해 배율', dmgTakenMult: '받는피해 배율', gradeBoost: '등급상승', evade: '회피', immune: '상태이상 면역' };
+  const ALL_LABELS = Object.assign({}, ARMY_STATUS_LABELS, BUFF_LABELS);
+  const DEBUFF_TYPES = new Set(Object.keys(ARMY_STATUS_LABELS));
 
   function list(id) {
     return GameState.armyStatus[id] || (GameState.armyStatus[id] = []);
   }
 
+  // opts: { turns, sourceId, magnitude } - magnitude는 dmgDealtMult/
+  // dmgTakenMult(배율)·gradeBoost(등급 수)·evade(확률 0~1)에서만 쓰인다.
   function applyArmyStatus(id, type, opts) {
-    if (!ARMY_STATUS_LABELS[type]) return;
+    if (!ALL_LABELS[type]) return;
+    if (DEBUFF_TYPES.has(type) && hasStatus(id, 'immune')) return; // 면역 상태면 걸리지 않는다
     const turns = (opts && opts.turns) || 3;
     const sourceId = opts && opts.sourceId;
+    const magnitude = opts && opts.magnitude;
     const arr = list(id);
     const existing = arr.find((s) => s.type === type);
-    if (existing) { existing.turnsLeft = turns; existing.sourceId = sourceId; }
-    else arr.push({ type, turnsLeft: turns, sourceId });
+    if (existing) { existing.turnsLeft = turns; existing.sourceId = sourceId; existing.magnitude = magnitude; }
+    else arr.push({ type, turnsLeft: turns, sourceId, magnitude });
   }
 
   function clearArmyStatus(id, type) {
@@ -43,6 +71,36 @@ const StatusEffects = (function () {
     const s = statusEntry(id, 'taunt');
     return s ? s.sourceId : null;
   }
+
+  // ---- 버프 조회 (최종 데미지 계산의 마지막 단계에서 순서대로 곱/판정한다) ----
+  function dmgDealtMult(id) {
+    return activeStatuses(id).filter((s) => s.type === 'dmgDealtMult').reduce((m, s) => m * (s.magnitude || 1), 1);
+  }
+  function dmgTakenMult(id) {
+    return activeStatuses(id).filter((s) => s.type === 'dmgTakenMult').reduce((m, s) => m * (s.magnitude || 1), 1);
+  }
+  // 여러 등급상승이 겹치면 합산한다(2개면 두 단계 상승).
+  function gradeBoostAmount(id) {
+    return activeStatuses(id).filter((s) => s.type === 'gradeBoost').reduce((sum, s) => sum + (s.magnitude || 0), 0);
+  }
+  function hasImmunity(id) { return hasStatus(id, 'immune'); }
+  // 회피가 여러 개 겹쳐도 확률을 곱하지 않고 가장 높은 값 하나만 적용한다.
+  function evadeChance(id) {
+    return activeStatuses(id).filter((s) => s.type === 'evade').reduce((m, s) => Math.max(m, s.magnitude || 0), 0);
+  }
+  function rollEvade(id) {
+    const chance = evadeChance(id);
+    return chance > 0 && Math.random() < chance;
+  }
+
+  // ---- 책략 사용 횟수 제한 ----
+  // S급: 이번 전장 씬(군세를 편성해 전투를 시작한 뒤부터)에 1회만.
+  function canUseThisScene(skillId) { return !GameState.strategyUsedInScene[skillId]; }
+  function markUsedThisScene(skillId) { GameState.strategyUsedInScene[skillId] = true; }
+  function resetSceneUsage() { GameState.strategyUsedInScene = {}; }
+  // A급: 이번 달(월력) 안에 누구를 상대로 썼든 1회만 - "다음달"이 되면 자동 초기화된다.
+  function canUseThisMonth(skillId) { return !GameState.strategyUsedInMonth[skillId]; }
+  function markUsedThisMonth(skillId) { GameState.strategyUsedInMonth[skillId] = true; }
 
   // id가 플레이어가 직접 지휘하는 군세(본대 관우군이든, 따로 편성한 유비군이든)인지 -
   // 두 경우 모두 같은 GameState.morale 하나를 공유해서 쓴다(getWarLock 참고).
@@ -135,8 +193,10 @@ const StatusEffects = (function () {
   return {
     applyArmyStatus, clearArmyStatus, activeStatuses, hasStatus, tickArmyStatus, tickAllArmyStatus,
     isConfused, isTaunted, tauntSourceId,
+    dmgDealtMult, dmgTakenMult, gradeBoostAmount, hasImmunity, evadeChance, rollEvade,
+    canUseThisScene, markUsedThisScene, resetSceneUsage, canUseThisMonth, markUsedThisMonth,
     igniteTile, extinguishTile, fireTilesForMap, tickFireTiles,
     linkChain, unlinkChain, chainedWith, propagateDamage,
-    LABELS: ARMY_STATUS_LABELS,
+    LABELS: ALL_LABELS,
   };
 })();
