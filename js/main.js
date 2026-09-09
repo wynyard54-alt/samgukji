@@ -724,7 +724,15 @@ function duelAcceptChance(challengerGrade, defenderGrade) {
   return Math.max(0, 100 - 20 * diff);
 }
 
-function enemyArmyGrade(rd) { return gradeFor(armyMuryeokValue(rd, []), MURYEOK_GRADES); }
+// 일기토에서 군세장이 포로로 잡혔는데 그 군세에 책사(advisorId)가 있었다면,
+// 지휘를 이어받은 책사의 무력으로 등급을 다시 매긴다(대개 훨씬 낮아 사실상
+// 와해 수준으로 약해진다) - captureCommander 참고.
+function enemyArmyGrade(rd) {
+  if (rd.commanderCaptured && rd.advisorId && ROSTER[rd.advisorId]) {
+    return gradeFor(armyMuryeokValue(ROSTER[rd.advisorId], []), MURYEOK_GRADES);
+  }
+  return gradeFor(armyMuryeokValue(rd, []), MURYEOK_GRADES);
+}
 function enemyJiryeokGrade(rd) { return gradeFor(rd.stats.int, JIRYEOK_GRADES); }
 
 function npcOnGateTile(id) {
@@ -759,7 +767,7 @@ function getWarLock(id, ctx, enemyMoraleOverride) {
   const rd = ROSTER[id];
   lock = {
     playerHit: fixedHitDamage(ctx.army.troop, warArmyGrade(ctx), GameState.morale, npcOnGateTile(id)),
-    enemyHit: fixedHitDamage(rd.troop || 1000, enemyArmyGrade(rd), enemyMoraleOverride != null ? enemyMoraleOverride : 100, false),
+    enemyHit: fixedHitDamage(rd.troop || 1000, enemyArmyGrade(rd), enemyMoraleOverride != null ? enemyMoraleOverride : (rd.morale != null ? rd.morale : 100), false),
   };
   GameState.warLocks[id] = lock;
   return lock;
@@ -961,13 +969,47 @@ function isOverwhelmingWin(rd, result) {
     (result.playerHp / result.playerMaxHp) >= CAPTURE_HP_RATIO;
 }
 
+// 부장 1명당 20%p, 최대 60%(3명 이상) - 지휘관을 잃고 와해된 군세의 병력 중
+// 이 비율만큼을 아군 세력 병력(예비 병력)으로 흡수한다.
+function armyGeneralSalvagePct(count) {
+  return Math.min(count, 3) * 20;
+}
+
 function captureCommander(id, afterCb) {
   const rd = ROSTER[id];
   GameState.npcStatus[id] = 'captured';
   GameState.capturedCommanders.push(id);
+
+  const advisor = rd.advisorId && ROSTER[rd.advisorId];
+  if (advisor) {
+    // 군세장은 포로로 잡혔지만 책사가 지휘를 이어받는다 - 군세는 지도에 그대로
+    // 남고 병력도 그대로지만, 이후 [전투]/일기토 계산에는 책사의 무력이
+    // 대신 쓰여(대개 훨씬 낮다) 사실상 와해 수준으로 약해진다.
+    rd.commanderCaptured = true;
+    delete GameState.warLocks[id]; // 지휘관 교체로 다음 교전 피해량을 새로 계산해야 한다
+    Dialogue.show([
+      { speaker: '내레이션', text: `압도적인 실력차로 ${rd.name}을(를) 사로잡았다! 이번 전쟁이 끝나면 등용을 제안할 수 있을 것이다.` },
+      { speaker: '내레이션', text: `지휘관을 잃은 ${rd.name}의 군세는 책사 ${advisor.name}이(가) 겨우 수습했지만, 사기가 크게 꺾여 오래 버티지 못할 것이다.` },
+    ], () => {
+      toast(`${rd.name}을(를) 포획! (군세는 ${advisor.name}이(가) 지휘)`);
+      if (afterCb) afterCb();
+    });
+    return;
+  }
+
+  // 책사가 없으면 지휘 계통이 완전히 무너져 군세 자체가 와해된다 - 부장이
+  // 있었다면 패잔병 일부를 그 자리에서 수습해 아군 세력 병력에 합류시킨다.
+  const salvagePct = armyGeneralSalvagePct((rd.generalIds || []).length);
+  const salvaged = salvagePct > 0 ? Math.round((rd.troop || 0) * salvagePct / 100) : 0;
+  if (salvaged > 0) { GameState.addResource({ troop: salvaged }); updateHUD(); }
   MapView.removeNpc(id);
-  Dialogue.show([{ speaker: '내레이션', text: `압도적인 실력차로 ${rd.name}을(를) 사로잡았다! 이번 전쟁이 끝나면 등용을 제안할 수 있을 것이다.` }], () => {
-    toast(`${rd.name}을(를) 포획했다!`);
+
+  const lines = [{ speaker: '내레이션', text: `압도적인 실력차로 ${rd.name}을(를) 사로잡았다! 이번 전쟁이 끝나면 등용을 제안할 수 있을 것이다.` }];
+  lines.push(salvaged > 0
+    ? { speaker: '내레이션', text: `지휘관을 잃은 ${rd.name}의 군세는 그 자리에서 무너졌지만, 부장들이 패잔병 ${salvaged}명을 수습해 아군에 합류시켰다.` }
+    : { speaker: '내레이션', text: `지휘관을 잃은 ${rd.name}의 군세는 그 자리에서 완전히 무너졌다.` });
+  Dialogue.show(lines, () => {
+    toast(salvaged > 0 ? `${rd.name}을(를) 포획! 패잔병 ${salvaged}명 흡수. (병사 ${GameState.resources.troop})` : `${rd.name}을(를) 포획했다!`);
     if (afterCb) afterCb();
   });
 }
@@ -991,6 +1033,18 @@ function onFreeBattleEnd(id, result, afterCb, persistHp) {
       MapView.removeNpc(id);
       Dialogue.show([{ speaker: '내레이션', text: `${rd.name}이(가) 승산이 없다고 보았는지 군세를 버리고 달아났다.` }], () => {
         toast(`${rd.name}이(가) 달아났다.`);
+        if (afterCb) afterCb();
+      });
+      return;
+    }
+    if (stage === 'warmap' && rd.kind === 'enemy') {
+      // 일반 승리(포획엔 못 미침) - 적장은 개인전에서 밀려 진영으로 돌아갈
+      // 뿐, 병력 손실 없이 군세는 그대로 남는다. 대신 사기가 크게 꺾여
+      // 이후 [전투] 피해 계산에 그대로 반영된다(fixedHitDamage의 사기 보정).
+      rd.morale = Math.max(0, (rd.morale != null ? rd.morale : 100) - 10);
+      delete GameState.warLocks[id]; // 사기가 바뀌었으니 다음 교전 피해량을 새로 계산해야 한다
+      Dialogue.show([{ speaker: '내레이션', text: `${rd.name}이(가) 밀려 진영으로 물러났다! 군세의 사기가 크게 떨어졌다.` }], () => {
+        toast(`${rd.name}의 군세 사기가 떨어졌다(${rd.morale}). [전투]로 몰아붙이자.`);
         if (afterCb) afterCb();
       });
       return;

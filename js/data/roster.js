@@ -227,8 +227,10 @@ const ROSTER = {
   // 판정한다). 뇌박·진란은 성문 앞을 지키는 선봉이라 관우군이 상대하고,
   // 둘 다 쓰러지면(main.js checkWonsulRetreat) 원술은 남은 병력을 이끌고
   // 성 안으로 물러난다 - 이번 장면에서는 원술 본인과는 싸우지 않는다.
+  // generalIds: 일기토로 기령이 포로로 잡혀 군세가 와해될 때, 휘하 부장인
+  // 뇌박·진란이 패잔병 일부를 수습해 아군에 합류시킨다(main.js captureCommander).
   giryeong: { id:'giryeong', name:'기령', kind:'enemy', forced:null, affiliation:'원술군', troop:5000,
-    stats:{atk:80, def:65, spd:60, int:45, cha:50},
+    stats:{atk:80, def:65, spd:60, int:45, cha:50}, generalIds:['noebak','jinran'],
     intro:'…네놈이 관우로구나! 이 기령의 삼첨도를 받아보아라!', sprite:SPRITE_COALITION },
   gyoyu: { id:'gyoyu', name:'교유', kind:'enemy', forced:null, affiliation:'원술군', troop:4000, warArmy:'ally',
     stats:{atk:60, def:55, spd:50, int:30, cha:35},
