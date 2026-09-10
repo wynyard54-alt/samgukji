@@ -175,6 +175,7 @@ if (false) (function () {
       { id:'sossang', x:12, y:16, label:'소쌍', fixed:true },
       { id:'jangsepyeong', x:14, y:17, label:'장세평', fixed:true },
       { id:'ganong', x:18, y:12, label:'간옹', randomSpawn:true },
+      { id:'sangin', x:20, y:12, label:'상인', fixed:true },
       { id:'muangug', x:22, y:8, label:'무안국' },
       { id:'deungmu', x:30, y:21, label:'등무(황건적 잔당)', fixed:true },
       { id:'jeongwonji', x:33, y:23, label:'정원지(황건적 두목)' },
@@ -281,6 +282,7 @@ if (false) (function () {
       { id:'yeomyu', x:36, y:16, label:'', randomSpawn:true, discoverable:true, discoveryRange:2, hideAfterJangsun:true,
         discoveryText:'성벽 밖에서 병사들이 수군거린다. "오환을 움직여 이 반란을 잠재우려면, 그 사람밖에 없다는데."' },
       { id:'jangpae', x:11, y:12, label:'장패', randomSpawn:true },
+      { id:'sangin', x:23, y:12, label:'상인', fixed:true },
       { id:'taesaja', x:36, y:5, label:'태사자', randomSpawn:true },
       { id:'choeyeom', x:34, y:12, label:'최염', randomSpawn:true, discoverable:true, discoveryRange:2,
         discoveryText:'수염을 단정히 기른 선비가 거리의 풍속을 말없이 살피고 있다.',
@@ -414,6 +416,7 @@ const SEOJU_AREA_LABELS = [
         discoveryText:'성 밖 들판에서 덩치 큰 사내가 창을 손질하며 주변을 살피고 있다.',
         residence:{ x:6, y:16, label:'서성' } },
       { id:'songgwan', x:22, y:19, label:'손관', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'sangin', x:26, y:6, label:'상인', fixed:true, storyGate:'seojuFreeRoam' },
     ],
     ambient:[
       ['merchant',25,8,'ash',2],['woman',12,5,'dust',2],['farmer',22,11,'earth',2],

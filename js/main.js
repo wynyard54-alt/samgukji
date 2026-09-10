@@ -506,6 +506,8 @@ function interactNPC(id, context) {
     return;
   }
 
+  if (rd.kind === 'merchant') { openMerchantShop(id); return; }
+
   if (id === 'yeopo' && stage === 'warmap') {
     startYeopoAssistScene();
     return;
@@ -3227,6 +3229,43 @@ function triggerMerchantEvent() {
     toast(`떠돌이 상인에게서 ${rice ? `쌀 ${riceAmount}` : `금 ${goldAmount}`}을(를) 얻었다.`);
     updateHUD();
   });
+}
+
+// ---- 도시맵(탁현/평원/서주) 상주 상인 - 금으로 군량/활/군마를 구매 ----
+const MERCHANT_DEALS = [
+  { key: 'rice', label: '군량', unit: 200, cost: 5 },
+  { key: 'bow', label: '활', unit: 20, cost: 8 },
+  { key: 'horse', label: '군마', unit: 10, cost: 15 },
+];
+
+function openMerchantShop(id) {
+  const rd = ROSTER[id];
+  Dialogue.show([{ speaker: rd.name, text: rd.intro }], () => showMerchantMenu(id));
+}
+
+function showMerchantMenu(id) {
+  const rd = ROSTER[id];
+  const gs = GameState;
+  showChoice(`${rd.name}: 무엇을 사시겠습니까? (보유 금 ${gs.resources.gold})`, [
+    ...MERCHANT_DEALS.map((deal) => ({
+      label: `${deal.label} 구매 (금 ${deal.cost} → ${deal.label} +${deal.unit})`,
+      cb: () => buyFromMerchant(id, deal),
+    })),
+    { label: '그만 둘러본다', cb: () => {} },
+  ]);
+}
+
+function buyFromMerchant(id, deal) {
+  if (GameState.resources.gold < deal.cost) {
+    centerAlert('금이 부족합니다.');
+    showMerchantMenu(id);
+    return;
+  }
+  GameState.resources.gold -= deal.cost;
+  GameState.addResource({ [deal.key]: deal.unit });
+  toast(`${deal.label} ${deal.unit}을(를) 구매했다. (금 ${deal.cost} 소비, 보유 ${deal.label} ${GameState.resources[deal.key]})`);
+  updateHUD();
+  showMerchantMenu(id);
 }
 
 function triggerHarvestEvent() {

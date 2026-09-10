@@ -56,6 +56,9 @@ const ROSTER = {
     bio:'장세평과 함께 유비에게 말과 금은을 대어 거병을 도운 중산의 대상이다.', intro:'그대들 뜻이 크다는 소문을 들었소. 이 정도 금은 내어드리리다.', sprite:SPRITE_MERCHANT },
   jangsepyeong: { id:'jangsepyeong', name:'장세평', birth:140, deathReal:205, deathVirtual:230, kind:'resource', reward:{troop:30}, affiliation:'-',
     bio:'소쌍과 함께 유비에게 말과 재물을 지원해 의병을 일으키게 한 중산의 대상이다.', intro:'좋은 말과 장정들을 마련해두었소. 큰일에 보태시게.', sprite:SPRITE_MERCHANT },
+  // 도시맵(탁현/평원/서주)에 상주하며 금을 내면 군량/활/군마를 파는 상인 - openMerchantShop(main.js) 참고.
+  sangin: { id:'sangin', name:'상인', kind:'merchant', affiliation:'-',
+    bio:'여러 고을을 오가며 군량과 병장기를 파는 떠돌이 상인이다.', intro:'필요한 물자가 있으면 말씀만 하시오. 값은 넉넉히 쳐드리리다.', sprite:SPRITE_MERCHANT },
   gongyung: { id:'gongyung', name:'공융', birth:153, deathReal:208, deathVirtual:243, kind:'recruit', forced:null, affiliation:'북해', chance:0.15,
     stats:{atk:18, def:22, spd:20, int:82, cha:84, lead:25}, bio:'북해상을 지낸 후한의 명사로, 학식이 높았으나 후에 조조에게 미움을 사 처형되었다.', intro:'북해에서 온 공융이오. 이런 촌구석에서 그대들 같은 의기 넘치는 이들을 만날 줄이야.' },
   ganong: { id:'ganong', name:'간옹', birth:155, deathReal:225, deathVirtual:245, kind:'recruit', forced:null, affiliation:'무소속', chance:0.2,
