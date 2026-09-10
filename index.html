@@ -341,10 +341,9 @@
   <p id="merchant-desc">보유 금 <span id="merchant-gold"></span> · 매달 한도가 새로 채워집니다</p>
   <div class="army-field merchant-row" data-key="rice">
     <label>군량 · 쌀 (이번 달 남은 한도 <span class="merchant-left"></span>/<span class="merchant-cap"></span>)</label>
-    <div class="stepper">
-      <button type="button" class="stepper-btn" data-target="merchant-rice" data-dir="-1">◀</button>
-      <div class="stepper-value" id="merchant-rice-value">0</div>
-      <button type="button" class="stepper-btn" data-target="merchant-rice" data-dir="1">▶</button>
+    <div class="merchant-slider-row">
+      <input type="range" class="merchant-slider" id="merchant-rice-slider" min="0" max="0" step="1" value="0">
+      <div class="merchant-slider-value" id="merchant-rice-value">0</div>
     </div>
     <div class="merchant-row-footer">
       <span class="merchant-cost"></span>
@@ -353,10 +352,9 @@
   </div>
   <div class="army-field merchant-row" data-key="bow">
     <label>활 (이번 달 남은 한도 <span class="merchant-left"></span>/<span class="merchant-cap"></span>)</label>
-    <div class="stepper">
-      <button type="button" class="stepper-btn" data-target="merchant-bow" data-dir="-1">◀</button>
-      <div class="stepper-value" id="merchant-bow-value">0</div>
-      <button type="button" class="stepper-btn" data-target="merchant-bow" data-dir="1">▶</button>
+    <div class="merchant-slider-row">
+      <input type="range" class="merchant-slider" id="merchant-bow-slider" min="0" max="0" step="1" value="0">
+      <div class="merchant-slider-value" id="merchant-bow-value">0</div>
     </div>
     <div class="merchant-row-footer">
       <span class="merchant-cost"></span>
@@ -365,10 +363,9 @@
   </div>
   <div class="army-field merchant-row" data-key="horse">
     <label>군마 (이번 달 남은 한도 <span class="merchant-left"></span>/<span class="merchant-cap"></span>)</label>
-    <div class="stepper">
-      <button type="button" class="stepper-btn" data-target="merchant-horse" data-dir="-1">◀</button>
-      <div class="stepper-value" id="merchant-horse-value">0</div>
-      <button type="button" class="stepper-btn" data-target="merchant-horse" data-dir="1">▶</button>
+    <div class="merchant-slider-row">
+      <input type="range" class="merchant-slider" id="merchant-horse-slider" min="0" max="0" step="1" value="0">
+      <div class="merchant-slider-value" id="merchant-horse-value">0</div>
     </div>
     <div class="merchant-row-footer">
       <span class="merchant-cost"></span>
