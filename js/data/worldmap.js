@@ -20,6 +20,8 @@ const WORLDMAP_FACTION_COLORS = {
   sasup: '#d8c9a3',        // 사섭 (베이지)
   yuwu: '#ff2d95',         // 유우 (핫핑크)
   hanbok: '#5a3a1a',       // 한복 (짙은 갈색)
+  yeopo: '#9c2b2b',        // 여포 (적갈색)
+  ijgwak: '#4a4a63',       // 이각·곽사(장안 조정) (남회색)
   hanna: '#ffffff',        // 한나라(세력 미정 지역) (하양)
   neutral: '#8a8478',      // 기타/미상 (짙은 회색)
 };
@@ -28,7 +30,7 @@ const WORLDMAP_FACTION_NAMES = {
   dongtak: '동탁', wonso: '원소', wonsul: '원술', gongsonchan: '공손찬', jojo: '조조',
   songgyeon: '손견', yupyo: '유표', yueon: '유언', seoryang: '마등·한수', yubi: '유비',
   dogyeom: '도겸', hwangeonjeok: '황건적', jangno: '장로', sasup: '사섭', yuwu: '유우',
-  hanbok: '한복', hanna: '한나라', neutral: '미상',
+  hanbok: '한복', yeopo: '여포', ijgwak: '이각·곽사', hanna: '한나라', neutral: '미상',
 };
 
 // [병력]/[농업량] 보기 모드에서 값 구간별로 쓰는 색상(연한 -> 진한). 마지막
@@ -138,9 +140,51 @@ const WORLDMAP_SCENE_FACTIONS_CAMP = {
   habi: 'dogyeom', sopae: 'dogyeom', nangya: 'dogyeom',
 };
 
+// 챕터2(194년 3월, 군웅할거 시점) 세력도. 삼국지10 194년 시나리오 참고 +
+// 연의/사서 기준으로 정리했다. 동탁은 192년에 죽고 이각·곽사가 장안 조정을
+// 장악한 상태(ijgwak)이고, 여포는 아직 자기 세력이 없이 장양에게 몸을 의탁해
+// 하내에 머무는 시점(하내=여포로 표시, 장료도 이 시점 여포 밑에 있다).
+// 유우는 193년에 공손찬에게 죽어 유주가 공손찬 손에 넘어갔고, 손견도 191년에
+// 죽어 남양은 원술이 아닌 유표 쪽으로 넘어간 상태다. 확신이 서지 않는 변방
+// 소도시는 굳이 덮어쓰지 않고 기존 hanna(세력 미정)로 남겨둔다.
+const WORLDMAP_SCENE_FACTIONS_CH2 = {
+  // 사예/관중 (이각·곽사가 헌제를 낀 장안 조정을 장악)
+  jangan: 'ijgwak', hamgokgwan: 'ijgwak', nakyang: 'ijgwak', hogwan: 'ijgwak',
+  // 유주 (공손찬, 유우를 죽이고 병합)
+  gye: 'gongsonchan', takhyeontown: 'gongsonchan',
+  // 기주 (원소)
+  nampi: 'wonso', georok: 'wonso', jungsan: 'wonso', eop: 'wonso',
+  // 평원 (유비, 공손찬 휘하 평원상)
+  pyeongwon2: 'yubi',
+  // 하내 (여포, 장양에게 의탁 중 - 아직 독립 세력 아님)
+  hanae: 'yeopo',
+  // 연주 (조조)
+  jinchang: 'jojo', baengma: 'jojo', bogyang: 'jojo',
+  // 양주/서량 (마등·한수)
+  muwi: 'seoryang', takhyeon: 'seoryang', geumseong: 'seoryang', anjeong: 'seoryang', cheonsu: 'seoryang',
+  // 서주 (도겸)
+  habi: 'dogyeom', sopae: 'dogyeom', nangya: 'dogyeom', gwangneung: 'dogyeom',
+  // 회남 (원술, 남양에서 밀려나 수춘으로 근거지를 옮긴 상태)
+  sujun: 'wonsul', yeogang: 'wonsul',
+  // 형주 (유표, 원술 퇴각 이후 남양까지 8군을 통합)
+  yangyang: 'yupyo', wan: 'yupyo', ganghwa: 'yupyo', jangsa: 'yupyo',
+  gangneung: 'yupyo', yeongneung: 'yupyo', gyeyang: 'yupyo', mureung: 'yupyo', iryeong: 'yupyo',
+  // 익주 (유언)
+  yangpyeonggwan: 'yueon', myeonjukgwan: 'yueon', jadong: 'yueon', seongdo: 'yueon', gangju: 'yueon', yeongan: 'yueon',
+  // 한중 (장로)
+  hanjung: 'jangno',
+  // 교주 (사섭)
+  gyoji: 'sasup',
+  // 시대 특성상 194년엔 이미 진압된 황건적 표기라 세력 미정으로 되돌림
+  heochang: 'hanna',
+};
+
 const WORLDMAP_SCENE_FACTIONS = {
   camp: WORLDMAP_SCENE_FACTIONS_CAMP,
   warmap: WORLDMAP_SCENE_FACTIONS_CAMP,
+  hoenam: WORLDMAP_SCENE_FACTIONS_CH2,
+  seoju_free: WORLDMAP_SCENE_FACTIONS_CH2,
+  habi_camp: WORLDMAP_SCENE_FACTIONS_CH2,
 };
 
 // 씬별로 "지금 여기" 깃발을 표시할 위치.
@@ -149,4 +193,7 @@ const WORLDMAP_SCENE_FLAG = {
   pyeongwon_free: 'gye',
   camp: 'hogwan',
   warmap: 'hogwan',
+  hoenam: 'sujun',
+  seoju_free: 'habi',
+  habi_camp: 'habi',
 };

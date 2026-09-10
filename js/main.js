@@ -3071,6 +3071,13 @@ function renderSaveBox() {
 // ---------------- 대지도 ----------------
 let worldMapMode = 'faction'; // 'faction' | 'troops' | 'rice'
 
+// stage만으로는 챕터1의 호로관 전선과 챕터2의 회남 벌판을 구분할 수 없다
+// (둘 다 stage='warmap'). 실제로 로드된 지도로 구분해 챕터2용 세력 표를 쓴다.
+function worldMapStageKey() {
+  if (stage === 'warmap' && MapView.currentMapId === 'hoenam') return 'hoenam';
+  return stage;
+}
+
 function worldMapMarkerColor(loc, faction) {
   if (worldMapMode === 'troops') return worldmapTierColor(loc.troops, WORLDMAP_TROOPS_THRESHOLDS, WORLDMAP_TROOPS_COLORS);
   if (worldMapMode === 'rice') return worldmapTierColor(loc.rice, WORLDMAP_RICE_THRESHOLDS, WORLDMAP_RICE_COLORS);
@@ -3080,8 +3087,8 @@ function worldMapMarkerColor(loc, faction) {
 function renderWorldMap() {
   const wrap = document.getElementById('worldmap-markers');
   wrap.innerHTML = '';
-  const overrides = WORLDMAP_SCENE_FACTIONS[stage] || {};
-  const flagLocId = WORLDMAP_SCENE_FLAG[stage];
+  const overrides = WORLDMAP_SCENE_FACTIONS[worldMapStageKey()] || {};
+  const flagLocId = WORLDMAP_SCENE_FLAG[worldMapStageKey()];
   WORLDMAP_LOCATIONS.forEach((loc) => {
     const el = document.createElement('div');
     el.className = `wm-marker ${loc.type}`;
@@ -3130,7 +3137,7 @@ function renderWorldMapLegend() {
     rows = tierLegendRows(WORLDMAP_RICE_THRESHOLDS, WORLDMAP_RICE_COLORS, '석');
   } else {
     title = '세력';
-    const overrides = WORLDMAP_SCENE_FACTIONS[stage] || {};
+    const overrides = WORLDMAP_SCENE_FACTIONS[worldMapStageKey()] || {};
     const seen = [];
     WORLDMAP_LOCATIONS.forEach((loc) => {
       const f = overrides[loc.id] || loc.faction;
