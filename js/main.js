@@ -2746,7 +2746,9 @@ function openArmyBox(onConfirm, opts) {
     if (!rd || !isScholarType(rd) || excludeIds.includes(id)) return;
     const opt = document.createElement('option');
     opt.value = id;
-    opt.textContent = `${rd.name} (지력 ${rd.stats.int})`;
+    const topStrategy = strategiesFor(id)[0];
+    const strategyLabel = topStrategy ? ` · 책략: ${STRATEGIES[topStrategy].name}` : '';
+    opt.textContent = `${rd.name} (지력 ${rd.stats.int}${strategyLabel})`;
     select.appendChild(opt);
   });
   select.onchange = updateArmyPower;
