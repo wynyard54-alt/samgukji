@@ -3232,41 +3232,112 @@ function triggerMerchantEvent() {
 }
 
 // ---- 도시맵(탁현/평원/서주) 상주 상인 - 금으로 군량/활/군마를 구매 ----
+// unit/cost = 1단계(스테퍼 한 칸)당 수량/금값, monthlyCap = 이번 달에 살 수 있는 최대 수량
+// (10단계 분량) - 다음달 버튼을 누르면 GameState.merchantBought가 초기화되며 다시 채워진다.
 const MERCHANT_DEALS = [
-  { key: 'rice', label: '군량', unit: 200, cost: 5 },
-  { key: 'bow', label: '활', unit: 20, cost: 8 },
-  { key: 'horse', label: '군마', unit: 10, cost: 15 },
+  { key: 'rice', label: '군량', unit: 200, cost: 5, monthlyCap: 2000 },
+  { key: 'bow', label: '활', unit: 20, cost: 8, monthlyCap: 200 },
+  { key: 'horse', label: '군마', unit: 10, cost: 15, monthlyCap: 100 },
 ];
+
+let merchantSteppers = {};
+
+function merchantMaxUnits(deal) {
+  const remainingMonthly = Math.max(0, deal.monthlyCap - GameState.merchantBought[deal.key]);
+  const affordableUnits = Math.floor(GameState.resources.gold / deal.cost) * deal.unit;
+  return Math.min(remainingMonthly, affordableUnits);
+}
+
+function makeMerchantStepper(deal) {
+  const el = document.getElementById(`merchant-${deal.key}-value`);
+  return {
+    step: deal.unit,
+    get() { return Number(el.dataset.val || 0); },
+    set(v) {
+      v = clamp(Math.round(v / deal.unit) * deal.unit, 0, merchantMaxUnits(deal));
+      el.dataset.val = v;
+      el.textContent = v.toLocaleString();
+      updateMerchantRow(deal);
+    },
+  };
+}
+
+function updateMerchantRow(deal) {
+  const row = document.querySelector(`.merchant-row[data-key="${deal.key}"]`);
+  const remainingMonthly = Math.max(0, deal.monthlyCap - GameState.merchantBought[deal.key]);
+  row.querySelector('.merchant-left').textContent = remainingMonthly.toLocaleString();
+  row.querySelector('.merchant-cap').textContent = deal.monthlyCap.toLocaleString();
+  const qty = merchantSteppers[deal.key].get();
+  const cost = (qty / deal.unit) * deal.cost;
+  row.querySelector('.merchant-cost').textContent = qty > 0 ? `금 ${cost} 소비` : '';
+}
+
+function wireMerchantStepperButtons() {
+  document.querySelectorAll('#merchant-box .stepper-btn').forEach((btn) => {
+    if (btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+    let holdTimeout = null;
+    let interval = null;
+    const fire = () => {
+      const key = btn.dataset.target.replace('merchant-', '');
+      const stepper = merchantSteppers[key];
+      if (!stepper) return;
+      stepper.set(stepper.get() + Number(btn.dataset.dir) * stepper.step);
+    };
+    const start = (ev) => {
+      ev.preventDefault();
+      fire();
+      holdTimeout = setTimeout(() => { interval = setInterval(fire, 150); }, 400);
+    };
+    const stop = () => { clearTimeout(holdTimeout); clearInterval(interval); };
+    btn.addEventListener('mousedown', start);
+    btn.addEventListener('touchstart', start, { passive: false });
+    ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach((ev) => btn.addEventListener(ev, stop));
+  });
+  document.querySelectorAll('.merchant-buy-btn').forEach((btn) => {
+    if (btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', () => buyFromMerchant(MERCHANT_DEALS.find((d) => d.key === btn.dataset.key)));
+  });
+}
+
+function renderMerchantBox() {
+  document.getElementById('merchant-gold').textContent = GameState.resources.gold.toLocaleString();
+  MERCHANT_DEALS.forEach((deal) => {
+    if (!merchantSteppers[deal.key]) merchantSteppers[deal.key] = makeMerchantStepper(deal);
+    merchantSteppers[deal.key].set(0);
+  });
+  document.getElementById('merchant-hint').textContent = '';
+  wireMerchantStepperButtons();
+}
 
 function openMerchantShop(id) {
   const rd = ROSTER[id];
-  Dialogue.show([{ speaker: rd.name, text: rd.intro }], () => showMerchantMenu(id));
+  Dialogue.show([{ speaker: rd.name, text: rd.intro }], () => {
+    renderMerchantBox();
+    document.getElementById('merchant-box').classList.remove('hidden');
+  });
 }
 
-function showMerchantMenu(id) {
-  const rd = ROSTER[id];
-  const gs = GameState;
-  showChoice(`${rd.name}: 무엇을 사시겠습니까? (보유 금 ${gs.resources.gold})`, [
-    ...MERCHANT_DEALS.map((deal) => ({
-      label: `${deal.label} 구매 (금 ${deal.cost} → ${deal.label} +${deal.unit})`,
-      cb: () => buyFromMerchant(id, deal),
-    })),
-    { label: '그만 둘러본다', cb: () => {} },
-  ]);
-}
-
-function buyFromMerchant(id, deal) {
-  if (GameState.resources.gold < deal.cost) {
-    centerAlert('금이 부족합니다.');
-    showMerchantMenu(id);
-    return;
-  }
-  GameState.resources.gold -= deal.cost;
-  GameState.addResource({ [deal.key]: deal.unit });
-  toast(`${deal.label} ${deal.unit}을(를) 구매했다. (금 ${deal.cost} 소비, 보유 ${deal.label} ${GameState.resources[deal.key]})`);
+function buyFromMerchant(deal) {
+  const qty = merchantSteppers[deal.key].get();
+  const hintEl = document.getElementById('merchant-hint');
+  if (qty <= 0) { hintEl.textContent = '구매할 수량을 먼저 골라주세요.'; return; }
+  const cost = (qty / deal.unit) * deal.cost;
+  if (GameState.resources.gold < cost) { hintEl.textContent = '금이 부족합니다.'; return; }
+  GameState.resources.gold -= cost;
+  GameState.addResource({ [deal.key]: qty });
+  GameState.merchantBought[deal.key] += qty;
+  hintEl.textContent = '';
+  toast(`${deal.label} ${qty.toLocaleString()}을(를) 구매했다. (금 ${cost} 소비, 보유 ${deal.label} ${GameState.resources[deal.key].toLocaleString()})`);
   updateHUD();
-  showMerchantMenu(id);
+  document.getElementById('merchant-gold').textContent = GameState.resources.gold.toLocaleString();
+  MERCHANT_DEALS.forEach((d) => merchantSteppers[d.key].set(0));
 }
+
+document.getElementById('merchant-close').onclick = () => {
+  document.getElementById('merchant-box').classList.add('hidden');
+};
 
 function triggerHarvestEvent() {
   const good = Math.random() < 0.5;
@@ -3511,6 +3582,7 @@ function runAmbientEvent(kind) {
 
 document.getElementById('btn-nextmonth').onclick = () => {
   GameState.nextMonth();
+  GameState.merchantBought = { rice: 0, bow: 0, horse: 0 }; // 상인의 월간 판매 한도 초기화
   // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).
   // 같은 달 안에서 연달아 전투를 치를 때만 체력이 그대로 이어진다 - 휴식(다음달)을 거치면 항상 완전 회복.
   const inCampaign = stage === 'warmap';
