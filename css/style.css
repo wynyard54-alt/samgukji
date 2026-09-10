@@ -62,6 +62,23 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
      여기서는 여백만 최소화해 화면을 최대한 채운다. */
   #explore-viewport{ margin:2px auto 0; }
   #map-hint{ margin-top:2px; }
+
+  /* 세력설명 화면 카드가 늘어나면(챕터2는 7개) 세로로 든 모바일의 빠듯한
+     세로 예산(물리적 화면 가로폭 정도) 안에서 맨 아래 "다음" 버튼까지
+     스크롤 없이 한 화면에 들어오지 않는 경우가 있었다. 열을 더 촘촘히
+     나누고 카드 여백/글자 크기를 줄여 전체 세로 길이를 압축한다. */
+  .pick-wrap h2{ margin-bottom:2px; }
+  .pick-wrap .subtitle{ margin-bottom:5px; }
+  .faction-scroll{
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:5px;
+    max-height:min(58vh,320px); margin-top:5px;
+  }
+  .faction-row{ padding:4px 8px; }
+  .fname{ font-size:11.5px; }
+  .floc{ font-size:9px; margin:0 0 2px; }
+  .fdetail{ font-size:9.5px; line-height:1.28; }
+  .note-box{ margin-top:6px; padding:5px 10px; font-size:10px; }
+  .step-nav{ margin-top:8px; }
 }
 
 /* 타이틀 */
@@ -82,7 +99,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .big-btn.outline:hover{ background:rgba(138,95,31,0.08); }
 
 /* 챕터 선택 / 세력 설명 */
-#screen-chapter, #screen-factions{ align-items:center; justify-content:center; background:var(--paper); overflow-y:auto; }
+#screen-chapter, #screen-factions, #screen-factions-2{ align-items:center; justify-content:center; background:var(--paper); overflow-y:auto; }
 /* flex 항목은 기본적으로 내용물 크기 아래로 줄어들지 않는다(min-width:auto) - 세로로 든
    모바일처럼 실제 화면 폭이 좁을 때 이 박스가 화면보다 넓게 그려져 잘려버리는 원인이었다.
    min-width:0으로 강제로 줄어들 수 있게 하고, width:100%로 항상 화면 폭 안에 맞춘다. */
@@ -130,7 +147,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 
 /* 캐릭터 선택 */
-#screen-select{ align-items:center; justify-content:center; background:var(--paper); overflow-y:auto; }
+#screen-select, #screen-select-2{ align-items:center; justify-content:center; background:var(--paper); overflow-y:auto; }
 .select-wrap{ text-align:center; width:100%; max-width:820px; min-width:0; box-sizing:border-box; padding:16px; }
 .select-wrap h2{ font-size:19px; margin-bottom:10px; }
 /* 세로로 든 모바일에서는 세력설명 화면과 마찬가지로 세로 공간이 빠듯하다. 카드를
