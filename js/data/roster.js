@@ -42,7 +42,8 @@ const ROSTER = {
   jangbi: { id:'jangbi', name:'장비', birth:165, deathReal:221, deathVirtual:255, role:'PC', kind:'playable', affiliation:'유비군',
     stats:{atk:100, def:90, spd:99, int:32, cha:46, lead:95}, weapon:'장팔사모',
     bio:'촉한의 오호대장군, 장판교에서 홀로 조조의 대군을 막아선 것으로 이름을 떨쳤다. 부하 장달·범강에게 암살당했다.',
-    skills:['pohyo'] },
+    skills:['pohyo'],
+    battleArt:{ glyph:'張', weapon:'丈八蛇矛', className:'hero-green', src:'assets/battle/duel_jangbi_v2.png' } },
 
   // 탁현
   chujeong: { id:'chujeong', name:'추정', birth:162, deathReal:230, deathVirtual:252, kind:'recruit', forced:null, affiliation:'무소속',
