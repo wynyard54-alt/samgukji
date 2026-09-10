@@ -1883,12 +1883,15 @@ function startJangbiVsUgeumDuel() {
       }
       Dialogue.show(STORY.seoju_wall_standoff_result, () => {
         MapView.stopNpcStir();
-        // 성문 앞이 아니라 성벽 위(문루 오른쪽, 일부러 두껍게 만든 성벽 구간)에서
-        // 도겸을 만난다 - 유비/도겸도 함께 등장시켜 세 사람이 모여 있는 것처럼 보인다.
-        MapView.setPlayerPos(23, 12);
+        // 연의대로 이 시점에 관우(와 조운)는 성벽이 아니라 후방을 지키고 있어야
+        // 하므로, 플레이어(관우)는 원래 대기 위치(후방)에 그대로 두고 카메라만
+        // 유비·도겸이 서 있는 성벽 쪽(문루 오른쪽, 일부러 두껍게 만든 성벽
+        // 구간)을 비춘다 - 예전에는 플레이어를 그 자리로 옮겨서 관우까지
+        // 성벽 위에 서 있는 것처럼 보였다.
+        MapView.setPlayerPos(29, 23);
         MapView.addNpc('yubi');
         MapView.addNpc('dogyeom');
-        MapView.clearCameraFocus();
+        MapView.panCameraTo(23, 12, 500);
         Dialogue.show(STORY.seoju_wall_standoff_city, () => {
           // 편지를 받은 조조가 곽가와 상의하는 장면이므로, 다시 조조 진영을 비춰준다.
           MapView.panCameraTo(15, 20, 700);
@@ -1936,9 +1939,12 @@ function goHabiCamp() {
     onAmbientInteract: runAmbientEvent,
     onStep: renderMinimap,
   });
+  // 문에서부터 걸어오는 대신, 유비 집무실에 이미 도착해 유비 바로 옆에 있는
+  // 것으로 시작한다(지도 기본 playerStart는 남쪽 대문 앞이라 너무 멀다).
+  MapView.setPlayerPos(16, 7);
   updateHUD();
   Dialogue.show(STORY.habi_intro, () => {
-    centerAlert('유비를 찾아가자.');
+    centerAlert('유비와 대화하자.');
   });
 }
 
