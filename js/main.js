@@ -2422,23 +2422,15 @@ BattleEvents.on('battleEnd', (payload) => {
 document.getElementById('btn-start').onclick = () => showScreen('screen-chapter');
 
 document.getElementById('chapter-card-1').onclick = () => showScreen('screen-factions');
+document.getElementById('chapter-card-2').onclick = () => showScreen('screen-factions-2');
 document.querySelectorAll('#screen-chapter .pick-card[data-ready="false"]').forEach((btn) => {
   btn.onclick = () => toast('준비 중인 챕터입니다.');
 });
 
-// 챕터2 정식 진입(세력 소개/장수 선택 등)은 아직 미완성이라, 관우 스토리 장면1만
-// 바로 확인해볼 수 있는 임시 미리보기 버튼이다. 정식 챕터2가 만들어지면 제거한다.
-document.getElementById('chapter-card-2-preview').onclick = () => {
-  GameState.reset('gwanwoo');
-  GameState.npcStatus['deungmu'] = 'resolved';
-  GameState.flags.act1 = true;
-  MAPS.pyeongwon.apMovement = false;
-  showScreen('screen-explore');
-  goSeojuFree();
-};
-
 document.getElementById('btn-faction-back').onclick = () => showScreen('screen-chapter');
 document.getElementById('btn-faction-next').onclick = () => showScreen('screen-select');
+document.getElementById('btn-faction2-back').onclick = () => showScreen('screen-chapter');
+document.getElementById('btn-faction2-next').onclick = () => showScreen('screen-select-2');
 
 document.querySelectorAll('.hero-card').forEach((card) => {
   if (card.dataset.ready === 'false') {
@@ -2446,6 +2438,19 @@ document.querySelectorAll('.hero-card').forEach((card) => {
     return;
   }
   card.onclick = () => {
+    if (card.dataset.chapter === '2') {
+      GameState.reset(card.dataset.hero);
+      // 연의 기준 유비의 서주 지원(도겸의 요청)은 194년 무렵이다 - 챕터1
+      // 기본값(184년)을 그대로 이어받지 않고 챕터 시작 연도로 맞춰준다.
+      GameState.year = 194;
+      GameState.month = 3;
+      GameState.npcStatus['deungmu'] = 'resolved';
+      GameState.flags.act1 = true;
+      MAPS.pyeongwon.apMovement = false;
+      showScreen('screen-explore');
+      goSeojuFree();
+      return;
+    }
     GameState.reset(card.dataset.hero);
     MAPS.pyeongwon.apMovement = false; // 이전 회차의 장순의 난 군세 이동모드가 남아있지 않도록 초기화
     goTakhyeonFree();
