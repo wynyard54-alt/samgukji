@@ -562,10 +562,14 @@ const MapView = (function () {
       // 빈 값이면 이름표가 영영 안 뜬다 - 그 경우 본명(rd.name)으로 대신한다.
       // 적 군세는 이름표 대신 [잔여병사/무력등급/지력등급]을 표기해 교전 전 전력을 가늠할 수 있게 한다.
       // rd.troop/능력치는 전투 결과에 따라 실시간으로 바뀌므로 매 프레임 다시 계산한다.
+      // 유비 마커는 GameState.allyArmy(회남 벌판에서 편성한 별도 군세)를 같은 형식으로 보여준다 -
+      // 유비 본인(ROSTER.yubi)에는 troop 필드가 없으므로 rd.troop 분기로는 못 잡는다.
       const baseLabel = n.label || rd.name;
       const label = (rd.kind === 'enemy' && rd.troop != null)
         ? `${baseLabel} · 병${rd.troop} · 무${enemyArmyGrade(rd)} · 지${gradeFor(rd.stats.int, JIRYEOK_GRADES)}`
-        : baseLabel;
+        : (n.id === 'yubi' && mapId === 'hoenam' && GameState.allyArmy)
+          ? `${baseLabel} · 병${GameState.allyArmy.troop} · 무${warArmyGrade({ commanderId:'yubi', army:GameState.allyArmy })} · 지${gradeFor(GameState.allyArmy.deputy && ROSTER[GameState.allyArmy.deputy] ? ROSTER[GameState.allyArmy.deputy].stats.int : 0, JIRYEOK_GRADES)}`
+          : baseLabel;
       drawTag(x, worldY(n.y)-7, label, '#40372c');
       drawDamageFloat(n.id, x, worldY(n.y)-22);
     } else if (hidden && Math.abs(n.x-player.x)+Math.abs(n.y-player.y)<=3) {

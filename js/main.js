@@ -576,6 +576,8 @@ function handleYubi() {
     } else {
       offerBarracksTraining('아우, 무슨 일인가?');
     }
+  } else if (MapView.currentMapId === 'hoenam') {
+    Dialogue.show([{ speaker: '유비', text: '원술의 군세가 곳곳에 진을 치고 있으니 조심하게. 나는 이 자리에서 교유의 군세를 상대하겠네.' }]);
   }
 }
 
@@ -1445,7 +1447,8 @@ function resolveArmyBattle(id) {
   if (!spend(ARMY_BATTLE_AP_COST)) return;
   const army = ctx.army;
   const commanderName = ROSTER[ctx.commanderId].name;
-  const showOnMap = rd.warArmy !== 'ally'; // 유비군은 지도에 별도 스프라이트가 없다
+  // 유비군 전투는 유비 마커에, 관우군 전투는 관우 본인에 공격/피격 연출을 건다.
+  const mapActorId = rd.warArmy === 'ally' ? 'yubi' : GameState.mainHero;
   const playerKey = ctx.commanderId;
 
   const lock = getWarLock(id, ctx);
@@ -1479,7 +1482,7 @@ function resolveArmyBattle(id) {
     const dmg = finalDamage(lock.playerHit, playerKey, id);
     rd.troop = Math.max(0, rd.troop - dmg);
     MapView.showDamageFloat(id, dmg);
-    if (showOnMap) MapView.showAttackBump(GameState.mainHero);
+    MapView.showAttackBump(mapActorId);
     lines.push({ speaker: '내레이션', text: dmg > 0 ? `${commanderName}군의 공격! ${rd.name}의 군세에 ${dmg}명 피해.` : `${commanderName}군의 공격! ${rd.name}의 군세가 완전히 회피했다.` });
     if (dmg > 0) StatusEffects.propagateDamage(id, dmg, chainDamage);
     if (rd.troop <= 0) enemyDown = true;
@@ -1487,7 +1490,7 @@ function resolveArmyBattle(id) {
   function enemyStrikes() {
     const dmg = finalDamage(lock.enemyHit, id, playerKey);
     army.troop = Math.max(0, army.troop - dmg);
-    if (showOnMap) MapView.showDamageFloat(GameState.mainHero, dmg);
+    MapView.showDamageFloat(mapActorId, dmg);
     MapView.showAttackBump(id);
     lines.push({ speaker: '내레이션', text: dmg > 0 ? `${rd.name}의 군세가 공격! ${commanderName}군이 ${dmg}명 피해를 입었다.` : `${rd.name}의 군세가 공격! ${commanderName}군이 완전히 회피했다.` });
     if (army.troop <= 0) playerDown = true;
@@ -2699,6 +2702,20 @@ function updateArmyPower() {
   const el = document.getElementById('army-power');
   el.textContent = `군세 능력치 — 무력 ${gradeFor(muryeok, MURYEOK_GRADES)} · 지력 ${gradeFor(jiryeok, JIRYEOK_GRADES)}`;
   el.title = `무력 ${muryeok} · 지력 ${jiryeok}`;
+  updateArmyRiceHint();
+}
+
+// 지금 스테퍼에 세팅된 병사 수 기준으로 고른 군량이 몇 달을 버티는지 보여준다
+// (1인당 월 2석 소비, monthlyRiceUpkeep 기준) - 병사/군량 스테퍼 둘 다
+// updateArmyPower를 거치므로 어느 쪽을 바꿔도 여기서 같이 갱신된다.
+function updateArmyRiceHint() {
+  const hintEl = document.getElementById('army-rice-hint');
+  if (!hintEl) return;
+  const troop = armySteppers['army-troop'] ? armySteppers['army-troop'].get() : 0;
+  const rice = armySteppers['army-rice'] ? armySteppers['army-rice'].get() : 0;
+  if (troop <= 0) { hintEl.textContent = ''; return; }
+  const months = Math.floor(rice / monthlyRiceUpkeep(troop));
+  hintEl.textContent = `병사 ${troop.toLocaleString()}명 기준 약 ${months}개월분 (월 ${monthlyRiceUpkeep(troop).toLocaleString()}가마 소비)`;
 }
 
 function wireArmyStepperButtons() {
