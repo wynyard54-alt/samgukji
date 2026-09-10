@@ -2198,6 +2198,13 @@ function handleAllyEngage(allyId, targetId) {
 let hoenamActive = false;
 let hoenamOrder = [];
 let hoenamIndex = 0;
+// 예전엔 적이 한 턴에 3칸만 움직였는데(같이 움직이는 다른 적들과 애니메이션
+// 박자를 맞추려던 임시값), 회남 벌판에서는 플레이어와 똑같은 조건으로
+// 싸우도록 관우군/유비군 행동력과 같은 크기의 이동력을 준다 - 남은 이동력을
+// 공격에 더 쓸지 접근에 더 쓸지는 (공격 자체가 행동력을 더 쓰지 않으므로)
+// computeAiPath가 매번 목표에 인접할 때까지 최대한 다가가는 것으로 이미
+// 자연스럽게 처리된다.
+const HOENAM_AI_MOVE_BUDGET = 8;
 
 function hoenamCombatantSpeed(id) {
   if (id === GameState.mainHero) return armySpeedValue(ROSTER[GameState.mainHero], (GameState.army && GameState.army.generals) || []);
@@ -2258,7 +2265,7 @@ function activateHoenamUnit() {
         if (hoenamUiBusy()) { setTimeout(waitThenAdvance, 200); return; }
         advance();
       })();
-    }, [id]);
+    }, [id], HOENAM_AI_MOVE_BUDGET);
   }
 }
 

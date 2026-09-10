@@ -751,6 +751,10 @@ const MapView = (function () {
     const nx=mover.x+dx, ny=mover.y+dy;
     mover.dir = dx<0?'left':dx>0?'right':dy<0?'up':'down';
     if (!isWalkable(nx,ny)) { render(); return; }
+    // 지금 조작 대상이 player가 아니라면(유비 차례) player가 서 있는 칸으로는
+    // 겹쳐 들어갈 수 없다 - player를 조작할 때 다른 npc 칸으로 못 들어가는 것과
+    // 대칭이다(그쪽은 아래 npcAt 검사가 이미 막는다).
+    if (mover !== player && nx === player.x && ny === player.y) { render(); return; }
     const npc=npcAt(nx,ny);
     if (npc) { interact(npc,false); return; } // 인접칸으로 다가가 공격하는 행동엔 행동력을 소모하지 않는다
     if (map.apMovement) {
@@ -934,12 +938,13 @@ const MapView = (function () {
   // target 생략시(기존 호출부 전부) 플레이어를 쫓는다. 회남 벌판의 유비군처럼
   // 아군이 다른 NPC(교유)를 목표로 접근할 때는 target에 그 NPC를 넘긴다 -
   // player든 일반 npc든 {x,y}만 있으면 되므로 그대로 재사용 가능하다.
-  function computeAiPath(n0, target) {
+  function computeAiPath(n0, target, moveBudget) {
     target = target || player;
     const path = [];
     const apScale = StatusEffects.apMult(n0.id);
     const costScale = StatusEffects.moveCostMult(n0.id);
-    let cx = n0.x, cy = n0.y, steps = Math.max(0, Math.floor(AI_MOVE_BUDGET * apScale));
+    const budget = moveBudget != null ? moveBudget : AI_MOVE_BUDGET;
+    let cx = n0.x, cy = n0.y, steps = Math.max(0, Math.floor(budget * apScale));
     if (Math.abs(cx-target.x)+Math.abs(cy-target.y) <= 1) return path; // 이미 사거리 - 이동 없이 대기 후 공격
     while (steps > 0) {
       const dist = Math.abs(cx-target.x)+Math.abs(cy-target.y);
@@ -1007,7 +1012,9 @@ const MapView = (function () {
   // 적이 여러 명이어도 턴 길이가 늘어나지 않도록 전원이 동시에(같은 박자로) 이동한다.
   // onlyIds를 주면(회남 벌판의 속도순 전투처럼 한 번에 하나씩만 움직이는 곳) 그
   // id들만 이번 호출에서 움직인다 - 생략하면 지금까지처럼 적 전원이 대상이다.
-  function runAiTurn(callback, onlyIds) {
+  // moveBudget을 주면(회남 벌판에서 플레이어와 같은 조건으로 싸우게 할 때) 그
+  // 값을 이번 호출의 이동력으로 쓴다 - 생략하면 기본 AI_MOVE_BUDGET(3칸)이다.
+  function runAiTurn(callback, onlyIds, moveBudget) {
     const done = (battled) => { if (callback) callback(battled); };
     if (!map || !map.apMovement) { done(false); return; }
     let hostiles = liveNpcs.filter((n0) => { const rd = ROSTER[n0.id]; return rd && rd.kind === 'enemy'; });
@@ -1018,7 +1025,7 @@ const MapView = (function () {
     const plans = hostiles.map((n0) => ({ n0, startX: n0.x, startY: n0.y, path: [], target: pickAiTarget(n0) }));
     for (const plan of plans) {
       // 혼란에 빠진 군세는 제자리에서 움직이지 못한다(이미 인접해 있었다면 공격은 그대로 발동).
-      plan.path = StatusEffects.isConfused(plan.n0.id) ? [] : computeAiPath(plan.n0, plan.target);
+      plan.path = StatusEffects.isConfused(plan.n0.id) ? [] : computeAiPath(plan.n0, plan.target, moveBudget);
       if (plan.path.length) { const last = plan.path[plan.path.length - 1]; plan.n0.x = last.x; plan.n0.y = last.y; }
       // 견벽거수처럼 "이동하면 사기 감소" 디버프가 걸려 있으면, 실제로 움직인
       // 칸 수만큼 사기를 깎는다 - 얌전히 있으면(경로 길이 0) 손해가 없다.
