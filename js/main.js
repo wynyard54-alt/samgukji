@@ -59,6 +59,10 @@ let stage = 'title';
 let centerAlertTimer = null;
 let pyeongwonCheckpoint = null; // 어양(구 평원현 지도) 도착 시점 GameState 스냅샷 (장순전 패배시 이 시점으로 복귀)
 let coalitionDepartCheckpoint = null; // 반동탁연합 출정(군세 편성) 직전 GameState 스냅샷 (여포전 등 호로관 이후 패배시 이 시점으로 복귀)
+// 지금 "행동/전투를 거는 쪽"이 관우가 아닐 때(회남 벌판의 속도순 전투에서
+// 유비군 차례일 때) 그 커맨더 id를 담는다 - resolveWarArmy가 이걸 최우선으로
+// 본다. 관우 차례거나 이 시스템을 안 쓰는 지도에서는 항상 null이다.
+let activeCommanderId = null;
 
 const DEADLINES = { takhyeon: 186, pyeongwon: 188 };
 const JANGSUN_TROOP_GOAL = 2000; // 유우가 요구하는 최소 모병 규모 (장순 3000명에 맞선 승산 확보용)
@@ -328,7 +332,11 @@ function renderPlayerPanel() {
 function updateHUD() {
   const gs = GameState;
   document.getElementById('hud-date').textContent = gs.dateLabel();
-  document.getElementById('hud-ap').textContent = `행동력 ${Math.min(gs.ap, effectiveApMax())}/${effectiveApMax()}`;
+  // 회남 벌판의 속도순 전투에서 유비군 차례일 때는 관우군과 별개인 allyAp를 보여준다.
+  const showAllyAp = hoenamActive && hoenamOrder[hoenamIndex] === 'yubi';
+  const apCur = showAllyAp ? gs.allyAp : gs.ap;
+  const apMax = showAllyAp ? gs.allyApMax : effectiveApMax();
+  document.getElementById('hud-ap').textContent = `행동력 ${Math.min(apCur, apMax)}/${apMax}`;
   document.getElementById('hud-gold').textContent = `금 ${gs.resources.gold}(+${scholarGoldIncome()})`;
   document.getElementById('hud-rice').textContent = `쌀 ${gs.resources.rice.toLocaleString()}(+0)`;
   document.getElementById('hud-troop').textContent = `병사 ${gs.resources.troop}`;
@@ -808,14 +816,21 @@ function maybeEnemyCastsStrategy(rd, ctx) {
   toast(`${rd.name} 진영의 ${advisor.name}이(가) ${STRATEGIES[sid].name}을(를) 시전했다! ${desc}`);
 }
 
-// 이 적을 어느 편의 군세가 상대하는지 정한다 - 기본은 플레이어가 직접
-// 편성한 군세(GameState.army, 지금까지는 늘 관우군)이고, ROSTER 항목에
-// warArmy:'ally'가 있으면 플레이어가 따로 편성한 동맹군(GameState.allyArmy,
-// 회남 벌판의 유비군)을 대신 쓴다 - 같은 세력(관우/유비)끼리는 플레이어가
-// 직접 지휘하되, 나중에 반동탁연합의 조조·원소나 하비전의 조조군처럼 진짜
-// 별개 세력이 돕는 경우가 생기면 여기에 warArmy:'ai:조조' 같은 새 갈래를
-// 추가해 AI가 알아서 판정하게 하면 된다.
+// 이 적을 어느 편의 군세가 상대하는지 정한다.
+// activeCommanderId가 설정돼 있으면(회남 벌판의 속도순 전투에서 지금
+// 조작/행동 중인 쪽이 관우가 아닐 때) 그 군세를 최우선으로 쓴다 - 유비군이
+// 교유가 아닌 다른 적(기령·뇌박·진란)에게 다가가 붙어도, 혹은 반대로 그런
+// 적이 유비군 쪽으로 다가와 붙어도 항상 실제로 맞닥뜨린 쪽의 군세로
+// 싸우게 하기 위함이다. activeCommanderId가 없으면(대부분의 지도) 예전
+// 방식대로 ROSTER 항목의 정적인 warArmy:'ally' 플래그를 보고, 그것도
+// 없으면 기본값인 GameState.army(관우군)를 쓴다 - 나중에 반동탁연합의
+// 조조·원소나 하비전의 조조군처럼 진짜 별개 세력이 돕는 경우가 생기면
+// warArmy:'ai:조조' 같은 새 갈래를 추가해 AI가 알아서 판정하게 하면 된다.
 function resolveWarArmy(rd) {
+  if (activeCommanderId && activeCommanderId !== GameState.mainHero) {
+    const army = armyFor(activeCommanderId);
+    if (army) return { army, commanderId: activeCommanderId };
+  }
   if (rd.warArmy === 'ally') {
     const army = GameState.allyArmy;
     return army ? { army, commanderId: army.commanderId } : null;
@@ -2157,14 +2172,121 @@ function goHoenamBattle() {
     onAllyEngage: handleAllyEngage,
   });
   updateHUD();
-  Dialogue.show(STORY.hoenam_intro);
+  Dialogue.show(STORY.hoenam_intro, () => startHoenamRound());
 }
 
-// 플레이어가 조종하지 않는 아군(map.allyChases에 등록된 대상, 예: 회남
-// 벌판의 유비군)이 스스로 목표에 인접했을 때 MapView가 호출한다. 플레이어가
-// 직접 [전투]를 눌러 붙는 게 아니므로 행동력을 소모하지 않는다.
+// 적이 유비군(또는 앞으로 늘어날 다른 아군)에 다가가 붙었을 때도, 유비군이
+// 먼저 적에게 다가가 붙을 때와 똑같이 이 함수를 거친다 - "누가 먼저
+// 다가갔는지"는 결과에 영향이 없어야 하므로. resolveArmyBattle 내부의
+// resolveWarArmy가 activeCommanderId를 최우선으로 보므로, 실제로 맞닥뜨린
+// 쪽(allyId)의 군세로 정확히 싸우도록 잠깐 그 값으로 바꿔둔다 - 이 함수는
+// 항상 동기적으로 필요한 army/commanderId를 다 읽어들인 뒤에 반환하므로
+// (내부의 Dialogue 콜백은 이미 캡처된 값만 쓴다), 호출이 끝나자마자 원래
+// 값으로 되돌려도 안전하다.
 function handleAllyEngage(allyId, targetId) {
+  const prev = activeCommanderId;
+  activeCommanderId = allyId;
   resolveArmyBattle(targetId, { freeAction: true });
+  activeCommanderId = prev;
+}
+
+// ---- 회남 벌판 전용: 속도순으로 한 번에 하나씩만 움직이는 이니셔티브 전투 ----
+// "플레이어 턴이 끝나면 적 전원이 동시에 움직이는" 기존 방식 대신, 관우군/
+// 유비군/적 군세 각각의 속도(전투 선타 순서와 같은 armySpeedValue 산식)로
+// 순서를 매겨 한 번에 하나씩만 움직이게 한다. 안전하게 회남 벌판에서만
+// 시험 적용한다 - 다른 전장(호로관 등)은 예전 방식 그대로다.
+let hoenamActive = false;
+let hoenamOrder = [];
+let hoenamIndex = 0;
+
+function hoenamCombatantSpeed(id) {
+  if (id === GameState.mainHero) return armySpeedValue(ROSTER[GameState.mainHero], (GameState.army && GameState.army.generals) || []);
+  if (id === 'yubi') return armySpeedValue(ROSTER.yubi, (GameState.allyArmy && GameState.allyArmy.generals) || []);
+  return ROSTER[id].stats.spd;
+}
+
+function computeHoenamOrder() {
+  const ids = [];
+  if (GameState.army) ids.push(GameState.mainHero);
+  if (GameState.allyArmy) ids.push('yubi');
+  ['giryeong', 'noebak', 'jinran', 'gyoyu'].forEach((id) => {
+    if (MapView.liveNpcIds.includes(id)) ids.push(id);
+  });
+  return ids.sort((a, b) => hoenamCombatantSpeed(b) - hoenamCombatantSpeed(a));
+}
+
+function startHoenamRound() {
+  hoenamActive = true;
+  hoenamOrder = computeHoenamOrder();
+  hoenamIndex = 0;
+  activateHoenamUnit();
+}
+
+// 일기토/전투 메뉴나 대사가 아직 화면에 떠 있는 동안에는(적 차례가 자동으로
+// 플레이어와 붙어버린 경우) 다음 차례로 자동 진행하지 않고 플레이어가 그
+// 교전을 다 처리할 때까지 기다린다.
+function hoenamUiBusy() {
+  return Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden');
+}
+
+function activateHoenamUnit() {
+  // 원술 정벌이 이미 끝나 endHoenamInitiative()가 불린 뒤라면, 지연되어 있던
+  // (예: 적 차례가 플레이어와 붙어 메뉴가 뜬 채로 마무리 컷신까지 이어진 경우)
+  // 호출이 뒤늦게 와도 아무 일도 하지 않는다.
+  if (!hoenamActive) return;
+  while (hoenamIndex < hoenamOrder.length) {
+    const id = hoenamOrder[hoenamIndex];
+    if (id === GameState.mainHero || id === 'yubi' || MapView.liveNpcIds.includes(id)) break;
+    hoenamIndex++; // 이번 라운드 도중 이미 격파/포획된 대상은 건너뛴다
+  }
+  if (hoenamIndex >= hoenamOrder.length) { monthAdvanceClick(); return; }
+  const id = hoenamOrder[hoenamIndex];
+  if (id === GameState.mainHero || id === 'yubi') {
+    const isYubi = id === 'yubi';
+    activeCommanderId = isYubi ? 'yubi' : null;
+    MapView.setControlledUnit(isYubi ? 'yubi' : null);
+    if (isYubi) GameState.allyAp = GameState.allyApMax = effectiveApMax();
+    else GameState.ap = effectiveApMax();
+    updateHUD();
+    setHoenamTurnUi(id, true);
+  } else {
+    setHoenamTurnUi(id, false);
+    MapView.runAiTurn((engaged) => {
+      hoenamIndex++;
+      const advance = () => setTimeout(activateHoenamUnit, engaged ? 450 : 150);
+      (function waitThenAdvance() {
+        if (hoenamUiBusy()) { setTimeout(waitThenAdvance, 200); return; }
+        advance();
+      })();
+    }, [id]);
+  }
+}
+
+function setHoenamTurnUi(id, controllable) {
+  const btn = document.getElementById('btn-nextmonth');
+  if (controllable) {
+    btn.textContent = '군세 행동종료';
+    btn.classList.remove('hidden');
+  } else {
+    btn.classList.add('hidden');
+  }
+  toast(`${ROSTER[id].name}의 차례다.`);
+}
+
+function endHoenamUnitTurn() {
+  hoenamIndex++;
+  activateHoenamUnit();
+}
+
+// 원술 정벌이 끝나(checkHoenamClear) 회남 벌판 전투 자체가 종료될 때 호출해
+// 이니셔티브 시스템을 완전히 끄고 버튼/조작 대상을 정상으로 되돌린다.
+function endHoenamInitiative() {
+  hoenamActive = false;
+  activeCommanderId = null;
+  MapView.setControlledUnit(null);
+  const btn = document.getElementById('btn-nextmonth');
+  btn.textContent = '휴식';
+  btn.classList.remove('hidden');
 }
 
 // 기령(관우군)과 교유(유비군)를 각각 실제로 격파해야 원술이 잔여 세력과
@@ -2211,6 +2333,7 @@ function checkHoenamClear() {
     const done = (id) => ['resolved', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]);
     if (!done('giryeong') || !done('gyoyu')) return;
     GameState.flags.hoenamCleared = true;
+    endHoenamInitiative();
     MapView.lockMovement(true);
     Dialogue.show(STORY.hoenam_giryeong_win, () => {
       Dialogue.show(STORY.hoenam_jangbi_arrives, () => {
@@ -3711,7 +3834,11 @@ function runAmbientEvent(kind) {
   if (ev) ev.run();
 }
 
-document.getElementById('btn-nextmonth').onclick = () => {
+// 회남 벌판의 속도순 전투가 진행 중일 때는 이 버튼이 "군세 행동종료"로
+// 바뀌어(endHoenamUnitTurn) 라운드 도중 한 유닛의 차례만 끝내고, 그 라운드가
+// 다 돌고 나서야 실제로 이 달의 마무리 처리(monthAdvanceClick)를 부른다 -
+// activateHoenamUnit이 라운드 끝에서 직접 호출한다.
+function monthAdvanceClick() {
   GameState.nextMonth();
   GameState.merchantBought = { rice: 0, bow: 0, horse: 0 }; // 상인의 월간 판매 한도 초기화
   // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).
@@ -3782,7 +3909,11 @@ document.getElementById('btn-nextmonth').onclick = () => {
     }
     toast(`${GameState.dateLabel()}이(가) 되었다. ${hpMsg}${incomeMsg}${spawnMsg}`);
   };
-  if (inCampaign) {
+  if (inCampaign && MapView.currentMapId === 'hoenam') {
+    // 이번 라운드가 끝났으니(전원이 한 번씩 움직였으니) 다음 라운드를 속도
+    // 순서대로 새로 시작한다 - 기존의 "적 전원 동시 이동"은 여기서는 쓰지 않는다.
+    startHoenamRound();
+  } else if (inCampaign) {
     // 적 군세의 턴: 한 칸씩 걸어서 접근하는 모습을 보여준 뒤, 사거리 안이면 공격한다.
     MapView.runAiTurn((aiBattle) => { if (!aiBattle) finishTurn(); }); // 전투가 발동했으면 턴종료 토스트는 생략
   } else if (inTown) {
@@ -3795,6 +3926,11 @@ document.getElementById('btn-nextmonth').onclick = () => {
   } else {
     finishTurn();
   }
+}
+
+document.getElementById('btn-nextmonth').onclick = () => {
+  if (hoenamActive) { endHoenamUnitTurn(); return; }
+  monthAdvanceClick();
 };
 
 document.getElementById('btn-restart').onclick = () => showScreen('screen-title');

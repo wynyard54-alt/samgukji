@@ -26,6 +26,10 @@ const MapView = (function () {
   let onAmbientInteract = null;
   let onAllyEngage = null; // 플레이어가 아닌 아군(회남 벌판의 유비군 등)이 자기 목표를 향해 다가가 인접하면 호출된다
   let spawnDeadlineAbs = null; // 랜덤 등장 장수가 마감 기한의 50% 안쪽에 나오도록 하는 절대 개월수 상한
+  // 회남 벌판의 속도순 전투에서 유비군 차례가 되면, WASD 조작 대상을 문자
+  // 그대로의 player 대신 이 id의 npc로 잠깐 바꾼다(setControlledUnit 참고).
+  // null이면 지금까지처럼 player가 조작 대상이다.
+  let controlledId = null;
   let liveNpcs = [];
   let crowd = [];
   let crowdTimer = null;
@@ -207,12 +211,30 @@ const MapView = (function () {
     }, 720);
   }
 
+  // 지금 WASD로 실제 조작하는 대상 - controlledId가 없으면(대부분의 지도)
+  // 지금까지처럼 player 그대로다. 회남 벌판에서 유비군 차례가 되면 이 함수가
+  // liveNpcs 안의 'yubi' npc를 대신 반환해, 이동/카메라 로직이 손대지 않고도
+  // 자연스럽게 그쪽을 따라가게 한다.
+  function activeMover() {
+    return controlledId ? liveNpcs.find((n) => n.id === controlledId) : player;
+  }
+
+  // 회남 벌판의 속도순 전투 전용 - 조작 대상을 player 대신 다른 npc(유비 등)로
+  // 바꾼다. id가 null/미지정이면 다시 player로 되돌아온다.
+  function setControlledUnit(id) {
+    controlledId = id || null;
+    updateCamera(true);
+    render();
+  }
+
   // 컷신 중 잠시 카메라를 플레이어가 아닌 다른 지점(예: 성벽 밖 적 군세)에
-  // 고정해두고 싶을 때 쓰는 오버라이드. null이면 평소대로 플레이어를 따라간다.
+  // 고정해두고 싶을 때 쓰는 오버라이드. null이면 평소대로 조작 대상(player 또는
+  // controlledId가 가리키는 npc)을 따라간다.
   let cameraFocus = null;
   function updateCamera(snap) {
-    const fx = cameraFocus ? cameraFocus.x : player.x;
-    const fy = cameraFocus ? cameraFocus.y : player.y;
+    const mover = activeMover() || player;
+    const fx = cameraFocus ? cameraFocus.x : mover.x;
+    const fy = cameraFocus ? cameraFocus.y : mover.y;
     const targetX = fx*TILE + TILE/2 - camera.w/2;
     const targetY = fy*TILE + TILE/2 - camera.h/2;
     const maxX = Math.max(0, map.width*TILE - camera.w);
@@ -719,10 +741,15 @@ const MapView = (function () {
 
   function tryMove(dx, dy) {
     if (!map || movementLocked) return;
-    // 혼란에 빠진 군세는(현재는 본대를 직접 조종하는 플레이어만 해당) 이동할 수 없다.
-    if (GameState.army && StatusEffects.isConfused(GameState.army.commanderId)) { render(); return; }
-    const nx=player.x+dx, ny=player.y+dy;
-    player.dir = dx<0?'left':dx>0?'right':dy<0?'up':'down';
+    const mover = activeMover();
+    if (!mover) return;
+    // 지금 조작 중인 쪽의 군세 - 평소엔 관우군(GameState.army), 회남 벌판에서
+    // 유비군 차례일 때는 controlledId를 통해 GameState.allyArmy가 된다.
+    const activeArmy = controlledId ? (typeof armyFor === 'function' ? armyFor(controlledId) : null) : GameState.army;
+    // 혼란에 빠진 군세는 이동할 수 없다.
+    if (activeArmy && StatusEffects.isConfused(activeArmy.commanderId)) { render(); return; }
+    const nx=mover.x+dx, ny=mover.y+dy;
+    mover.dir = dx<0?'left':dx>0?'right':dy<0?'up':'down';
     if (!isWalkable(nx,ny)) { render(); return; }
     const npc=npcAt(nx,ny);
     if (npc) { interact(npc,false); return; } // 인접칸으로 다가가 공격하는 행동엔 행동력을 소모하지 않는다
@@ -730,9 +757,11 @@ const MapView = (function () {
       // 적 AI 행동력(computeAiPath)과 동일한 moveCostMult 배율을 플레이어
       // 이동에도 적용한다 - 나중에 적 책사가 플레이어 쪽에 이 디버프를
       // 걸어도(반대로) 같은 함수로 처리되도록.
-      const commanderId = GameState.army && GameState.army.commanderId;
-      const cost = tileMoveCost(nx,ny) * (commanderId ? StatusEffects.moveCostMult(commanderId) : 1);
-      if (!GameState.spendAP(cost)) { if (onApBlocked) onApBlocked(); render(); return; }
+      const cost = tileMoveCost(nx,ny) * (activeArmy ? StatusEffects.moveCostMult(activeArmy.commanderId) : 1);
+      // 유비군 차례(controlledId 있음)에는 관우군과 별개인 allyAp 예산을 쓴다 -
+      // 그래야 관우가 이번 라운드에 쓴 행동력과 무관하게 유비군도 자기 몫을 쓸 수 있다.
+      const spent = controlledId ? GameState.spendAllyAP(cost) : GameState.spendAP(cost);
+      if (!spent) { if (onApBlocked) onApBlocked(); render(); return; }
       if (onApSpent) onApSpent();
     } else if (footTileCount + 1 >= FOOT_TILES_PER_AP) {
       // 완전히 무제한으로 돌아다니지는 못하도록, 장수 혼자 걷는 이동도 10칸째마다 행동력을 쓴다.
@@ -742,7 +771,7 @@ const MapView = (function () {
     } else {
       footTileCount++;
     }
-    player.x=nx; player.y=ny;
+    mover.x=nx; mover.y=ny;
     updateCamera();
     render();
     if (onStep) onStep();
@@ -976,10 +1005,13 @@ const MapView = (function () {
   // 플레이어 턴 종료(휴식/다음달)시 호출되는 Tier2 AI: 사거리 안이면 공격, 아니면 접근, 막히면 대기.
   // 이동은 한 칸씩 애니메이션으로 보여준 뒤(순간이동 방지) 완료되면 callback(전투발동여부)를 호출한다.
   // 적이 여러 명이어도 턴 길이가 늘어나지 않도록 전원이 동시에(같은 박자로) 이동한다.
-  function runAiTurn(callback) {
+  // onlyIds를 주면(회남 벌판의 속도순 전투처럼 한 번에 하나씩만 움직이는 곳) 그
+  // id들만 이번 호출에서 움직인다 - 생략하면 지금까지처럼 적 전원이 대상이다.
+  function runAiTurn(callback, onlyIds) {
     const done = (battled) => { if (callback) callback(battled); };
     if (!map || !map.apMovement) { done(false); return; }
-    const hostiles = liveNpcs.filter((n0) => { const rd = ROSTER[n0.id]; return rd && rd.kind === 'enemy'; });
+    let hostiles = liveNpcs.filter((n0) => { const rd = ROSTER[n0.id]; return rd && rd.kind === 'enemy'; });
+    if (onlyIds) hostiles = hostiles.filter((n0) => onlyIds.includes(n0.id));
 
     // 계획 단계: 기존처럼 한 명씩 실제 위치를 옮겨가며 서로 겹치지 않는 경로를 계산한 뒤,
     // 다시 시작 위치로 되돌려 전원이 동시에 애니메이션되도록 한다.
@@ -1108,16 +1140,18 @@ const MapView = (function () {
     const wy=((ev.clientY-rect.top)*sy)+camera.y;
     const x=Math.floor(wx/TILE), y=Math.floor(wy/TILE);
     const npc=npcAt(x,y);
-    if(npc && Math.abs(npc.x-player.x)+Math.abs(npc.y-player.y)===1)interact(npc,false);
+    const mover=activeMover();
+    if(npc && mover && Math.abs(npc.x-mover.x)+Math.abs(npc.y-mover.y)===1)interact(npc,false);
   });
 
   return {
     load,render,removeNpc,addNpc,walkNpcPath,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,setPlayerPos,
-    panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,showDamageFloat,showAttackBump,
+    panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,showDamageFloat,showAttackBump,setControlledUnit,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},
     get playerPos(){return {x:player.x,y:player.y,dir:player.dir};},
     get mapSize(){return map ? {w:map.width,h:map.height} : {w:1,h:1};},
     get liveNpcIds(){return liveNpcs.map((n) => n.id);},
+    get controlledUnitId(){return controlledId;},
   };
 })();

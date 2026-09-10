@@ -4,6 +4,8 @@ const GameState = {
   month: 3,
   ap: 6,
   apMax: 6,
+  allyAp: 0, // 회남 벌판 속도순 전투에서 유비군 차례일 때만 쓰는 별도 행동력 (관우군의 ap와 별개 예산)
+  allyApMax: 0,
   resources: { rice: 100000, gold: 120, troop: 80, bow: 0, horse: 0 },
   merchantBought: { rice: 0, bow: 0, horse: 0 }, // 도시맵 상인에게서 이번 달에 이미 산 양 (다음달마다 0으로 초기화, 월간 판매 한도용)
   fame: 0, // 명성 (100당 최대 행동력 +1, 최대 1000)
@@ -34,6 +36,7 @@ const GameState = {
     this.mainHero = hero;
     this.year = 184; this.month = 3;
     this.ap = 6; this.apMax = 6;
+    this.allyAp = 0; this.allyApMax = 0;
     this.resources = { rice: 100000, gold: 120, troop: 80, bow: 0, horse: 0 };
     this.merchantBought = { rice: 0, bow: 0, horse: 0 };
     this.fame = 0;
@@ -66,6 +69,12 @@ const GameState = {
   spendAP(n) {
     if (this.ap < n) return false;
     this.ap -= n;
+    return true;
+  },
+
+  spendAllyAP(n) {
+    if (this.allyAp < n) return false;
+    this.allyAp -= n;
     return true;
   },
 

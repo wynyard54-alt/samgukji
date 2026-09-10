@@ -578,9 +578,11 @@ const SEOJU_AREA_LABELS = [
 // checkWonsulRetreat, MapView.removeNpc('wonsul')). 갈림길 위/아래에는
 // 기령(관우군이 상대)과 교유(유비군이 상대, warArmy:'ally')가 있다.
 // 유비군은 하비 관청에서 이미 편성을 마치고 함께 출정했으므로, 입장 시점에
-// 관우(플레이어) 바로 옆에 유비 마커를 고정 배치해 같이 도착한 것을 보여준다 -
-// 플레이어가 직접 조작하는 건 아니고(WASD는 늘 관우), 교유와의 전투는 지금까지와
-// 똑같이 교유 NPC에게 말을 걸어 진행한다.
+// 관우(플레이어) 바로 옆에 유비 마커를 고정 배치해 같이 도착한 것을 보여준다.
+// 이 지도는 관우군/유비군/적 군세 각각의 속도로 정한 순서대로 한 번에 하나씩만
+// 움직이는 이니셔티브 전투를 시험 적용한 곳이라(main.js의 hoenam* 함수들 참고),
+// 유비군 차례가 되면 WASD 조작 대상이 잠시 유비로 바뀐다 - 더는 교유만 자동으로
+// 쫓아가지 않고, 어느 적이든 직접 다가가 붙일 수 있다.
 (function () {
   const w = 36, h = 25;
   const grid = makeGrid(w, h, 0);
@@ -615,10 +617,9 @@ const SEOJU_AREA_LABELS = [
       { id:'wonsul', x:17, y:12, label:'원술 군세', fixed:true },
       { id:'noebak', x:12, y:10, label:'뇌박 군세', fixed:true },
       { id:'jinran', x:12, y:14, label:'진란 군세', fixed:true },
-      // 유비군은 플레이어가 조종하지 않고, 매달 스스로 교유를 향해 걸어가
-      // 인접하면 자동으로 붙는다(main.js handleAllyEngage + allyChases 참고).
+      // 유비군은 자기 차례에 플레이어가 직접 조종한다(main.js hoenamActivateUnit +
+      // MapView.setControlledUnit 참고) - 더는 교유만 자동으로 쫓아가지 않는다.
       { id:'yubi', x:3, y:14, label:'유비 군세', fixed:true },
     ],
-    allyChases: [{ allyId:'yubi', targetId:'gyoyu' }],
   };
 })();
