@@ -3298,11 +3298,19 @@ function renderMerchantBox() {
   wireMerchantBuyButtons();
 }
 
+// 슬라이더를 드래그할 때 이 창 위에서만큼은 터치가 절대 페이지 스크롤/당겨서
+// 새로고침으로 새지 않도록 touchmove 자체의 기본 동작을 막는다. 네이티브
+// <input type=range>의 자체 드래그 렌더링은 브라우저 내부 위젯 처리라 이
+// preventDefault의 영향을 받지 않아 슬라이더 조작 자체는 그대로 동작한다.
+function blockTouchScroll(ev) { ev.preventDefault(); }
+
 function openMerchantShop(id) {
   const rd = ROSTER[id];
   Dialogue.show([{ speaker: rd.name, text: rd.intro }], () => {
     renderMerchantBox();
-    document.getElementById('merchant-box').classList.remove('hidden');
+    const box = document.getElementById('merchant-box');
+    box.classList.remove('hidden');
+    box.addEventListener('touchmove', blockTouchScroll, { passive: false });
   });
 }
 
@@ -3323,7 +3331,9 @@ function buyFromMerchant(deal) {
 }
 
 document.getElementById('merchant-close').onclick = () => {
-  document.getElementById('merchant-box').classList.add('hidden');
+  const box = document.getElementById('merchant-box');
+  box.classList.add('hidden');
+  box.removeEventListener('touchmove', blockTouchScroll);
 };
 
 function triggerHarvestEvent() {
