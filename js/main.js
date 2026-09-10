@@ -1866,14 +1866,10 @@ function goSeojuFree() {
 
 // 연의 그대로 장비가 우금을 가볍게 물리치는 장면 - 화웅전(goSasugwan)과 같은
 // 패턴으로, 지면 재도전(승패가 뒤바뀌는 건 연의에 안 맞으므로 다시 시킨다).
-// ugeum_seoju는 이 서주 포위전 장면에서 "우금이 이끄는 부대"를 나타내는
-// 군세 개체(이름 '우금군', 다른 7개 부대와 같은 명명 규칙)라, 일기토
-// 화면에서는 표시 이름만 '우금'으로 바꿔서 보여준다(병력/스탯 등 로스터
-// 데이터 자체는 그대로 둔다).
 function startJangbiVsUgeumDuel() {
   Battle.start({
     player: ROSTER.jangbi,
-    enemy: Object.assign({}, ROSTER.ugeum_seoju, { name: '우금' }),
+    enemy: ROSTER.ugeum_seoju,
     onEnd: (result) => {
       if (result.outcome !== 'win') {
         toast('우금에게 밀렸다... 다시 도전하자!');
