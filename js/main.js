@@ -3235,7 +3235,7 @@ function triggerMerchantEvent() {
 // unit/cost = 슬라이더 한 칸(step)당 수량/금값, monthlyCap = 이번 달에 살 수 있는
 // 최대 수량 - 다음달 버튼을 누르면 GameState.merchantBought가 초기화되며 다시 채워진다.
 const MERCHANT_DEALS = [
-  { key: 'rice', label: '군량', unit: 300, cost: 10, monthlyCap: 5100 }, // 300의 배수로 딱 떨어지게(약 5000) 맞춘 값
+  { key: 'rice', label: '군량', unit: 300, cost: 10, monthlyCap: 6000 },
   { key: 'bow', label: '활', unit: 100, cost: 10, monthlyCap: 3000 },
   { key: 'horse', label: '군마', unit: 50, cost: 10, monthlyCap: 1000 },
 ];
