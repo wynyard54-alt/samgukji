@@ -1808,7 +1808,7 @@ const SEOJU_JOJO_ARMY_IDS = [
   'johong_seoju', 'akjin_seoju', 'ugeum_seoju', 'ijeon_seoju',
 ];
 // 자유탐방이 시작되면 곧바로(확률 없이) 등장하는 서주 사람들.
-const SEOJU_FREEROAM_NPC_IDS = ['michuk', 'mibang', 'jingyu', 'jindeung', 'songgwan', 'jopyo'];
+const SEOJU_FREEROAM_NPC_IDS = ['michuk', 'mibang', 'jingyu', 'jindeung', 'songgwan', 'jopyo', 'sangin'];
 // 진군·서성은 도겸의 소개 없이 우연히 마주치는 희귀 출현 인재라, 자유탐방
 // 시작 시점에 각자의 확률(ROSTER[id].chance)로 한 번만 등장 여부를 굴린다.
 const SEOJU_RARE_RECRUIT_IDS = ['jingun', 'seoseong'];
