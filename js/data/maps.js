@@ -611,6 +611,10 @@ const SEOJU_AREA_LABELS = [
       { id:'wonsul', x:17, y:12, label:'원술 군세', fixed:true },
       { id:'noebak', x:12, y:10, label:'뇌박 군세', fixed:true },
       { id:'jinran', x:12, y:14, label:'진란 군세', fixed:true },
+      // 유비군은 플레이어가 조종하지 않고, 매달 스스로 교유를 향해 걸어가
+      // 인접하면 자동으로 붙는다(main.js handleAllyEngage + allyChases 참고).
+      { id:'yubi', x:3, y:14, label:'유비 군세', fixed:true },
     ],
+    allyChases: [{ allyId:'yubi', targetId:'gyoyu' }],
   };
 })();

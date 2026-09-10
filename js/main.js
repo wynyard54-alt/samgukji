@@ -435,6 +435,10 @@ function interactNPC(id, context) {
     return;
   }
   if (id === 'yubi' && stage === 'habi_camp') { handleHabiYubi(); return; }
+  if (id === 'yubi' && MapView.currentMapId === 'hoenam') {
+    Dialogue.show([{ speaker: '유비', text: '교유는 내가 맡겠네. 아우는 기령에게 집중하게.' }]);
+    return;
+  }
   if (id === 'yubi') { handleYubi(); return; }
 
   if (id === 'songyeon' && stage === 'camp') {
@@ -1438,14 +1442,17 @@ function applyFireTileDamage(occId, dps) {
 const ARMY_BATTLE_AP_COST = 2;
 const DUEL_AP_COST = 1;
 const STRATEGY_AP_COST = 1;
-function resolveArmyBattle(id) {
+// opts.freeAction이면 행동력을 소모하지 않는다 - 플레이어가 직접 지시한
+// 전투가 아니라, 유비군처럼 AI가 스스로 목표에 다가가 자동으로 붙는
+// 전투(main.js의 handleAllyEngage)이기 때문에 플레이어 행동력과 무관하다.
+function resolveArmyBattle(id, opts) {
+  opts = opts || {};
   const rd = ROSTER[id];
   const ctx = resolveWarArmy(rd);
   if (!ctx) { toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`); return; }
-  if (!spend(ARMY_BATTLE_AP_COST)) return;
+  if (!opts.freeAction && !spend(ARMY_BATTLE_AP_COST)) return;
   const army = ctx.army;
   const commanderName = ROSTER[ctx.commanderId].name;
-  const showOnMap = rd.warArmy !== 'ally'; // 유비군은 지도에 별도 스프라이트가 없다
   const playerKey = ctx.commanderId;
 
   const lock = getWarLock(id, ctx);
@@ -1479,7 +1486,7 @@ function resolveArmyBattle(id) {
     const dmg = finalDamage(lock.playerHit, playerKey, id);
     rd.troop = Math.max(0, rd.troop - dmg);
     MapView.showDamageFloat(id, dmg);
-    if (showOnMap) MapView.showAttackBump(GameState.mainHero);
+    MapView.showAttackBump(playerKey);
     lines.push({ speaker: '내레이션', text: dmg > 0 ? `${commanderName}군의 공격! ${rd.name}의 군세에 ${dmg}명 피해.` : `${commanderName}군의 공격! ${rd.name}의 군세가 완전히 회피했다.` });
     if (dmg > 0) StatusEffects.propagateDamage(id, dmg, chainDamage);
     if (rd.troop <= 0) enemyDown = true;
@@ -1487,7 +1494,7 @@ function resolveArmyBattle(id) {
   function enemyStrikes() {
     const dmg = finalDamage(lock.enemyHit, id, playerKey);
     army.troop = Math.max(0, army.troop - dmg);
-    if (showOnMap) MapView.showDamageFloat(GameState.mainHero, dmg);
+    MapView.showDamageFloat(playerKey, dmg);
     MapView.showAttackBump(id);
     lines.push({ speaker: '내레이션', text: dmg > 0 ? `${rd.name}의 군세가 공격! ${commanderName}군이 ${dmg}명 피해를 입었다.` : `${rd.name}의 군세가 공격! ${commanderName}군이 완전히 회피했다.` });
     if (army.troop <= 0) playerDown = true;
@@ -2127,9 +2134,17 @@ function goHoenamBattle() {
     onApSpent: updateHUD,
     onApBlocked,
     onStep: renderMinimap,
+    onAllyEngage: handleAllyEngage,
   });
   updateHUD();
   Dialogue.show(STORY.hoenam_intro);
+}
+
+// 플레이어가 조종하지 않는 아군(map.allyChases에 등록된 대상, 예: 회남
+// 벌판의 유비군)이 스스로 목표에 인접했을 때 MapView가 호출한다. 플레이어가
+// 직접 [전투]를 눌러 붙는 게 아니므로 행동력을 소모하지 않는다.
+function handleAllyEngage(allyId, targetId) {
+  resolveArmyBattle(targetId, { freeAction: true });
 }
 
 // 기령(관우군)과 교유(유비군)를 각각 실제로 격파해야 원술이 잔여 세력과

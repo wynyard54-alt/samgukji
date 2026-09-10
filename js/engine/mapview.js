@@ -24,6 +24,7 @@ const MapView = (function () {
   let onApSpent = null;
   let onStep = null; // onApSpent와 달리 행동력 소모 여부와 무관하게 실제로 한 칸 움직일 때마다 불린다 (미니맵 등 즉각 갱신용)
   let onAmbientInteract = null;
+  let onAllyEngage = null; // 플레이어가 아닌 아군(회남 벌판의 유비군 등)이 자기 목표를 향해 다가가 인접하면 호출된다
   let spawnDeadlineAbs = null; // 랜덤 등장 장수가 마감 기한의 50% 안쪽에 나오도록 하는 절대 개월수 상한
   let liveNpcs = [];
   let crowd = [];
@@ -146,6 +147,7 @@ const MapView = (function () {
     onApSpent = (opts && opts.onApSpent) || null;
     onStep = (opts && opts.onStep) || null;
     onAmbientInteract = (opts && opts.onAmbientInteract) || null;
+    onAllyEngage = (opts && opts.onAllyEngage) || null;
     spawnDeadlineAbs = (opts && opts.spawnDeadlineAbsMonth) || null;
     ambientEvents = [];
 
@@ -879,24 +881,28 @@ const MapView = (function () {
   // 필요 행동력 2배" 같은 효과는 moveCostMult로 타일당 소모량에 곱해진다.
   // 플레이어의 행동력(GameState.ap)과 동일한 배율 방식이라, 나중에 어느
   // 쪽에 걸리든(플레이어 상대 진영도) 같은 함수로 처리된다.
-  function computeAiPath(n0) {
+  // target 생략시(기존 호출부 전부) 플레이어를 쫓는다. 회남 벌판의 유비군처럼
+  // 아군이 다른 NPC(교유)를 목표로 접근할 때는 target에 그 NPC를 넘긴다 -
+  // player든 일반 npc든 {x,y}만 있으면 되므로 그대로 재사용 가능하다.
+  function computeAiPath(n0, target) {
+    target = target || player;
     const path = [];
     const apScale = StatusEffects.apMult(n0.id);
     const costScale = StatusEffects.moveCostMult(n0.id);
     let cx = n0.x, cy = n0.y, steps = Math.max(0, Math.floor(AI_MOVE_BUDGET * apScale));
-    if (Math.abs(cx-player.x)+Math.abs(cy-player.y) <= 1) return path; // 이미 사거리 - 이동 없이 대기 후 공격
+    if (Math.abs(cx-target.x)+Math.abs(cy-target.y) <= 1) return path; // 이미 사거리 - 이동 없이 대기 후 공격
     while (steps > 0) {
-      const dist = Math.abs(cx-player.x)+Math.abs(cy-player.y);
+      const dist = Math.abs(cx-target.x)+Math.abs(cy-target.y);
       if (dist <= 1) break;
-      const dx = Math.sign(player.x-cx), dy = Math.sign(player.y-cy);
-      const preferX = Math.abs(player.x-cx) >= Math.abs(player.y-cy);
+      const dx = Math.sign(target.x-cx), dy = Math.sign(target.y-cy);
+      const preferX = Math.abs(target.x-cx) >= Math.abs(target.y-cy);
       const options = preferX ? [[dx,0],[0,dy]] : [[0,dy],[dx,0]];
       let moved = false;
       for (const [ddx,ddy] of options) {
         if (!ddx && !ddy) continue;
         const tx=cx+ddx, ty=cy+ddy;
         if (!isWalkable(tx,ty)) continue;
-        if (tx===player.x && ty===player.y) continue; // 플레이어 타일로는 이동하지 않는다
+        if (tx===target.x && ty===target.y) continue; // 목표 타일로는 이동하지 않는다(인접까지만)
         if (npcAt(tx,ty)) continue;
         const cost = tileMoveCost(tx,ty) * costScale;
         if (cost > steps) continue;
@@ -931,11 +937,15 @@ const MapView = (function () {
     render();
 
     const finishTurn = () => {
+      let playerEngaged = false;
       for (const { n0 } of plans) {
         const n = effectiveNpc(n0);
-        if (Math.abs(n.x-player.x)+Math.abs(n.y-player.y) === 1) { interact(n,false); done(true); return; } // 한 번에 한 전투만 발동
+        if (Math.abs(n.x-player.x)+Math.abs(n.y-player.y) === 1) { interact(n,false); playerEngaged = true; break; } // 한 번에 한 전투만 발동
       }
-      done(false);
+      // 플레이어가 적과 붙었더라도 유비군 같은 아군의 턴은 별개로 계속
+      // 진행한다 - 안 그러면 플레이어가 적 옆에 서 있는 동안 아군이 영영
+      // 움직이지 못하게 된다.
+      runAllyChases((allyEngaged) => done(playerEngaged || allyEngaged));
     };
 
     const maxLen = plans.reduce((m, p) => Math.max(m, p.path.length), 0);
@@ -949,6 +959,54 @@ const MapView = (function () {
       step++;
       if (step < maxLen) setTimeout(tick, AI_STEP_MS);
       else setTimeout(finishTurn, AI_STEP_MS);
+    };
+    tick();
+  }
+
+  // 플레이어가 직접 조종하지 않는 아군(map.allyChases에 등록된 목록, 예:
+  // 회남 벌판의 유비군→교유)이 자기 목표를 향해 스스로 걸어가는 턴. 적 AI와
+  // 똑같이 한 칸씩 애니메이션한 뒤, 인접하면 onAllyEngage(allyId, targetId)로
+  // 알려 실제 전투 판정은 main.js 쪽(resolveArmyBattle)에 맡긴다 - 여기서는
+  // "누가 누구에게 다가갔는지"만 판단한다.
+  function runAllyChases(callback) {
+    const done = (battled) => { if (callback) callback(battled); };
+    const chases = (map.allyChases || []).filter(({ allyId, targetId }) =>
+      liveNpcs.some((n) => n.id === allyId) && liveNpcs.some((n) => n.id === targetId));
+    if (!chases.length) { done(false); return; }
+
+    const plans = chases.map(({ allyId, targetId }) => {
+      const allyNpc = liveNpcs.find((n) => n.id === allyId);
+      const targetNpc = liveNpcs.find((n) => n.id === targetId);
+      const startX = allyNpc.x, startY = allyNpc.y;
+      const path = StatusEffects.isConfused(allyId) ? [] : computeAiPath(allyNpc, targetNpc);
+      if (path.length) { const last = path[path.length - 1]; allyNpc.x = last.x; allyNpc.y = last.y; }
+      allyNpc.x = startX; allyNpc.y = startY;
+      return { allyId, targetId, allyNpc, targetNpc, path };
+    });
+    render();
+
+    const finishChase = () => {
+      for (const { allyId, targetId, allyNpc, targetNpc } of plans) {
+        if (Math.abs(allyNpc.x-targetNpc.x)+Math.abs(allyNpc.y-targetNpc.y) === 1) {
+          if (onAllyEngage) onAllyEngage(allyId, targetId);
+          done(true);
+          return; // 한 번에 한 전투만 발동(적 AI와 동일한 규칙)
+        }
+      }
+      done(false);
+    };
+
+    const maxLen = plans.reduce((m, p) => Math.max(m, p.path.length), 0);
+    if (maxLen === 0) { finishChase(); return; }
+    let step = 0;
+    const tick = () => {
+      for (const { allyNpc, path } of plans) {
+        if (step < path.length) { allyNpc.x = path[step].x; allyNpc.y = path[step].y; }
+      }
+      render();
+      step++;
+      if (step < maxLen) setTimeout(tick, AI_STEP_MS);
+      else setTimeout(finishChase, AI_STEP_MS);
     };
     tick();
   }
