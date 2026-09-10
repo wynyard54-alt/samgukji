@@ -1366,6 +1366,7 @@ function attemptStrategy(id) {
     openWarCommandMenu(id);
     return;
   }
+  if (!spend(STRATEGY_AP_COST)) return;
   // 실제 효과가 구현된 책략 중, 지금 쓸 수 있는(전투당/월 1회 제한에 걸리지
   // 않은) 것만 골라 선택지로 보여준다 - 없으면 기존 범용 책략으로 바로 나간다.
   const castable = strategiesFor(deputyId).filter((sid) => STRATEGY_EFFECTS[sid] && strategyIsUsable(sid));
@@ -1380,6 +1381,7 @@ function attemptStrategy(id) {
 
 function attemptDuelChallenge(id) {
   const rd = ROSTER[id];
+  if (!spend(DUEL_AP_COST)) return;
   if (id === 'jangsun') { // 장순은 절대 일기토에 응하지 않는다 - 반드시 군세전투로 넘어간다
     Dialogue.show([{ speaker: rd.name, text: '흥, 필부의 결투 따위로 대세를 바꿀 성싶으냐! 전군으로 붙어보자!' }], () => {
       toast('장순이 일기토를 거절했다.');
@@ -1429,9 +1431,11 @@ function applyFireTileDamage(occId, dps) {
 
 // [전투] 한 번 = 딱 한 교전. 속도가 빠른 쪽이 먼저 때리고, 그 한 방으로
 // 상대가 쓰러지면 반격 없이 그대로 끝난다. 공격이 이번 행동의 마지막
-// 액션이라 행동력을 3 소모하고, 양쪽 다 살아남으면 결과만 보여준 뒤
+// 액션이라 행동력을 2 소모하고, 양쪽 다 살아남으면 결과만 보여준 뒤
 // 멈춘다 - 계속하려면 다시 [전투]를 눌러야 한다.
-const ARMY_BATTLE_AP_COST = 3;
+const ARMY_BATTLE_AP_COST = 2;
+const DUEL_AP_COST = 1;
+const STRATEGY_AP_COST = 1;
 function resolveArmyBattle(id) {
   const rd = ROSTER[id];
   const ctx = resolveWarArmy(rd);
