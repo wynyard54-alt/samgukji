@@ -211,13 +211,16 @@ const STORY = {
   ],
 
   // 연의에서는 대치만 하다 끝나지 않는다 - 성미 급한 장비가 우금과 붙어
-  // 가볍게 물리친다. 이 세 줄이 끝나면 아직 성벽 밖(카메라도 조조 진영
-  // 쪽)이고, 다음 배열(seoju_wall_standoff_city)부터 성 안으로 들어간
-  // 뒤라 main.js에서 그 사이에 플레이어를 성문 쪽으로 옮기고 카메라도
-  // 되돌린다.
-  seoju_wall_standoff: [
+  // 가볍게 물리친다. 이 대사 다음에 실제 일기토(장비 vs 우금)가 재생되고,
+  // 승리하면 seoju_wall_standoff_result로 이어진다. 그 뒤로도 아직 성벽
+  // 밖(카메라도 조조 진영 쪽)이고, 다음 배열(seoju_wall_standoff_city)부터
+  // 성 안으로 들어간 뒤라 main.js에서 그 사이에 플레이어를 성문 쪽으로
+  // 옮기고 카메라도 되돌린다.
+  seoju_wall_standoff_pre: [
     { speaker: '관우', text: '저것이 조조의 군세입니까…! 듣던 것보다 훨씬 많군요.' },
     { speaker: '장비', text: '치, 숫자만 많으면 다냐! 한번 붙어보자고! 이몸이 나가신다!' },
+  ],
+  seoju_wall_standoff_result: [
     { speaker: '내레이션', text: '조조군에서 우금이 나섰지만 장비의 적수는 되지 못했다.' },
   ],
 
