@@ -934,6 +934,45 @@ const MapView = (function () {
     return path;
   }
 
+  // 지도 위에서 지금 "플레이어 편"으로 칠 수 있는 목표들 - 문자 그대로 조작
+  // 중인 장수(player) 하나뿐이던 것을, 회남 벌판의 유비군처럼 플레이어가
+  // 편성한 다른 군세가 지도에 함께 있으면 그것도 목표 후보에 넣는다.
+  // playerArmies()/army.commanderId는 main.js가 이미 관우군/유비군을
+  // { commanderId, troop, ... } 한 모양으로 다루려고 만들어둔 추상화를
+  // 그대로 재사용한 것 - 나중에 플레이어가 세 번째, 네 번째 군세를 더
+  // 갖게 되어도 이 함수는 손댈 필요가 없다.
+  function friendlyTargets() {
+    const targets = [];
+    const armies = (typeof playerArmies === 'function') ? playerArmies() : [];
+    for (const army of armies) {
+      const cid = army.commanderId;
+      const pos = (cid === GameState.mainHero) ? { x: player.x, y: player.y } : liveNpcs.find((n) => n.id === cid);
+      if (pos) targets.push({ id: cid, x: pos.x, y: pos.y, troop: army.troop });
+    }
+    // 아직 군세를 편성하기 전이거나 위 목록에서 어떤 이유로든 빠졌더라도,
+    // 문자 그대로의 조작 캐릭터는 항상 최소한의 목표로 남아있어야 한다
+    // (예전부터 항상 그래왔던 동작을 그대로 보장).
+    if (!targets.some((t) => t.id === GameState.mainHero)) {
+      targets.push({ id: GameState.mainHero, x: player.x, y: player.y, troop: Infinity });
+    }
+    return targets;
+  }
+
+  // 이 적이 이번 턴에 노릴 목표를 정한다: 가장 가까운 쪽을 우선하고, 거리가
+  // 같으면 병력이 더 적은(약한) 쪽을 노린다 - "무조건 플레이어만 쫓아다니지
+  // 말고 가까운/약한 쪽부터 공격하게 해달라"는 요청에 따른 간단한 규칙.
+  function pickAiTarget(n0) {
+    const targets = friendlyTargets();
+    let best = targets[0];
+    let bestDist = Math.abs(n0.x-best.x)+Math.abs(n0.y-best.y);
+    for (let i = 1; i < targets.length; i++) {
+      const t = targets[i];
+      const dist = Math.abs(n0.x-t.x)+Math.abs(n0.y-t.y);
+      if (dist < bestDist || (dist === bestDist && t.troop < best.troop)) { best = t; bestDist = dist; }
+    }
+    return best;
+  }
+
   // 플레이어 턴 종료(휴식/다음달)시 호출되는 Tier2 AI: 사거리 안이면 공격, 아니면 접근, 막히면 대기.
   // 이동은 한 칸씩 애니메이션으로 보여준 뒤(순간이동 방지) 완료되면 callback(전투발동여부)를 호출한다.
   // 적이 여러 명이어도 턴 길이가 늘어나지 않도록 전원이 동시에(같은 박자로) 이동한다.
@@ -944,10 +983,10 @@ const MapView = (function () {
 
     // 계획 단계: 기존처럼 한 명씩 실제 위치를 옮겨가며 서로 겹치지 않는 경로를 계산한 뒤,
     // 다시 시작 위치로 되돌려 전원이 동시에 애니메이션되도록 한다.
-    const plans = hostiles.map((n0) => ({ n0, startX: n0.x, startY: n0.y, path: [] }));
+    const plans = hostiles.map((n0) => ({ n0, startX: n0.x, startY: n0.y, path: [], target: pickAiTarget(n0) }));
     for (const plan of plans) {
       // 혼란에 빠진 군세는 제자리에서 움직이지 못한다(이미 인접해 있었다면 공격은 그대로 발동).
-      plan.path = StatusEffects.isConfused(plan.n0.id) ? [] : computeAiPath(plan.n0);
+      plan.path = StatusEffects.isConfused(plan.n0.id) ? [] : computeAiPath(plan.n0, plan.target);
       if (plan.path.length) { const last = plan.path[plan.path.length - 1]; plan.n0.x = last.x; plan.n0.y = last.y; }
       // 견벽거수처럼 "이동하면 사기 감소" 디버프가 걸려 있으면, 실제로 움직인
       // 칸 수만큼 사기를 깎는다 - 얌전히 있으면(경로 길이 0) 손해가 없다.
@@ -958,15 +997,25 @@ const MapView = (function () {
     render();
 
     const finishTurn = () => {
-      let playerEngaged = false;
-      for (const { n0 } of plans) {
+      let engaged = false;
+      for (const { n0, target } of plans) {
         const n = effectiveNpc(n0);
-        if (Math.abs(n.x-player.x)+Math.abs(n.y-player.y) === 1) { interact(n,false); playerEngaged = true; break; } // 한 번에 한 전투만 발동
+        if (Math.abs(n.x-target.x)+Math.abs(n.y-target.y) !== 1) continue;
+        if (target.id === GameState.mainHero) {
+          interact(n,false); // 문자 그대로의 플레이어와 붙으면 예전처럼 직접 고를 수 있는 교전 메뉴를 띄운다.
+        } else if (onAllyEngage) {
+          // 유비군 같은 아군과 붙었을 때는, 유비군이 먼저 적에게 다가가 붙을 때와
+          // 똑같은 콜백(onAllyEngage)을 그대로 재사용해 자동으로 전투를 발동시킨다 -
+          // "누가 먼저 다가갔는지"는 결과에 영향이 없어야 하므로.
+          onAllyEngage(target.id, n0.id);
+        }
+        engaged = true;
+        break; // 한 번에 한 전투만 발동
       }
-      // 플레이어가 적과 붙었더라도 유비군 같은 아군의 턴은 별개로 계속
-      // 진행한다 - 안 그러면 플레이어가 적 옆에 서 있는 동안 아군이 영영
+      // 플레이어(또는 유비군)가 적과 붙었더라도 유비군의 추적 턴은 별개로 계속
+      // 진행한다 - 안 그러면 누군가 적 옆에 서 있는 동안 아군이 영영
       // 움직이지 못하게 된다.
-      runAllyChases((allyEngaged) => done(playerEngaged || allyEngaged));
+      runAllyChases((allyEngaged) => done(engaged || allyEngaged));
     };
 
     const maxLen = plans.reduce((m, p) => Math.max(m, p.path.length), 0);
