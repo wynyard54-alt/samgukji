@@ -85,6 +85,11 @@ const Battle = (function () {
     return Math.random() * 100 < chance;
   }
 
+  // 방어 태세 시 피해 배율 - 방어 스탯 55을 기준으로 높을수록 더 막고 낮을수록 덜 막는다
+  function defendMult(def) {
+    return Math.min(0.70, Math.max(0.40, 0.55 - (def - 55) * 0.002));
+  }
+
   function dealDamage(attacker, defender, mode, skillDef) {
     const side = attacker === p ? 'player' : 'enemy';
     const oppSide = side === 'player' ? 'enemy' : 'player';
@@ -102,7 +107,7 @@ const Battle = (function () {
     let mult = mode === 'ultimate' ? (skillDef ? skillDef.dmgMult : 2.3) : 1.3;
     const variance = 0.85 + Math.random() * 0.3;
     let dmg = Math.round(base * mult * variance);
-    if (defender.defending && mode !== 'ultimate') dmg = Math.round(dmg * 0.55);
+    if (defender.defending && mode !== 'ultimate') dmg = Math.round(dmg * defendMult(defender.data.stats.def));
     defender.hp -= dmg;
 
     let extra = '';
