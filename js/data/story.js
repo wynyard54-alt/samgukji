@@ -281,8 +281,8 @@ const STORY = {
   // 연의 원문 기준(이호경식지계 -> 구호탄랑지계). 계책 이름 자체는 10세
   // 눈높이에 어려워 대사에는 쓰지 않고 여기 주석에만 남긴다.
   habi_intro: [
-    { speaker: '내레이션', text: '조조에게 연주 일대를 되빼앗기고, 복양과 정도에서도 패한 여포는 유비가 있는 서주로 향했다.' },
-    { speaker: '내레이션', text: '여포가 서주로 온다는 소식은 유비에게도 전해졌다.' },
+    { speaker: '내레이션', text: '조조에게 연주 일대를 되빼앗기고, 복양과 정도에서도 패한 여포는 유비가 있는 서주로 향했다.', scene: 'assets/illust/habi_yeopo_march.jpg' },
+    { speaker: '내레이션', text: '여포가 서주로 온다는 소식은 유비에게도 전해졌다.', scene: 'assets/illust/habi_yeopo_march.jpg' },
   ],
 
   habi_yeopo_debate: [
@@ -305,10 +305,10 @@ const STORY = {
     { speaker: '장비', text: '잘됐습니다! 그 의리 없는 놈을 지금 당장 베어버리죠!' },
     { speaker: '유비', text: '아니다. 궁지에 몰려 나를 찾아온 사람을 죽이는 것은 의롭지 못하다.' },
     { speaker: '내레이션', text: '이튿날, 여포가 유비의 서주목 임명을 축하하러 찾아왔다.' },
-    { speaker: '내레이션', text: '여포를 본 장비가 여포를 치려 하자, 유비는 여포를 조용히 불러 조조가 보낸 밀서를 직접 보여주었다.' },
-    { speaker: '여포', text: '…조조가 우리 둘을 서로 죽이게 하려는 것이었군.' },
-    { speaker: '유비', text: '안심하시오. 나는 그런 불의를 행하지 않겠소.' },
-    { speaker: '여포', text: '…고맙소, 현덕 공. 이 은혜는 잊지 않겠소.' },
+    { speaker: '내레이션', text: '여포를 본 장비가 여포를 치려 하자, 유비는 여포를 조용히 불러 조조가 보낸 밀서를 직접 보여주었다.', scene: 'assets/illust/habi_secret_letter.jpg' },
+    { speaker: '여포', text: '…조조가 우리 둘을 서로 죽이게 하려는 것이었군.', scene: 'assets/illust/habi_secret_letter.jpg' },
+    { speaker: '유비', text: '안심하시오. 나는 그런 불의를 행하지 않겠소.', scene: 'assets/illust/habi_secret_letter.jpg' },
+    { speaker: '여포', text: '…고맙소, 현덕 공. 이 은혜는 잊지 않겠소.', scene: 'assets/illust/habi_secret_letter.jpg' },
     { speaker: '내레이션', text: '조조는 유비를 통해 여포 제거가 실패하자, 유비에게 원술과 싸우라는 황명을 보낸다.' },
   ],
 
