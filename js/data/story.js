@@ -337,7 +337,7 @@ const STORY = {
   // 어느 쪽이 먼저 끝나든 나머지 하나까지 끝나야 이 대사로 이어진다.
   hoenam_giryeong_win: [
     { speaker: '내레이션', text: '관우가 기령의 군세를 격파하는 동안, 반대편에서는 유비의 군세가 교유의 군세를 무너뜨렸다.' },
-    { speaker: '내레이션', text: '기세가 꺾인 원술은 남은 군세를 이끌고 성 안에 틀어박혀 나오지 않았다.', scene: 'assets/illust/hoenam_jangbi_kneel.jpg' },
+    { speaker: '내레이션', text: '기세가 꺾인 원술은 남은 군세를 이끌고 성 안에 틀어박혀 나오지 않았다.' },
   ],
 
   hoenam_jangbi_arrives: [
