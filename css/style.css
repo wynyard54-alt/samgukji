@@ -476,7 +476,14 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .merchant-slider-row{ display:flex; align-items:center; gap:12px; }
 .merchant-slider{
   flex:1; -webkit-appearance:none; appearance:none; height:6px; border-radius:4px;
-  background:var(--panel-border); outline:none; touch-action:pan-y;
+  background:var(--panel-border); outline:none;
+  /* 이 화면은 세로 모바일에서 90도 회전 트랜스폼으로 표시되므로(위 "모바일에서
+     화면을 아래로 당기면..." 참고), 슬라이더를 손가락으로 좌우로 끌 때 그 드래그가
+     회전된 좌표계에서 세로 스와이프로 해석돼 웹뷰의 당겨서 새로고침 제스처로
+     새어나가는 문제가 있었다. pan-x/pan-y로 방향을 맞추는 대신 아예 이 엘리먼트
+     위에서는 브라우저의 기본 팬/스크롤 동작 자체를 꺼서(터치를 슬라이더 자체의
+     드래그로만 쓰게) 근본적으로 막는다. */
+  touch-action:none;
 }
 .merchant-slider::-webkit-slider-thumb{
   -webkit-appearance:none; appearance:none; width:26px; height:26px; border-radius:50%;
