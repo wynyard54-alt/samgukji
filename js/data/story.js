@@ -337,18 +337,18 @@ const STORY = {
   // 어느 쪽이 먼저 끝나든 나머지 하나까지 끝나야 이 대사로 이어진다.
   hoenam_giryeong_win: [
     { speaker: '내레이션', text: '관우가 기령의 군세를 격파하는 동안, 반대편에서는 유비의 군세가 교유의 군세를 무너뜨렸다.' },
-    { speaker: '내레이션', text: '기세가 꺾인 원술은 남은 군세를 이끌고 성 안에 틀어박혀 나오지 않았다.' },
+    { speaker: '내레이션', text: '기세가 꺾인 원술은 남은 군세를 이끌고 성 안에 틀어박혀 나오지 않았다.', scene: 'assets/illust/hoenam_jangbi_kneel.jpg' },
   ],
 
   hoenam_jangbi_arrives: [
-    { speaker: '내레이션', text: '대치가 이어지던 그때, 장비가 다급히 말을 몰아 달려왔다.' },
-    { speaker: '장비', text: '형님! 관우! 큰일 났수! 하비성이… 하비성이 여포에게 넘어갔수!' },
-    { speaker: '유비', text: '…뭐라? 익덕, 그게 무슨 소리인가!' },
-    { speaker: '장비', text: '형님이 당부한 금주령을 어겼소. 조표가 성문을 열고 여포가 하비성을 차지해 버렸수다.' },
-    { speaker: '장비', text: '면목없소. 죽음으로 용서를 빌겠소.' },
-    { speaker: '유비', text: '그만하거라 장비야. 우린 같은날 죽기로 맹세한 몸 아니냐.' },
-    { speaker: '장비', text: '형님...!' },
-    { speaker: '유비', text: '…원술은 나중에 다시 도모하자. 지금은 하비로 돌아가야 한다!' },
+    { speaker: '내레이션', text: '대치가 이어지던 그때, 장비가 다급히 말을 몰아 달려왔다.', scene: 'assets/illust/hoenam_jangbi_kneel.jpg' },
+    { speaker: '장비', text: '형님! 관우! 큰일 났수! 하비성이… 하비성이 여포에게 넘어갔수!', scene: 'assets/illust/hoenam_jangbi_kneel.jpg' },
+    { speaker: '유비', text: '…뭐라? 익덕, 그게 무슨 소리인가!', scene: 'assets/illust/hoenam_jangbi_kneel.jpg' },
+    { speaker: '장비', text: '형님이 당부한 금주령을 어겼소. 조표가 성문을 열고 여포가 하비성을 차지해 버렸수다.', scene: 'assets/illust/hoenam_jangbi_kneel.jpg' },
+    { speaker: '장비', text: '면목없소. 죽음으로 용서를 빌겠소.', scene: 'assets/illust/hoenam_jangbi_kneel.jpg' },
+    { speaker: '유비', text: '그만하거라 장비야. 우린 같은날 죽기로 맹세한 몸 아니냐.', scene: 'assets/illust/hoenam_jangbi_kneel.jpg' },
+    { speaker: '장비', text: '형님...!', scene: 'assets/illust/hoenam_jangbi_kneel.jpg' },
+    { speaker: '유비', text: '…원술은 나중에 다시 도모하자. 지금은 하비로 돌아가야 한다!', scene: 'assets/illust/hoenam_jangbi_kneel.jpg' },
     { speaker: '내레이션', text: '유비 일행은 원술 정벌을 포기하고, 서둘러 하비로 발길을 돌렸다.' },
   ],
 

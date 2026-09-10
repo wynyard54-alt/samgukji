@@ -805,6 +805,23 @@ const MapView = (function () {
 
   function removeNpc(id) { liveNpcs=liveNpcs.filter((n)=>n.id!==id); render(); }
 
+  // 정해진 좌표들을 따라 한 칸씩 걸어가는 모습을 보여준 뒤 콜백한다(예: 원술이
+  // 순간이동으로 사라지는 대신 성문 안쪽으로 실제로 걸어 들어가는 연출). AI
+  // 추적과 달리 경로를 스스로 계산하지 않고 그대로 재생만 하는 단순 스크립트용이다.
+  function walkNpcPath(id, path, stepMs, callback) {
+    const npc = liveNpcs.find((n) => n.id === id);
+    if (!npc || !path || !path.length) { if (callback) callback(); return; }
+    let step = 0;
+    const tick = () => {
+      npc.x = path[step].x; npc.y = path[step].y;
+      render();
+      step++;
+      if (step < path.length) setTimeout(tick, stepMs);
+      else if (callback) callback();
+    };
+    tick();
+  }
+
   // 스토리 진행에 따라 지도에 새 인물을 등장시킨다 (등무 처치 후 정원지 등장 등).
   function addNpc(id) {
     if (!map || liveNpcs.some((n) => n.id === id)) return;
@@ -1046,7 +1063,7 @@ const MapView = (function () {
   });
 
   return {
-    load,render,removeNpc,addNpc,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,setPlayerPos,
+    load,render,removeNpc,addNpc,walkNpcPath,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,setPlayerPos,
     panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,showDamageFloat,showAttackBump,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},

@@ -2176,6 +2176,13 @@ function handleAllyEngage(allyId, targetId) {
 // afterCb는 항상(대사가 뜨든 안 뜨든) 정확히 한 번 호출된다 - checkHoenamClear가
 // 이어서 기령/교유 완료 여부를 확인할 때 두 대사가 동시에 겹쳐 뜨지 않도록
 // 순서를 맞추기 위함이다.
+// 수춘성 서문(x=19~20, y=10~13)은 원래 buildup 단계에서 열어둔 통로다 -
+// 원술이 퇴각해 들어간 뒤에는 다시 성벽으로 막아, 플레이어가 성 안으로
+// 따라 들어가지 못하게 한다.
+function sealHoenamWestGate() {
+  for (let y = 10; y <= 13; y++) for (let x = 19; x <= 20; x++) MAPS.hoenam.tiles[y][x] = 4;
+}
+
 function checkWonsulRetreat(afterCb) {
   const done = (id) => ['resolved', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]);
   if (GameState.flags.wonsulRetreated || !done('noebak') || !done('jinran')) {
@@ -2183,8 +2190,19 @@ function checkWonsulRetreat(afterCb) {
     return;
   }
   GameState.flags.wonsulRetreated = true;
-  MapView.removeNpc('wonsul');
-  Dialogue.show([{ speaker: '내레이션', text: '앞서 나와 있던 뇌박과 진란이 무너지자, 원술은 남은 병력을 이끌고 성 안으로 황급히 물러났다.' }], afterCb);
+  // 순간이동으로 사라지는 대신 서문을 지나 성 안쪽까지 실제로 걸어 들어가는
+  // 모습을 보여준 뒤에 지운다 - 카메라도 잠깐 그 쪽을 비춰준다.
+  MapView.panCameraTo(20, 12, 400);
+  MapView.walkNpcPath('wonsul', [
+    { x: 18, y: 12 }, { x: 19, y: 12 }, { x: 20, y: 12 }, { x: 21, y: 12 }, { x: 22, y: 12 }, { x: 23, y: 12 },
+  ], 180, () => {
+    MapView.removeNpc('wonsul');
+    sealHoenamWestGate();
+    Dialogue.show([{ speaker: '내레이션', text: '앞서 나와 있던 뇌박과 진란이 무너지자, 원술은 남은 병력을 이끌고 성 안으로 황급히 물러났다.' }], () => {
+      MapView.clearCameraFocus();
+      if (afterCb) afterCb();
+    });
+  });
 }
 
 function checkHoenamClear() {
