@@ -967,6 +967,12 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   .duel-actor.player{left:-1%}.duel-actor.enemy{right:-1%;transform:none}
   .duel-actor.generic{height:57vw}
   .duel-actor.enemy.generic{right:4%}
+  /* 장비는 캔버스가 세로(vh)가 아니라 가로로 넓은 비율(1355/959)이라, 회전
+     프리젠테이션에서는 세로 기준 height 값이 그대로 가로세로비만큼 곱해져
+     시각적 높이가 되므로, 데스크톱용 47vh를 그대로 쓰면 실제 화면에서
+     화면 밖으로 넘칠 만큼 커진다. 상대(우금, generic)와 같은 시각적
+     높이가 되도록 별도로 계산한 값을 쓴다. */
+  .duel-actor[data-id="jangbi"]{height:27vw}
   .battle-side{width:24vh;padding:4px 6px}
   #battle-side-e{right:6px;top:6px}#battle-side-p{left:6px;top:6px}
   .battle-name{left:30px;top:2px;font-size:10px}.battle-portrait{width:22px;height:22px;font-size:12px}
