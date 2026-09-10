@@ -557,12 +557,12 @@ const SEOJU_AREA_LABELS = [
       { type:'mapLabel', x:20, y:25.5, label:'출정로' },
     ],
     npcs: [
-      { id:'jojo', x:17, y:25, label:'조조', fixed:true },
-      { id:'wonso', x:23, y:25, label:'원소', fixed:true },
-      { id:'hojin', x:20, y:20, label:'호진', fixed:true },
-      { id:'jangje', x:20, y:15, label:'장제', fixed:true },
-      { id:'beonjo', x:20, y:11, label:'번조', fixed:true },
-      { id:'yeopo', x:20, y:7, label:'여포', fixed:true },
+      { id:'jojo', x:17, y:25, label:'조조 군세', fixed:true },
+      { id:'wonso', x:23, y:25, label:'원소 군세', fixed:true },
+      { id:'hojin', x:20, y:20, label:'호진 군세', fixed:true },
+      { id:'jangje', x:20, y:15, label:'장제 군세', fixed:true },
+      { id:'beonjo', x:20, y:11, label:'번조 군세', fixed:true },
+      { id:'yeopo', x:20, y:7, label:'여포 군세', fixed:true },
     ],
   };
 })();
@@ -601,12 +601,12 @@ const SEOJU_AREA_LABELS = [
       { type:'mapLabel', x:19.5, y:9.5, label:'수춘 서문' },
     ],
     npcs: [
-      { id:'giryeong', x:9, y:7, label:'기령', fixed:true },
+      { id:'giryeong', x:9, y:7, label:'기령 군세', fixed:true },
       { id:'yanghong', x:11, y:7, label:'양홍', fixed:true },
-      { id:'gyoyu', x:9, y:18, label:'교유', fixed:true, warArmy:'ally' },
-      { id:'wonsul', x:17, y:12, label:'원술', fixed:true },
-      { id:'noebak', x:12, y:10, label:'뇌박', fixed:true },
-      { id:'jinran', x:12, y:14, label:'진란', fixed:true },
+      { id:'gyoyu', x:9, y:18, label:'교유 군세', fixed:true, warArmy:'ally' },
+      { id:'wonsul', x:17, y:12, label:'원술 군세', fixed:true },
+      { id:'noebak', x:12, y:10, label:'뇌박 군세', fixed:true },
+      { id:'jinran', x:12, y:14, label:'진란 군세', fixed:true },
     ],
   };
 })();
