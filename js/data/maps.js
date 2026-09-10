@@ -577,6 +577,10 @@ const SEOJU_AREA_LABELS = [
 // 무너뜨리면 원술이 남은 병력을 이끌고 성 안으로 물러난다(main.js
 // checkWonsulRetreat, MapView.removeNpc('wonsul')). 갈림길 위/아래에는
 // 기령(관우군이 상대)과 교유(유비군이 상대, warArmy:'ally')가 있다.
+// 유비군은 하비 관청에서 이미 편성을 마치고 함께 출정했으므로, 입장 시점에
+// 관우(플레이어) 바로 옆에 유비 마커를 고정 배치해 같이 도착한 것을 보여준다 -
+// 플레이어가 직접 조작하는 건 아니고(WASD는 늘 관우), 교유와의 전투는 지금까지와
+// 똑같이 교유 NPC에게 말을 걸어 진행한다.
 (function () {
   const w = 36, h = 25;
   const grid = makeGrid(w, h, 0);

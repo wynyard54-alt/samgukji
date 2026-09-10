@@ -435,10 +435,6 @@ function interactNPC(id, context) {
     return;
   }
   if (id === 'yubi' && stage === 'habi_camp') { handleHabiYubi(); return; }
-  if (id === 'yubi' && MapView.currentMapId === 'hoenam') {
-    Dialogue.show([{ speaker: '유비', text: '교유는 내가 맡겠네. 아우는 기령에게 집중하게.' }]);
-    return;
-  }
   if (id === 'yubi') { handleYubi(); return; }
 
   if (id === 'songyeon' && stage === 'camp') {
@@ -580,6 +576,8 @@ function handleYubi() {
     } else {
       offerBarracksTraining('아우, 무슨 일인가?');
     }
+  } else if (MapView.currentMapId === 'hoenam') {
+    Dialogue.show([{ speaker: '유비', text: '교유는 내가 맡겠네. 아우는 기령에게 집중하게.' }]);
   }
 }
 
@@ -1453,7 +1451,7 @@ function resolveArmyBattle(id, opts) {
   if (!opts.freeAction && !spend(ARMY_BATTLE_AP_COST)) return;
   const army = ctx.army;
   const commanderName = ROSTER[ctx.commanderId].name;
-  const playerKey = ctx.commanderId;
+  const playerKey = ctx.commanderId; // 유비군 전투는 유비 마커에, 관우군 전투는 관우 본인에 공격/피격 연출을 건다.
 
   const lock = getWarLock(id, ctx);
   // 기습(forceFirstStrike)이 걸려 있으면 속도와 무관하게 반드시 선타를 친다.
@@ -2714,6 +2712,20 @@ function updateArmyPower() {
   const el = document.getElementById('army-power');
   el.textContent = `군세 능력치 — 무력 ${gradeFor(muryeok, MURYEOK_GRADES)} · 지력 ${gradeFor(jiryeok, JIRYEOK_GRADES)}`;
   el.title = `무력 ${muryeok} · 지력 ${jiryeok}`;
+  updateArmyRiceHint();
+}
+
+// 지금 스테퍼에 세팅된 병사 수 기준으로 고른 군량이 몇 달을 버티는지 보여준다
+// (1인당 월 2석 소비, monthlyRiceUpkeep 기준) - 병사/군량 스테퍼 둘 다
+// updateArmyPower를 거치므로 어느 쪽을 바꿔도 여기서 같이 갱신된다.
+function updateArmyRiceHint() {
+  const hintEl = document.getElementById('army-rice-hint');
+  if (!hintEl) return;
+  const troop = armySteppers['army-troop'] ? armySteppers['army-troop'].get() : 0;
+  const rice = armySteppers['army-rice'] ? armySteppers['army-rice'].get() : 0;
+  if (troop <= 0) { hintEl.textContent = ''; return; }
+  const months = Math.floor(rice / monthlyRiceUpkeep(troop));
+  hintEl.textContent = `병사 ${troop.toLocaleString()}명 기준 약 ${months}개월분 (월 ${monthlyRiceUpkeep(troop).toLocaleString()}가마 소비)`;
 }
 
 function wireArmyStepperButtons() {
