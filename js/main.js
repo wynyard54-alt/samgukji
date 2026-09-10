@@ -3232,15 +3232,18 @@ function triggerMerchantEvent() {
 }
 
 // ---- 도시맵(탁현/평원/서주) 상주 상인 - 금으로 군량/활/군마를 구매 ----
-// unit/cost = 슬라이더 한 칸(step)당 수량/금값, monthlyCap = 이번 달에 살 수 있는
+// unit/cost = 스테퍼 한 칸당 수량/금값, monthlyCap = 이번 달에 살 수 있는
 // 최대 수량 - 다음달 버튼을 누르면 GameState.merchantBought가 초기화되며 다시 채워진다.
+// (원래 <input type=range> 드래그 슬라이더로 만들었으나, 실기기 웹뷰에서 슬라이더를
+// 좌우로 끄는 제스처가 당겨서 새로고침으로 새는 문제를 끝내 못 잡아 군세 편성
+// 화면과 같은 ◀▶ 스테퍼 버튼 방식으로 되돌렸다 - 버튼은 그 문제가 없다.)
 const MERCHANT_DEALS = [
   { key: 'rice', label: '군량', unit: 300, cost: 10, monthlyCap: 6000 },
   { key: 'bow', label: '활', unit: 100, cost: 10, monthlyCap: 3000 },
   { key: 'horse', label: '군마', unit: 50, cost: 10, monthlyCap: 1000 },
 ];
 
-let merchantSliders = {};
+let merchantSteppers = {};
 
 function merchantMaxUnits(deal) {
   const remainingMonthly = Math.max(0, deal.monthlyCap - GameState.merchantBought[deal.key]);
@@ -3252,16 +3255,15 @@ function merchantCostFor(deal, qty) {
   return Math.round((qty / deal.unit) * deal.cost);
 }
 
-function makeMerchantSlider(deal) {
-  const input = document.getElementById(`merchant-${deal.key}-slider`);
-  const valueEl = document.getElementById(`merchant-${deal.key}-value`);
-  input.addEventListener('input', () => updateMerchantRow(deal));
+function makeMerchantStepper(deal) {
+  const el = document.getElementById(`merchant-${deal.key}-value`);
   return {
-    get() { return Number(input.value); },
+    step: deal.unit,
+    get() { return Number(el.dataset.val || 0); },
     set(v) {
-      input.max = merchantMaxUnits(deal);
-      input.value = clamp(v, 0, Number(input.max));
-      valueEl.textContent = Number(input.value).toLocaleString();
+      v = clamp(Math.round(v / deal.unit) * deal.unit, 0, merchantMaxUnits(deal));
+      el.dataset.val = v;
+      el.textContent = v.toLocaleString();
       updateMerchantRow(deal);
     },
   };
@@ -3272,12 +3274,32 @@ function updateMerchantRow(deal) {
   const remainingMonthly = Math.max(0, deal.monthlyCap - GameState.merchantBought[deal.key]);
   row.querySelector('.merchant-left').textContent = remainingMonthly.toLocaleString();
   row.querySelector('.merchant-cap').textContent = deal.monthlyCap.toLocaleString();
-  const qty = merchantSliders[deal.key].get();
-  document.getElementById(`merchant-${deal.key}-value`).textContent = qty.toLocaleString();
+  const qty = merchantSteppers[deal.key].get();
   row.querySelector('.merchant-cost').textContent = qty > 0 ? `금 ${merchantCostFor(deal, qty)} 소비` : '';
 }
 
-function wireMerchantBuyButtons() {
+function wireMerchantStepperButtons() {
+  document.querySelectorAll('#merchant-box .stepper-btn').forEach((btn) => {
+    if (btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+    let holdTimeout = null;
+    let interval = null;
+    const fire = () => {
+      const key = btn.dataset.target.replace('merchant-', '');
+      const stepper = merchantSteppers[key];
+      if (!stepper) return;
+      stepper.set(stepper.get() + Number(btn.dataset.dir) * stepper.step);
+    };
+    const start = (ev) => {
+      ev.preventDefault();
+      fire();
+      holdTimeout = setTimeout(() => { interval = setInterval(fire, 150); }, 400);
+    };
+    const stop = () => { clearTimeout(holdTimeout); clearInterval(interval); };
+    btn.addEventListener('mousedown', start);
+    btn.addEventListener('touchstart', start, { passive: false });
+    ['mouseup', 'mouseleave', 'touchend', 'touchcancel'].forEach((ev) => btn.addEventListener(ev, stop));
+  });
   document.querySelectorAll('.merchant-buy-btn').forEach((btn) => {
     if (btn.dataset.wired) return;
     btn.dataset.wired = '1';
@@ -3288,34 +3310,23 @@ function wireMerchantBuyButtons() {
 function renderMerchantBox() {
   document.getElementById('merchant-gold').textContent = GameState.resources.gold.toLocaleString();
   MERCHANT_DEALS.forEach((deal) => {
-    const input = document.getElementById(`merchant-${deal.key}-slider`);
-    input.min = 0;
-    input.step = deal.unit;
-    if (!merchantSliders[deal.key]) merchantSliders[deal.key] = makeMerchantSlider(deal);
-    merchantSliders[deal.key].set(0);
+    if (!merchantSteppers[deal.key]) merchantSteppers[deal.key] = makeMerchantStepper(deal);
+    merchantSteppers[deal.key].set(0);
   });
   document.getElementById('merchant-hint').textContent = '';
-  wireMerchantBuyButtons();
+  wireMerchantStepperButtons();
 }
-
-// 슬라이더를 드래그할 때 이 창 위에서만큼은 터치가 절대 페이지 스크롤/당겨서
-// 새로고침으로 새지 않도록 touchmove 자체의 기본 동작을 막는다. 네이티브
-// <input type=range>의 자체 드래그 렌더링은 브라우저 내부 위젯 처리라 이
-// preventDefault의 영향을 받지 않아 슬라이더 조작 자체는 그대로 동작한다.
-function blockTouchScroll(ev) { ev.preventDefault(); }
 
 function openMerchantShop(id) {
   const rd = ROSTER[id];
   Dialogue.show([{ speaker: rd.name, text: rd.intro }], () => {
     renderMerchantBox();
-    const box = document.getElementById('merchant-box');
-    box.classList.remove('hidden');
-    box.addEventListener('touchmove', blockTouchScroll, { passive: false });
+    document.getElementById('merchant-box').classList.remove('hidden');
   });
 }
 
 function buyFromMerchant(deal) {
-  const qty = merchantSliders[deal.key].get();
+  const qty = merchantSteppers[deal.key].get();
   const hintEl = document.getElementById('merchant-hint');
   if (qty <= 0) { hintEl.textContent = '구매할 수량을 먼저 골라주세요.'; return; }
   const cost = merchantCostFor(deal, qty);
@@ -3327,13 +3338,11 @@ function buyFromMerchant(deal) {
   toast(`${deal.label} ${qty.toLocaleString()}을(를) 구매했다. (금 ${cost} 소비, 보유 ${deal.label} ${GameState.resources[deal.key].toLocaleString()})`);
   updateHUD();
   document.getElementById('merchant-gold').textContent = GameState.resources.gold.toLocaleString();
-  MERCHANT_DEALS.forEach((d) => merchantSliders[d.key].set(0));
+  MERCHANT_DEALS.forEach((d) => merchantSteppers[d.key].set(0));
 }
 
 document.getElementById('merchant-close').onclick = () => {
-  const box = document.getElementById('merchant-box');
-  box.classList.add('hidden');
-  box.removeEventListener('touchmove', blockTouchScroll);
+  document.getElementById('merchant-box').classList.add('hidden');
 };
 
 function triggerHarvestEvent() {
