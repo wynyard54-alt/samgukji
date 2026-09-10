@@ -327,7 +327,10 @@ function buildSeojuGrid(gateOpen) {
   // 감싸고 도는 트인 돌길이라, 그 줄까지 막으면 관청 앞뜰에서 좌우로(좌측
   // 건물가·우측 저잣거리 방향) 도는 실제 그림 속 길이 막혀버린다. 건물
   // 몸체만 y=7~8로 막는다.
-  rectFill(grid, 9, 7, 14, 8, 2);   // 중앙좌 가옥
+  // 중앙좌 가옥은 왼쪽 모서리(x=9)가 실제 그림에서는 건물이 아니라 벚꽃나무와
+  // 트인 길이라, x=9까지 막으면 그림상 도로인 칸이 이동 불가로 판정됐다.
+  // 실제 지붕이 시작되는 x=10부터 막는다.
+  rectFill(grid, 10, 7, 14, 8, 2);  // 중앙좌 가옥
   rectFill(grid, 20, 7, 24, 8, 2);  // 중앙우 가옥(저잣거리 옆)
   rectFill(grid, 2, 8, 7, 8, 2);    // 좌하단 가옥
   rectFill(grid, 27, 7, 34, 8, 2);  // 우하단 가옥(가장 크다)
@@ -397,12 +400,12 @@ const SEOJU_AREA_LABELS = [
       { id:'dogyeom', x:18, y:5, label:'도겸', fixed:true },
       // 조표는 하비상 진규의 관아 동료로, 관청 근처에 자리한다.
       { id:'jopyo', x:16, y:5, label:'조표', fixed:true, storyGate:'seojuFreeRoam' },
-      // 미축·미방·진규·진등 - 성 안쪽 중앙좌 가옥 앞에 2x2로 모여 있다(한 줄로
-      // 세우면 통로를 막아버려서 일부러 두 줄로 나눴다).
-      { id:'michuk', x:10, y:9, label:'미축', fixed:true, storyGate:'seojuFreeRoam' },
-      { id:'jingyu', x:12, y:9, label:'진규', fixed:true, storyGate:'seojuFreeRoam' },
-      { id:'mibang', x:10, y:10, label:'미방', fixed:true, storyGate:'seojuFreeRoam' },
-      { id:'jindeung', x:12, y:10, label:'진등', fixed:true, storyGate:'seojuFreeRoam' },
+      // 미축·미방·진규·진등 - 한 자리에 모여 있으면 너무 붐벼 보여서, 성 안
+      // 좌우로 넓게 흩어 각자 다른 가옥 앞에 세운다.
+      { id:'michuk', x:6, y:9, label:'미축', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'mibang', x:13, y:10, label:'미방', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'jingyu', x:22, y:9, label:'진규', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'jindeung', x:30, y:10, label:'진등', fixed:true, storyGate:'seojuFreeRoam' },
       // 손건은 도겸의 추천을 받아야만(main.js songgeonRecommended) 등장한다.
       { id:'songgeon', x:21, y:10, label:'', discoverable:true, discoveryRange:2, storyGate:'songgeonRecommended',
         discoveryText:'저잣거리 한켠에서 죽간을 든 선비가 지나가는 소문을 기록하고 있다.',
