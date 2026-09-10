@@ -2000,6 +2000,22 @@ function startWonsulExpedition() {
         field: 'allyArmy',
         excludeIds: [GameState.army.deputy, ...GameState.army.generals].filter(Boolean),
         desc: '교유를 상대할 유비군을 꾸리세요.',
+        // 여기서 X를 누르면 방금 짠 관우군을 취소(자원 환불)하고 맨 처음부터
+        // 다시 짤 수 있다 - 안 그러면 관우군에 넣은 병력/군량이 취소할 방법
+        // 없이 그대로 묶여버린다.
+        priorArmy: {
+          label: '관우군',
+          troop: GameState.army.troop,
+          rice: GameState.army.rice,
+          onCancel: () => {
+            GameState.resources.troop += GameState.army.troop;
+            GameState.resources.rice += GameState.army.rice;
+            GameState.army = null;
+            document.getElementById('army-box').classList.add('hidden');
+            updateHUD();
+            startWonsulExpedition();
+          },
+        },
       });
     });
   });
@@ -2766,6 +2782,18 @@ function openArmyBox(onConfirm, opts) {
   document.getElementById('army-desc').textContent = opts.desc
     || `${commanderRd.name}${subjectParticle(commanderRd.name)} 이끌 군세를 꾸리세요.`;
 
+  // 회남 벌판처럼 두 군세를 연달아 짤 때, 이미 확정한 앞 군세를 보여주고
+  // X로 취소(자원 환불 + 처음부터 다시)할 수 있게 한다.
+  const priorEl = document.getElementById('army-prior');
+  if (opts.priorArmy) {
+    document.getElementById('army-prior-label').textContent =
+      `${opts.priorArmy.label} 편성 완료 · 병 ${opts.priorArmy.troop} · 군량 ${opts.priorArmy.rice} (다시 짜려면 ✕)`;
+    priorEl.classList.remove('hidden');
+    document.getElementById('army-prior-cancel').onclick = opts.priorArmy.onCancel;
+  } else {
+    priorEl.classList.add('hidden');
+  }
+
   const select = document.getElementById('army-deputy');
   select.innerHTML = '<option value="">없음</option>';
   GameState.recruited.forEach((id) => {
@@ -2845,8 +2873,10 @@ window.addEventListener('keydown', (ev) => {
 // 대사, 장순의 난 행군(군세 이동모드) 중에는 되돌릴 상태가 애매해 제외한다.
 const SAVE_KEY = 'samgukji_saves_v1';
 const SAVE_SLOT_COUNT = 10;
-const SAVE_RESUMABLE_STAGES = ['takhyeon_free', 'pyeongwon_free', 'camp', 'warmap'];
-const STAGE_MAP_ID = { takhyeon_free: 'takhyeon', pyeongwon_free: 'pyeongwon', camp: 'camp', warmap: 'warmap' };
+const SAVE_RESUMABLE_STAGES = ['takhyeon_free', 'pyeongwon_free', 'camp', 'warmap', 'seoju_free', 'habi_camp'];
+// seoju_free는 도겸이 소환한 서주 대치(seoju_siege) 또는 그 뒤의 서주 자유탐방(seoju)
+// 둘 중 하나라 고정 매핑이 안 된다 - buildSaveSnapshot에서 MapView.currentMapId로 대신 구한다.
+const STAGE_MAP_ID = { takhyeon_free: 'takhyeon', pyeongwon_free: 'pyeongwon', camp: 'camp', warmap: 'warmap', habi_camp: 'habi' };
 
 function loadSaveSlots() {
   try {
@@ -2882,14 +2912,19 @@ function canSaveNow() {
   return true;
 }
 
+// stage만으로는 실제 지도를 못 정하는 경우가 있다 - warmap 스테이지는 호로관
+// 전선/회남 벌판 둘 다 쓰고, seoju_free는 서주 대치/서주 자유탐방 둘 다 쓴다.
+// 그래서 STAGE_MAP_ID 대신 항상 MapView.currentMapId(실제 로드돼 있는 지도)를
+// 그대로 저장해뒀다가 불러올 때 그 지도로 정확히 복원한다.
 function buildSaveSnapshot() {
-  const mapId = STAGE_MAP_ID[stage];
+  const mapId = MapView.currentMapId;
   const pos = MapView.playerPos;
   return {
     savedAt: Date.now(),
     label: `${GameState.dateLabel()} · ${GameState.heroData().name}`,
     location: LOCATION_NAMES[mapId] || mapId,
     stage,
+    mapId,
     playerPos: { x: pos.x, y: pos.y },
     gameState: JSON.parse(JSON.stringify(GameState)),
   };
@@ -2897,8 +2932,10 @@ function buildSaveSnapshot() {
 
 // go_____Free류 진입 함수를 그대로 쓰면 첫 도착 안내 대사나 행동력 재보급 같은
 // 1회성 연출/부수효과가 다시 발동해버려서, 저장 불러오기 전용으로 지도만 조용히
-// 다시 그려주는 경로를 따로 둔다.
-function resumeExploreStage(targetStage, playerPos) {
+// 다시 그려주는 경로를 따로 둔다. mapId는 buildSaveSnapshot이 저장해둔 실제
+// 지도(옛 저장 데이터라 없으면 undefined) - warmap/seoju_free처럼 스테이지 하나가
+// 지도 두 개를 오가는 경우를 정확히 구분하는 데 쓴다.
+function resumeExploreStage(targetStage, playerPos, mapId) {
   stage = targetStage;
   showScreen('screen-explore');
   const opts = { onInteract: interactNPC, onApSpent: updateHUD, onApBlocked, onStep: renderMinimap };
@@ -2909,7 +2946,11 @@ function resumeExploreStage(targetStage, playerPos) {
   } else if (targetStage === 'camp') {
     MapView.load('camp', opts);
   } else if (targetStage === 'warmap') {
-    MapView.load('warmap', opts);
+    MapView.load(mapId === 'hoenam' ? 'hoenam' : 'warmap', opts);
+  } else if (targetStage === 'habi_camp') {
+    MapView.load('habi', { ...opts, onAmbientInteract: runAmbientEvent });
+  } else if (targetStage === 'seoju_free') {
+    MapView.load(mapId === 'seoju' ? 'seoju' : 'seoju_siege', { ...opts, onAmbientInteract: runAmbientEvent });
   }
   if (playerPos) MapView.setPlayerPos(playerPos.x, playerPos.y);
   updateHUD();
@@ -2917,7 +2958,7 @@ function resumeExploreStage(targetStage, playerPos) {
 
 function applySaveSnapshot(snap) {
   Object.keys(snap.gameState).forEach((k) => { GameState[k] = snap.gameState[k]; });
-  resumeExploreStage(snap.stage, snap.playerPos);
+  resumeExploreStage(snap.stage, snap.playerPos, snap.mapId);
   closeSaveBox();
   toast('불러오기 완료.');
 }
