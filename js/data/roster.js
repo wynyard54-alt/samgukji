@@ -287,7 +287,10 @@ const ROSTER = {
     stats:{atk:30, def:34, spd:32, int:92, cha:68, lead:52}, sprite:SPRITE_DONGTAK,
     bio:'본래 조조를 섬겼으나 실망해 떠난 뒤 여포의 책사가 되었다. 하비성 함락 때 여포와 함께 사로잡혀 처형당했다.',
     intro:'…내 계책을 따랐더라면, 이 지경까지 오지는 않았을 것을.' },
-  gosun: { id:'gosun', name:'고순', birth:165, deathReal:199, deathVirtual:255, kind:'enemy', forced:null, affiliation:'여포군', troop:10000,
+  // 진궁(책사)을 부장으로 둬서, 일기토로 고순을 사로잡아도(captureCommander의
+  // advisor 분기) 군세가 곧바로 와해되지 않고 진궁이 지휘를 이어받는다 -
+  // 기령이 양홍을 부장으로 둔 것과 같은 구조.
+  gosun: { id:'gosun', name:'고순', birth:165, deathReal:199, deathVirtual:255, kind:'enemy', forced:null, affiliation:'여포군', troop:10000, deputy:'jingung',
     stats:{atk:90, def:93, spd:81, int:58, cha:38, lead:95}, sprite:SPRITE_DONGTAK,
     bio:'여포의 맹장으로 정예부대 함진영을 이끌었으며, 하비성 함락 후 진궁과 함께 처형되었다.', intro:'…함진영은 항복을 모른다. 덤벼라.' },
   jangryo: { id:'jangryo', name:'장료', birth:169, deathReal:222, deathVirtual:259, kind:'enemy', forced:null, affiliation:'여포군',

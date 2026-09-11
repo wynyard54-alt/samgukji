@@ -687,7 +687,10 @@ const SEOJU_AREA_LABELS = [
     tiles: grid,
     backgroundKey: 'hoesu_overview',
     apMovement: true,
-    playerStart: { x:16, y:13 },
+    // 갈림길 한복판에서 시작하면 원술군이 화면 밖이라 쫓기는 긴장감이 없다 -
+    // 갈림길과 기령 군세(왼쪽아래 가지 끝) 중간쯤까지 이미 내려온 지점에서
+    // 시작해, 화면에 추격해오는 원술군이 바로 보이게 한다.
+    playerStart: { x:11, y:17 },
     camera: { viewportW:800, viewportH:480 },
     decor: [
       { type:'mapLabel', x:14, y:2, label:'여포군 고순' },
@@ -700,7 +703,7 @@ const SEOJU_AREA_LABELS = [
       { id:'janghun', x:6, y:22, label:'장훈 군세', fixed:true },
       { id:'akchwi', x:4, y:21, label:'악취 군세', fixed:true },
       { id:'jingi', x:7, y:20, label:'진기 군세', fixed:true },
-      { id:'yubi', x:17, y:13, label:'유비 군세', fixed:true },
+      { id:'yubi', x:12, y:17, label:'유비 군세', fixed:true },
     ],
   };
 })();
