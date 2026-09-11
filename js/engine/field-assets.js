@@ -33,6 +33,7 @@ const FieldAssets = (function () {
     seoju_overview:'seoju_map_v1.jpg',
     habi_gwannae_overview:'habi_gwannae_map_v1.jpg',
     suchun_overview:'suchun_map_v1.jpg',
+    hoesu_overview:'hoesu_map_v1.jpg',
   };
 
   function get(key) {
