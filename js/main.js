@@ -2471,7 +2471,7 @@ function checkHoenamClear() {
 // 하비 함락 소식에 회남에서 발길을 돌렸지만, 원술이 여포에게 뒤를 쳐달라
 // 협공을 청하며 유비는 앞뒤로 포위된 신세가 된다(js/data/story.js
 // gwangneung_wonsul_yeopo_deal 참고). 회남 벌판과 똑같은 크기의 빈 벌판
-// (js/data/maps.js MAPS.gwangneung)에 관우군/유비군을 그대로 옮겨오고,
+// (js/data/maps.js MAPS.hoesu, "회수평야")에 관우군/유비군을 그대로 옮겨오고,
 // 좌상단에 고순(여포군), 좌하단에 원술군 잔여 4개 부대를 새로 배치한다.
 function goGwangneungRetreat() {
   stage = 'warmap';
@@ -2489,7 +2489,7 @@ function goGwangneungRetreat() {
   releaseCapturedForRetreat();
   GameState.ap = effectiveApMax();
   showScreen('screen-explore');
-  MapView.load('gwangneung', {
+  MapView.load('hoesu', {
     onInteract: interactNPC,
     onApSpent: updateHUD,
     onApBlocked,

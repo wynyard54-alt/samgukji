@@ -634,7 +634,7 @@ const SEOJU_AREA_LABELS = [
 // 전부 개활지로 열어둔다 - 그림이 준비되면 backgroundKey를 회남 벌판처럼
 // 지정하면 된다.
 // 관우군/유비군은 수춘성에서 이미 편성된 GameState.army/allyArmy를 그대로
-// 이어받아 이 지도에 옮겨온다(main.js goGwangneungRetreat). 적은 좌상단
+// 이어받아 이 지도(회수평야)에 옮겨온다(main.js goGwangneungRetreat). 적은 좌상단
 // (10~11시 방향)에 여포군 고순(1만), 좌하단(7시 방향)에 원술군 잔여
 // 4개 부대(기령 5천 · 장훈·악취·진기 각 3천)를 새로 배치한다 - 앞선
 // 수춘성 전투에서 패주/포획됐던 흔적은 이 장면 진입 시 전부 리젠된다.
@@ -644,8 +644,8 @@ const SEOJU_AREA_LABELS = [
   const w = 36, h = 25;
   const grid = makeGrid(w, h, 0);
 
-  MAPS.gwangneung = {
-    name: '광릉 도주로',
+  MAPS.hoesu = {
+    name: '회수평야',
     width: w, height: h,
     tiles: grid,
     // backgroundKey: 그림 준비되면 여기에 지정
