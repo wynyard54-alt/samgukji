@@ -2677,16 +2677,7 @@ document.querySelectorAll('.hero-card').forEach((card) => {
   }
   card.onclick = () => {
     if (card.dataset.chapter === '2') {
-      GameState.reset(card.dataset.hero);
-      // 연의 기준 유비의 서주 지원(도겸의 요청)은 194년 무렵이다 - 챕터1
-      // 기본값(184년)을 그대로 이어받지 않고 챕터 시작 연도로 맞춰준다.
-      GameState.year = 194;
-      GameState.month = 3;
-      GameState.npcStatus['deungmu'] = 'resolved';
-      GameState.flags.act1 = true;
-      MAPS.pyeongwon.apMovement = false;
-      showScreen('screen-explore');
-      goSeojuFree();
+      enterChapter2(card.dataset.hero);
       return;
     }
     GameState.reset(card.dataset.hero);
@@ -2695,6 +2686,53 @@ document.querySelectorAll('.hero-card').forEach((card) => {
     Dialogue.show(STORY.intro, () => centerAlert('유비를 찾아가자.'));
   };
 });
+
+// 챕터2 시작 공통 처리 - 챕터 선택 화면에서 장수를 새로 고를 때(carry 없음)와
+// 챕터1 엔딩에서 "계승하여 챕터2로"를 고를 때(carry 있음) 둘 다 이 함수를
+// 거친다. carry가 있으면 이어서 applyChapter2Inheritance가 금/쌀/명성/
+// 등용장수를 넘겨받는다.
+function enterChapter2(heroId, carry) {
+  // 챕터1도 전쟁맵마다 이니셔티브 엔진(warRoundActive/activeCommanderId 등)을
+  // 쓰므로, 챕터1 엔딩 직후 곧바로 이어서 들어오는 이 경로에서도 혹시 남아
+  // 있을 흔적을 확실히 걷어내고 시작한다 - 이미 꺼져 있으면 아무 일도
+  // 하지 않는 안전한 호출이다.
+  endWarInitiative();
+  GameState.reset(heroId);
+  // 연의 기준 유비의 서주 지원(도겸의 요청)은 194년 무렵이다 - 챕터1
+  // 기본값(184년)을 그대로 이어받지 않고 챕터 시작 연도로 맞춰준다.
+  GameState.year = 194;
+  GameState.month = 3;
+  GameState.npcStatus['deungmu'] = 'resolved';
+  GameState.flags.act1 = true;
+  MAPS.pyeongwon.apMovement = false;
+  showScreen('screen-explore');
+  const deceased = carry ? applyChapter2Inheritance(carry) : [];
+  if (deceased.length) {
+    Dialogue.show([{ speaker: '내레이션', text: `그 사이 세월이 흘러, 지난 이야기에서 등용했던 장수 중 ${deceased.join(', ')}은(는) 천수를 다해 세상을 떠났다는 소식이 들려왔다.` }], () => goSeojuFree());
+  } else {
+    goSeojuFree();
+  }
+}
+
+// 챕터1 엔딩의 "계승하여 챕터2로"에서 넘어온 금/쌀/명성/등용장수를 반영한다.
+// 장수 성장(스탯·필살기)은 ROSTER 객체 자체에 남아있어 GameState.reset이
+// 손대지 않으므로 별도 처리가 필요 없다. 등용장수 중에는, 챕터 사이 흐른
+// 10년(184~194년) 동안 실제(deathReal, 연의 기준 우선) 천수를 다한 이가
+// 있을 수 있어 그런 이는 자동으로 이탈시키고 이름을 돌려준다.
+function applyChapter2Inheritance(carry) {
+  GameState.resources.gold = carry.gold;
+  GameState.resources.rice = carry.rice;
+  GameState.fame = carry.fame;
+  const deceased = [];
+  carry.recruited.forEach((id) => {
+    const rd = ROSTER[id];
+    if (!rd) return;
+    if (rd.deathReal != null && GameState.year >= rd.deathReal) { deceased.push(rd.name); return; }
+    GameState.recruited.push(id);
+    GameState.npcStatus[id] = 'recruited';
+  });
+  return deceased;
+}
 
 function learnRandomSkill(hero) {
   if (!hero.skills) hero.skills = [];
@@ -4047,7 +4085,16 @@ document.getElementById('btn-nextmonth').onclick = () => {
   monthAdvanceClick();
 };
 
-document.getElementById('btn-restart').onclick = () => showScreen('screen-title');
+document.getElementById('btn-ending-continue').onclick = () => {
+  const carry = {
+    gold: GameState.resources.gold,
+    rice: GameState.resources.rice,
+    fame: GameState.fame,
+    recruited: [...GameState.recruited],
+  };
+  enterChapter2(GameState.mainHero, carry);
+};
+document.getElementById('btn-ending-chapters').onclick = () => showScreen('screen-chapter');
 
 // 모바일 터치 이동패드 (클릭=탭으로 동일하게 동작)
 function touchpadBlocked() {
