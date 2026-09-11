@@ -99,12 +99,12 @@ function showScreen(id) {
 // 구석의 작은 토스트는 모바일 화면에서 특히 잘 안 보인다는 피드백이 있어,
 // 모든 안내 메시지를 화면 정중앙에 큼직하게 띄운다. toast()는 하위 호환을
 // 위해 이름만 남겨두고 centerAlert()로 위임한다.
-function centerAlert(msg) {
+function centerAlert(msg, holdMs) {
   const el = document.getElementById('center-alert');
   el.textContent = msg;
   el.classList.remove('hidden');
   clearTimeout(centerAlertTimer);
-  centerAlertTimer = setTimeout(() => el.classList.add('hidden'), 2200);
+  centerAlertTimer = setTimeout(() => el.classList.add('hidden'), holdMs || 2200);
 }
 
 // 메시지가 다 사라질 때까지 기다리지 않고, 클릭/터치하면 바로 닫을 수 있게 한다.
@@ -2461,11 +2461,59 @@ function checkHoenamClear() {
     MapView.lockMovement(true);
     Dialogue.show(STORY.hoenam_giryeong_win, () => {
       Dialogue.show(STORY.hoenam_jangbi_arrives, () => {
-        MapView.lockMovement(false);
-        toast('원술 정벌이 중단되었다. (다음 장면에서 계속)');
+        Dialogue.show(STORY.gwangneung_intro, () => goGwangneungRetreat());
       });
     });
   });
+}
+
+// ---------------- 챕터2 (관우) : 광릉 도주 [장면4] ----------------
+// 하비 함락 소식에 회남에서 발길을 돌렸지만, 원술이 여포에게 뒤를 쳐달라
+// 협공을 청하며 유비는 앞뒤로 포위된 신세가 된다(js/data/story.js
+// gwangneung_wonsul_yeopo_deal 참고). 회남 벌판과 똑같은 크기의 빈 벌판
+// (js/data/maps.js MAPS.gwangneung)에 관우군/유비군을 그대로 옮겨오고,
+// 좌상단에 고순(여포군), 좌하단에 원술군 잔여 4개 부대를 새로 배치한다.
+function goGwangneungRetreat() {
+  stage = 'warmap';
+  // 앞선 수춘성 전투에서 패주(routed)/포획됐던 흔적(낮아진 병력, 지휘관
+  // 교체 등)이 이 장면까지 이어지지 않도록, 등장하는 5개 부대를 모두
+  // 정해진 병력으로 리젠한다.
+  const regenTroop = { gosun: 10000, giryeong: 5000, janghun: 3000, akchwi: 3000, jingi: 3000 };
+  Object.keys(regenTroop).forEach((id) => {
+    ROSTER[id].troop = regenTroop[id];
+    delete ROSTER[id].commanderCaptured;
+    delete GameState.npcStatus[id];
+    delete GameState.warLocks[id];
+    StatusEffects.clearArmyStatus(id);
+  });
+  releaseCapturedForRetreat();
+  GameState.ap = effectiveApMax();
+  showScreen('screen-explore');
+  MapView.load('gwangneung', {
+    onInteract: interactNPC,
+    onApSpent: updateHUD,
+    onApBlocked,
+    onStep: renderMinimap,
+    onAllyEngage: handleAllyEngage,
+  });
+  updateHUD();
+  Dialogue.show(STORY.gwangneung_wonsul_yeopo_deal, () => {
+    MapView.lockMovement(false);
+    centerAlert('원술과 여포 군대를 피해 유비군세를 광릉으로 무사히 탈출시켜라', 4000);
+  });
+}
+
+// 수춘성에서 사로잡아 등용 대기 중이던 적장이 있어도, 광릉 도주 중까지
+// 계속 붙잡아둘 상황이 아니다 - 이 장면 시작과 함께 모두 풀려나 원술에게
+// 돌아간 것으로 처리한다. releaseCapturedOnDefeat와 달리 아군이 진 것도
+// 아니라 문구만 다르다 - 상태값은 똑같이 'routed'를 써서, 이번 장면에서
+// 추격자로 다시 등장해도 서사적으로 어긋나지 않게 한다.
+function releaseCapturedForRetreat() {
+  if (!GameState.capturedCommanders.length) return;
+  const names = GameState.capturedCommanders.map((id) => ROSTER[id].name).join(', ');
+  for (const id of GameState.capturedCommanders) GameState.npcStatus[id] = 'routed';
+  GameState.capturedCommanders = [];
+  toast(`사로잡아 두었던 ${names}이(가) 혼란을 틈타 모두 원술에게 돌아갔다.`);
 }
 
 // ---------------- 유주 어양 : 장순의 난 (군세전투 튜토리얼) ----------------

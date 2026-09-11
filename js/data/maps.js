@@ -576,7 +576,9 @@ const SEOJU_AREA_LABELS = [
 // 자유롭다 - 대신 성문 앞에 나와 있는 선봉(뇌박·진란, 관우군이 상대)을 둘 다
 // 무너뜨리면 원술이 남은 병력을 이끌고 성 안으로 물러난다(main.js
 // checkWonsulRetreat, MapView.removeNpc('wonsul')). 갈림길 위/아래에는
-// 기령(관우군이 상대)과 교유(유비군이 상대, warArmy:'ally')가 있다.
+// 기령(관우군이 상대)과 교유(유비군이 상대)가 있다 - 누가 누구와 실제로
+// 맞닥뜨렸는지는 정적인 플래그가 아니라 main.js의 activeCommanderId가
+// 그때그때 판정한다.
 // 유비군은 하비 관청에서 이미 편성을 마치고 함께 출정했으므로, 입장 시점에
 // 관우(플레이어) 바로 옆에 유비 마커를 고정 배치해 같이 도착한 것을 보여준다.
 // 이 지도는 관우군/유비군/적 군세 각각의 속도로 정한 순서대로 한 번에 하나씩만
@@ -613,13 +615,55 @@ const SEOJU_AREA_LABELS = [
     npcs: [
       { id:'giryeong', x:9, y:7, label:'기령 군세', fixed:true },
       { id:'yanghong', x:11, y:7, label:'양홍', fixed:true },
-      { id:'gyoyu', x:9, y:18, label:'교유 군세', fixed:true, warArmy:'ally' },
+      { id:'gyoyu', x:9, y:18, label:'교유 군세', fixed:true },
       { id:'wonsul', x:17, y:12, label:'원술 군세', fixed:true },
       { id:'noebak', x:12, y:10, label:'뇌박 군세', fixed:true },
       { id:'jinran', x:12, y:14, label:'진란 군세', fixed:true },
       // 유비군은 자기 차례에 플레이어가 직접 조종한다(main.js hoenamActivateUnit +
       // MapView.setControlledUnit 참고) - 더는 교유만 자동으로 쫓아가지 않는다.
       { id:'yubi', x:3, y:14, label:'유비 군세', fixed:true },
+    ],
+  };
+})();
+
+// ---------------- 챕터2 (관우) : 광릉 도주 [장면4] ----------------
+// 연의 12회 - 원술이 사자를 보내 여포에게 곡식·군마·금은·비단을 약속하며
+// 유비를 앞뒤로 협공하자 청하고, 여포가 이를 받아들여 고순을 보내 유비의
+// 후방을 치게 하는 장면. 회남 벌판(수춘성)과 똑같은 크기(36x25)의 빈
+// 벌판으로, 타일 위에 얹을 그림은 별도로 준비 중이라 지금은 벽/장애물 없이
+// 전부 개활지로 열어둔다 - 그림이 준비되면 backgroundKey를 회남 벌판처럼
+// 지정하면 된다.
+// 관우군/유비군은 수춘성에서 이미 편성된 GameState.army/allyArmy를 그대로
+// 이어받아 이 지도에 옮겨온다(main.js goGwangneungRetreat). 적은 좌상단
+// (10~11시 방향)에 여포군 고순(1만), 좌하단(7시 방향)에 원술군 잔여
+// 4개 부대(기령 5천 · 장훈·악취·진기 각 3천)를 새로 배치한다 - 앞선
+// 수춘성 전투에서 패주/포획됐던 흔적은 이 장면 진입 시 전부 리젠된다.
+// 아직 추격/도착 판정(승패) 로직은 붙이지 않은 상태다 - 다음 단계에서
+// 이니셔티브 전투 엔진에 "적을 피해 목적지에 도달" 승리조건을 얹을 예정.
+(function () {
+  const w = 36, h = 25;
+  const grid = makeGrid(w, h, 0);
+
+  MAPS.gwangneung = {
+    name: '광릉 도주로',
+    width: w, height: h,
+    tiles: grid,
+    // backgroundKey: 그림 준비되면 여기에 지정
+    apMovement: true,
+    playerStart: { x:28, y:13 },
+    camera: { viewportW:800, viewportH:480 },
+    decor: [
+      { type:'mapLabel', x:8, y:4, label:'여포군 고순' },
+      { type:'mapLabel', x:10, y:20, label:'원술군 잔여 부대' },
+      { type:'mapLabel', x:34, y:13, label:'광릉' },
+    ],
+    npcs: [
+      { id:'gosun', x:8, y:4, label:'고순 군세', fixed:true },
+      { id:'giryeong', x:9, y:19, label:'기령 군세', fixed:true },
+      { id:'janghun', x:11, y:20, label:'장훈 군세', fixed:true },
+      { id:'akchwi', x:9, y:21, label:'악취 군세', fixed:true },
+      { id:'jingi', x:11, y:19, label:'진기 군세', fixed:true },
+      { id:'yubi', x:29, y:13, label:'유비 군세', fixed:true },
     ],
   };
 })();

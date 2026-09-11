@@ -351,6 +351,25 @@ const STORY = {
     { speaker: '내레이션', text: '유비 일행은 원술 정벌을 포기하고, 서둘러 하비로 발길을 돌렸다.' },
   ],
 
+  // 유비 일행이 하비로 발길을 돌렸지만, 원술과 여포 사이의 밀약으로 앞뒤가
+  // 막힌 상황을 관우가 먼저 보고한다 - 아직 화면은 회남 벌판이고, 이어서
+  // main.js goGwangneungRetreat가 광릉 도주 지도로 넘겨준다.
+  gwangneung_intro: [
+    { speaker: '관우', text: '앞에는 원술, 뒤에는 여포입니다. 병사들이 크게 동요하고 있습니다.' },
+  ],
+
+  // 연의 12회 - 원술이 사자를 보내 여포에게 곡식·군마·금은·비단을 약속하며
+  // 유비를 앞뒤로 협공하자 청하고, 여포가 이를 받아들여 고순을 보내 유비의
+  // 후방을 치게 하는 장면. 관우/유비 시점이 아니라 원술-여포 진영을 비추는
+  // 컷씬이다.
+  gwangneung_wonsul_yeopo_deal: [
+    { speaker: '내레이션', text: '한편, 원술의 사자가 은밀히 여포의 진영을 찾았다.', scene: 'assets/illust/wonsul_yeopo_deal.jpg' },
+    { speaker: '원술', text: '유비를 도모해주면 곡식 5만 곡과 말 500필, 금은 1만 냥과 비단 1천 필을 보내겠다 전하라.', scene: 'assets/illust/wonsul_yeopo_deal.jpg' },
+    { speaker: '여포', text: '하하, 이리 후하게 나온다면야 마다할 까닭이 없지!', scene: 'assets/illust/wonsul_yeopo_deal.jpg' },
+    { speaker: '여포', text: '고순, 군사를 이끌고 가서 유비의 뒤를 쳐라.', scene: 'assets/illust/wonsul_yeopo_deal.jpg' },
+    { speaker: '내레이션', text: '고순이 여포의 명을 받들어 대군을 이끌고 유비의 뒤를 노리기 시작했다.', scene: 'assets/illust/wonsul_yeopo_deal.jpg' },
+  ],
+
   // TODO(챕터2 다음 장면, 소패): 하비 함락 이후 유비 일행이 소패에 머물게 되는
   // 시점에 간옹을 노식처럼 발견형 서브퀘스트로 등장시킬 것. 연의에서는 고순·장료가
   // 소패를 공격해와 유비가 대책을 상의하는 장면에서 간옹이 처음 제대로 소개된다
