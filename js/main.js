@@ -155,6 +155,21 @@ function spend(n) {
   return true;
 }
 
+// 일기토/전투/책략처럼 교전 메뉴에서 쓰는 행동력은 spend()와 달리 항상
+// 관우군(GameState.ap)이 아니라 "지금 실제로 싸우는 쪽"의 행동력을 써야 한다 -
+// 회남 벌판에서 유비군 차례에 이 메뉴를 쓰면 activeCommanderId가 'yubi'로
+// 되어 있어 GameState.allyAp에서 대신 깎인다.
+function spendCombatAP(n) {
+  const useAlly = activeCommanderId === 'yubi';
+  const ok = useAlly ? GameState.spendAllyAP(n) : GameState.spendAP(n);
+  if (!ok) {
+    centerAlert(useAlly ? '유비군의 행동력이 부족합니다. "군세 행동종료"를 눌러보세요.' : '행동력이 부족합니다. "휴식"을 눌러보세요.');
+    return false;
+  }
+  updateHUD();
+  return true;
+}
+
 function describeReward(r) {
   const parts = [];
   if (r.gold) parts.push(`금 ${r.gold}`);
@@ -406,6 +421,11 @@ function updateHUD() {
 function interactNPC(id, context) {
   const rd = ROSTER[id];
   if (!rd) return;
+  // 회남 벌판의 속도순 전투에서 적이 자기 차례에 자동으로 관우(문자 그대로의
+  // 조작 캐릭터)에게 다가가 붙으면 finishTurn(mapview.js)이 이 값을 함께
+  // 실어 보낸다 - 직전이 유비군 차례였어도(activeCommanderId가 'yubi'로 남아
+  // 있어도) 이번 교전은 항상 관우 쪽임을 정확히 반영하기 위함이다.
+  if (context && context.engagedCommanderId) activeCommanderId = context.engagedCommanderId;
   const st = GameState.npcStatus[id];
   // 미방은 이미 마음을 정한 상태라, 손건과 달리 친밀도를 쌓을 필요 없이
   // 서주에서 찾아가 인사만 나누면 곧바로 등용된다("찾아서 등용"). 미축·진규·
@@ -827,7 +847,13 @@ function maybeEnemyCastsStrategy(rd, ctx) {
 // 조조·원소나 하비전의 조조군처럼 진짜 별개 세력이 돕는 경우가 생기면
 // warArmy:'ai:조조' 같은 새 갈래를 추가해 AI가 알아서 판정하게 하면 된다.
 function resolveWarArmy(rd) {
-  if (activeCommanderId && activeCommanderId !== GameState.mainHero) {
+  // activeCommanderId가 명시적으로 설정돼 있으면(회남 벌판에서 실제로 맞닥뜨린
+  // 쪽이 확정된 상태) 그 값을 그대로 최종 답으로 쓴다 - 관우 쪽으로 확정된
+  // 경우까지 포함해서, 아래의 정적인 warArmy:'ally' 플래그(교유 전용)로
+  // 새지 않게 한다. 예를 들어 교유가 유비군 대신 관우에게 다가가 붙어도
+  // engagedCommanderId로 관우가 명시되므로 여기서 바로 관우군으로 확정된다.
+  if (activeCommanderId) {
+    if (activeCommanderId === GameState.mainHero) return { army: GameState.army, commanderId: GameState.mainHero };
     const army = armyFor(activeCommanderId);
     if (army) return { army, commanderId: activeCommanderId };
   }
@@ -1385,7 +1411,7 @@ function attemptStrategy(id) {
     openWarCommandMenu(id);
     return;
   }
-  if (!spend(STRATEGY_AP_COST)) return;
+  if (!spendCombatAP(STRATEGY_AP_COST)) return;
   // 실제 효과가 구현된 책략 중, 지금 쓸 수 있는(전투당/월 1회 제한에 걸리지
   // 않은) 것만 골라 선택지로 보여준다 - 없으면 기존 범용 책략으로 바로 나간다.
   const castable = strategiesFor(deputyId).filter((sid) => STRATEGY_EFFECTS[sid] && strategyIsUsable(sid));
@@ -1400,7 +1426,7 @@ function attemptStrategy(id) {
 
 function attemptDuelChallenge(id) {
   const rd = ROSTER[id];
-  if (!spend(DUEL_AP_COST)) return;
+  if (!spendCombatAP(DUEL_AP_COST)) return;
   if (id === 'jangsun') { // 장순은 절대 일기토에 응하지 않는다 - 반드시 군세전투로 넘어간다
     Dialogue.show([{ speaker: rd.name, text: '흥, 필부의 결투 따위로 대세를 바꿀 성싶으냐! 전군으로 붙어보자!' }], () => {
       toast('장순이 일기토를 거절했다.');
@@ -1458,12 +1484,18 @@ const STRATEGY_AP_COST = 1;
 // opts.freeAction이면 행동력을 소모하지 않는다 - 플레이어가 직접 지시한
 // 전투가 아니라, 유비군처럼 AI가 스스로 목표에 다가가 자동으로 붙는
 // 전투(main.js의 handleAllyEngage)이기 때문에 플레이어 행동력과 무관하다.
+// opts.onComplete(outcome)이 있으면 이 교전의 대사가 완전히 끝난 뒤(추가로
+// 뜨는 후속 대사까지 전부) 정확히 한 번 호출된다 - outcome.concluded가
+// true면 어느 한쪽 군세가 완전히 무너져 끝난 것이고, false면 "접전만 끝나고
+// 양쪽 다 살아있는" 상태라 다시 [전투]를 걸면(또는 handleAllyEngage처럼
+// 자동으로) 이어서 싸울 수 있다는 뜻이다.
 function resolveArmyBattle(id, opts) {
   opts = opts || {};
+  const onComplete = opts.onComplete || (() => {});
   const rd = ROSTER[id];
   const ctx = resolveWarArmy(rd);
   if (!ctx) { toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`); return; }
-  if (!opts.freeAction && !spend(ARMY_BATTLE_AP_COST)) return;
+  if (!opts.freeAction && !spendCombatAP(ARMY_BATTLE_AP_COST)) return;
   const army = ctx.army;
   const commanderName = ROSTER[ctx.commanderId].name;
   const playerKey = ctx.commanderId; // 유비군 전투는 유비 마커에, 관우군 전투는 관우 본인에 공격/피격 연출을 건다.
@@ -1544,6 +1576,7 @@ function resolveArmyBattle(id, opts) {
   Dialogue.show(lines, () => {
     if (!enemyDown && !playerDown) {
       toast('한 차례 접전이 끝났다. 계속하려면 다시 [전투]를 사용하자.');
+      onComplete({ concluded: false });
       return;
     }
     delete GameState.warLocks[id];
@@ -1551,21 +1584,24 @@ function resolveArmyBattle(id, opts) {
     StatusEffects.unlinkChain(id);
     if (id === 'jangsun') {
       resolveJangsunBattle({ winner: enemyDown ? 'player' : 'enemy', playerTroopsLeft: army.troop });
+      onComplete({ concluded: true, enemyDown, playerDown });
       return;
     }
     if (enemyDown && wasGuaranteedCapture) {
-      captureCommander(id, () => { if (stage === 'warmap') checkWarmapClear(); });
+      captureCommander(id, () => { if (stage === 'warmap') checkWarmapClear(); onComplete({ concluded: true, enemyDown, playerDown }); });
     } else if (enemyDown) {
       Dialogue.show([{ speaker: '내레이션', text: `${rd.name}의 군세가 완전히 무너졌다! (아군 병력 ${army.troop}명 남음)` }], () => {
         GameState.npcStatus[id] = 'resolved';
         MapView.removeNpc(id);
         toast(`${rd.name}이(가) 패주했다.`);
         if (stage === 'warmap') checkWarmapClear();
+        onComplete({ concluded: true, enemyDown, playerDown });
       });
     } else {
       Dialogue.show([{ speaker: '내레이션', text: `아군이 ${rd.name}의 군세에 완전히 밀려 무너졌다.` }], () => {
         releaseCapturedOnDefeat();
         toast('전열을 정비해 다시 도전하자.');
+        onComplete({ concluded: true, enemyDown, playerDown });
       });
     }
   });
@@ -2179,15 +2215,34 @@ function goHoenamBattle() {
 // 먼저 적에게 다가가 붙을 때와 똑같이 이 함수를 거친다 - "누가 먼저
 // 다가갔는지"는 결과에 영향이 없어야 하므로. resolveArmyBattle 내부의
 // resolveWarArmy가 activeCommanderId를 최우선으로 보므로, 실제로 맞닥뜨린
-// 쪽(allyId)의 군세로 정확히 싸우도록 잠깐 그 값으로 바꿔둔다 - 이 함수는
-// 항상 동기적으로 필요한 army/commanderId를 다 읽어들인 뒤에 반환하므로
-// (내부의 Dialogue 콜백은 이미 캡처된 값만 쓴다), 호출이 끝나자마자 원래
-// 값으로 되돌려도 안전하다.
-function handleAllyEngage(allyId, targetId) {
+// 쪽(allyId)의 군세로 정확히 싸우도록 활성화 전체 동안 그 값으로 바꿔둔다.
+//
+// remainingBudget이 있으면(회남 벌판의 속도순 전투) 적이 그 활성화에서
+// 이동하고 남은 행동력이다 - 플레이어가 [전투]를 반복해서 누를 수 있는 것과
+// 똑같이, 이 예산이 ARMY_BATTLE_AP_COST 이상 남아있고 양쪽이 다 살아있는
+// 동안은 접전(freeAction, 행동력 소모 없음 - 예산 관리는 이 함수가 직접 함)을
+// 계속 이어간다. 한 교전의 대사가 다 끝난 뒤(onComplete)에만 다음 교전을
+// 걸어, 화면에 여러 전투가 동시에 겹쳐 뜨지 않게 한다.
+function handleAllyEngage(allyId, targetId, remainingBudget) {
   const prev = activeCommanderId;
   activeCommanderId = allyId;
-  resolveArmyBattle(targetId, { freeAction: true });
-  activeCommanderId = prev;
+  const attemptOnce = (budgetLeft) => {
+    const enemyAlive = MapView.liveNpcIds.includes(targetId);
+    const allyArmyRef = armyFor(allyId);
+    const allyAlive = allyArmyRef && allyArmyRef.troop > 0;
+    if (budgetLeft == null || budgetLeft < ARMY_BATTLE_AP_COST || !enemyAlive || !allyAlive) {
+      activeCommanderId = prev;
+      return;
+    }
+    resolveArmyBattle(targetId, {
+      freeAction: true,
+      onComplete: (outcome) => {
+        if (outcome.concluded) { activeCommanderId = prev; return; }
+        attemptOnce(budgetLeft - ARMY_BATTLE_AP_COST);
+      },
+    });
+  };
+  attemptOnce(remainingBudget);
 }
 
 // ---- 회남 벌판 전용: 속도순으로 한 번에 하나씩만 움직이는 이니셔티브 전투 ----
@@ -2199,11 +2254,12 @@ let hoenamActive = false;
 let hoenamOrder = [];
 let hoenamIndex = 0;
 // 예전엔 적이 한 턴에 3칸만 움직였는데(같이 움직이는 다른 적들과 애니메이션
-// 박자를 맞추려던 임시값), 회남 벌판에서는 플레이어와 똑같은 조건으로
-// 싸우도록 관우군/유비군 행동력과 같은 크기의 이동력을 준다 - 남은 이동력을
-// 공격에 더 쓸지 접근에 더 쓸지는 (공격 자체가 행동력을 더 쓰지 않으므로)
-// computeAiPath가 매번 목표에 인접할 때까지 최대한 다가가는 것으로 이미
-// 자연스럽게 처리된다.
+// 박자를 맞추려던 임시값), 회남 벌판에서는 플레이어와 완전히 똑같은 조건으로
+// 싸우도록 관우군/유비군과 같은 크기의 행동력 예산을 준다. computeAiPath는
+// 목표에 인접할 때까지 필요한 만큼만 다가가고(그 이상 낭비하지 않는다), 남은
+// 예산은 handleAllyEngage가 [전투] 1회당 ARMY_BATTLE_AP_COST씩 써가며 - 이동
+// 없이 다 붙어있었다면 여러 번, 멀리서 다가왔다면 그만큼 적게 - 접전을
+// 이어간다. 플레이어가 [전투]를 반복해서 누를 수 있는 것과 정확히 같은 예산.
 const HOENAM_AI_MOVE_BUDGET = 8;
 
 function hoenamCombatantSpeed(id) {
@@ -2216,9 +2272,10 @@ function computeHoenamOrder() {
   const ids = [];
   if (GameState.army) ids.push(GameState.mainHero);
   if (GameState.allyArmy) ids.push('yubi');
-  ['giryeong', 'noebak', 'jinran', 'gyoyu'].forEach((id) => {
-    if (MapView.liveNpcIds.includes(id)) ids.push(id);
-  });
+  // enemiesInScene()은 이미 지도에 상관없이 "지금 살아있는 적 전원"을
+  // 돌려주는 범용 함수라, 회남 벌판 고유 id를 하드코딩할 필요가 없다 -
+  // 나중에 이 이니셔티브 시스템을 다른 지도에 넓힐 때도 그대로 쓸 수 있다.
+  ids.push(...enemiesInScene());
   return ids.sort((a, b) => hoenamCombatantSpeed(b) - hoenamCombatantSpeed(a));
 }
 
@@ -2257,6 +2314,10 @@ function activateHoenamUnit() {
     updateHUD();
     setHoenamTurnUi(id, true);
   } else {
+    // 직전 차례가 유비군이었을 수 있으므로, 그 흔적(activeCommanderId/조작
+    // 대상)이 이 적의 자동 교전 판정에 새지 않도록 여기서 확실히 초기화한다.
+    activeCommanderId = null;
+    MapView.setControlledUnit(null);
     setHoenamTurnUi(id, false);
     MapView.runAiTurn((engaged) => {
       hoenamIndex++;

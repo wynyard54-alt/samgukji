@@ -792,10 +792,10 @@ const MapView = (function () {
     }
   }
 
-  function interact(npc, proximity) {
+  function interact(npc, proximity, meta) {
     if (!onInteract) return;
     const firstDiscovery=!!(npc.discoverable && !GameState.npcStatus[npc.id]);
-    onInteract(npc.id,{ firstDiscovery, discoveryText:npc.discoveryText||'', proximity:!!proximity, atResidence:!!npc._atResidence });
+    onInteract(npc.id,{ firstDiscovery, discoveryText:npc.discoveryText||'', proximity:!!proximity, atResidence:!!npc._atResidence, ...(meta||{}) });
   }
 
   function interactFacing() {
@@ -1014,19 +1014,27 @@ const MapView = (function () {
   // id들만 이번 호출에서 움직인다 - 생략하면 지금까지처럼 적 전원이 대상이다.
   // moveBudget을 주면(회남 벌판에서 플레이어와 같은 조건으로 싸우게 할 때) 그
   // 값을 이번 호출의 이동력으로 쓴다 - 생략하면 기본 AI_MOVE_BUDGET(3칸)이다.
+  // callback(battled, meta) - meta는 실제로 교전이 발동했을 때만 채워지며
+  // { apUsed, targetId, isMainHero } 모양이다. apUsed는 이번 활성화에서
+  // 이동에 실제로 쓴 행동력(moveBudget 중 실제 소모분)으로, 회남 벌판의
+  // 속도순 전투가 "이동에 더 쓸지 공격에 더 쓸지" 남은 예산을 계산하는 데 쓴다.
   function runAiTurn(callback, onlyIds, moveBudget) {
-    const done = (battled) => { if (callback) callback(battled); };
+    const done = (battled, meta) => { if (callback) callback(battled, meta); };
     if (!map || !map.apMovement) { done(false); return; }
     let hostiles = liveNpcs.filter((n0) => { const rd = ROSTER[n0.id]; return rd && rd.kind === 'enemy'; });
     if (onlyIds) hostiles = hostiles.filter((n0) => onlyIds.includes(n0.id));
 
     // 계획 단계: 기존처럼 한 명씩 실제 위치를 옮겨가며 서로 겹치지 않는 경로를 계산한 뒤,
     // 다시 시작 위치로 되돌려 전원이 동시에 애니메이션되도록 한다.
-    const plans = hostiles.map((n0) => ({ n0, startX: n0.x, startY: n0.y, path: [], target: pickAiTarget(n0) }));
+    const plans = hostiles.map((n0) => ({ n0, startX: n0.x, startY: n0.y, path: [], target: pickAiTarget(n0), apUsed: 0 }));
     for (const plan of plans) {
       // 혼란에 빠진 군세는 제자리에서 움직이지 못한다(이미 인접해 있었다면 공격은 그대로 발동).
       plan.path = StatusEffects.isConfused(plan.n0.id) ? [] : computeAiPath(plan.n0, plan.target, moveBudget);
-      if (plan.path.length) { const last = plan.path[plan.path.length - 1]; plan.n0.x = last.x; plan.n0.y = last.y; }
+      if (plan.path.length) {
+        const last = plan.path[plan.path.length - 1]; plan.n0.x = last.x; plan.n0.y = last.y;
+        const costScale = StatusEffects.moveCostMult(plan.n0.id);
+        plan.apUsed = plan.path.reduce((sum, tile) => sum + tileMoveCost(tile.x, tile.y) * costScale, 0);
+      }
       // 견벽거수처럼 "이동하면 사기 감소" 디버프가 걸려 있으면, 실제로 움직인
       // 칸 수만큼 사기를 깎는다 - 얌전히 있으면(경로 길이 0) 손해가 없다.
       const moraleCost = StatusEffects.moveMoraleCost(plan.n0.id);
@@ -1036,17 +1044,25 @@ const MapView = (function () {
     render();
 
     const finishTurn = () => {
-      let engaged = false;
-      for (const { n0, target } of plans) {
+      let engaged = false, meta = null;
+      for (const { n0, target, apUsed } of plans) {
         const n = effectiveNpc(n0);
         if (Math.abs(n.x-target.x)+Math.abs(n.y-target.y) !== 1) continue;
-        if (target.id === GameState.mainHero) {
-          interact(n,false); // 문자 그대로의 플레이어와 붙으면 예전처럼 직접 고를 수 있는 교전 메뉴를 띄운다.
+        const isMainHero = target.id === GameState.mainHero;
+        meta = { apUsed, targetId: target.id, isMainHero };
+        if (isMainHero) {
+          // 문자 그대로의 플레이어와 붙으면 예전처럼 직접 고를 수 있는 교전
+          // 메뉴를 띄운다 - engagedCommanderId를 함께 실어 보내, main.js가
+          // (직전이 유비군 차례였더라도) 이번 교전은 항상 관우 쪽임을 정확히
+          // 알 수 있게 한다.
+          interact(n, false, { engagedCommanderId: target.id });
         } else if (onAllyEngage) {
           // 유비군 같은 아군과 붙었을 때는, 유비군이 먼저 적에게 다가가 붙을 때와
           // 똑같은 콜백(onAllyEngage)을 그대로 재사용해 자동으로 전투를 발동시킨다 -
-          // "누가 먼저 다가갔는지"는 결과에 영향이 없어야 하므로.
-          onAllyEngage(target.id, n0.id);
+          // "누가 먼저 다가갔는지"는 결과에 영향이 없어야 하므로. moveBudget이
+          // 있으면(회남 벌판) 이동하고 남은 행동력도 함께 넘겨, 그 예산으로
+          // 몇 번 더 붙을지는 main.js(handleAllyEngage)가 스스로 정한다.
+          onAllyEngage(target.id, n0.id, moveBudget != null ? Math.max(0, moveBudget - apUsed) : null);
         }
         engaged = true;
         break; // 한 번에 한 전투만 발동
@@ -1054,7 +1070,7 @@ const MapView = (function () {
       // 플레이어(또는 유비군)가 적과 붙었더라도 유비군의 추적 턴은 별개로 계속
       // 진행한다 - 안 그러면 누군가 적 옆에 서 있는 동안 아군이 영영
       // 움직이지 못하게 된다.
-      runAllyChases((allyEngaged) => done(engaged || allyEngaged));
+      runAllyChases((allyEngaged) => done(engaged || allyEngaged, meta));
     };
 
     const maxLen = plans.reduce((m, p) => Math.max(m, p.path.length), 0);
