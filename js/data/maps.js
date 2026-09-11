@@ -9,6 +9,25 @@ function makeGrid(w, h, base) {
   return g;
 }
 
+// 회수평야처럼 배경 그림 속 구불구불한 오솔길(직사각형으로는 안 깎이는
+// 모양)을 이동 가능하게 뚫어줄 때 쓰는 헬퍼 - (x0,y0)에서 (x1,y1)까지
+// 선을 따라가며, 시작폭 w0에서 끝폭 w1로 점점 넓어지거나 좁아지는
+// 둥근 통로를 v(보통 0=열림)로 칠한다.
+function fillCorridor(grid, x0, y0, x1, y1, w0, w1, v) {
+  const h = grid.length, w = grid[0].length;
+  const steps = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) * 2) || 1;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const cx = x0 + (x1 - x0) * t, cy = y0 + (y1 - y0) * t;
+    const r = (w0 + (w1 - w0) * t) / 2;
+    for (let yy = Math.max(0, Math.floor(cy - r)); yy <= Math.min(h - 1, Math.ceil(cy + r)); yy++) {
+      for (let xx = Math.max(0, Math.floor(cx - r)); xx <= Math.min(w - 1, Math.ceil(cx + r)); xx++) {
+        if (Math.hypot(xx - cx, yy - cy) <= r) grid[yy][xx] = v;
+      }
+    }
+  }
+}
+
 const MAPS = {};
 
 // ---------------- 탁현 : 이전 빈 바탕 자료 (비활성, 좌표 이력 보존용) ----------------
@@ -630,19 +649,37 @@ const SEOJU_AREA_LABELS = [
 // 연의 12회 - 원술이 사자를 보내 여포에게 곡식·군마·금은·비단을 약속하며
 // 유비를 앞뒤로 협공하자 청하고, 여포가 이를 받아들여 고순을 보내 유비의
 // 후방을 치게 하는 장면. 회남 벌판(수춘성)과 똑같은 크기(36x25)다.
-// 배경 그림(hoesu_map_v1.jpg, Y자 갈림길)은 붙였지만, 그림 속 숲/바위 벽을
-// 실제 이동 불가 타일로 깎아내는 작업은 아직이라 지금은 타일 자체는
-// 전부 개활지로 열려 있다 - 나중에 그림에 맞춰 길 바깥을 막으면 된다.
+// 배경 그림(hoesu_map_v1.jpg)은 세 갈래로 갈라지는 Y자 오솔길이다 - 가운데
+// 갈림길(약 x17,y13)에서 위쪽 가지는 지도 상단으로, 오른쪽 가지는 우상단
+// 관문(광릉으로 가는 출구)으로, 왼쪽아래 가지는 좌하단으로 뻗는다. 길 바깥은
+// 전부 숲/바위(이동 불가, 타일4)로 막고, fillCorridor로 그 세 가지를 따라
+// 그림 속 풀밭 폭에 맞춰 넉넉하게(최대한 넓게) 뚫었다.
 // 관우군/유비군은 수춘성에서 이미 편성된 GameState.army/allyArmy를 그대로
-// 이어받아 이 지도(회수평야)에 옮겨온다(main.js goGwangneungRetreat). 적은 좌상단
-// (10~11시 방향)에 여포군 고순(1만), 좌하단(7시 방향)에 원술군 잔여
-// 4개 부대(기령 5천 · 장훈·악취·진기 각 3천)를 새로 배치한다 - 앞선
-// 수춘성 전투에서 패주/포획됐던 흔적은 이 장면 진입 시 전부 리젠된다.
+// 이어받아 이 지도(회수평야)에 옮겨온다(main.js goGwangneungRetreat) - 그림의
+// 실제 지형에 맞춰, 두 갈래(위/왼쪽아래)에서 협공해오는 적 사이의 갈림길
+// 한복판(관우/유비 시작 위치)에서 오른쪽 관문(광릉)으로 빠져나가야 하는
+// 구도다. 위쪽 가지 끝에 여포군 고순(1만), 왼쪽아래 가지 끝에 원술군 잔여
+// 4개 부대(기령 5천 · 장훈·악취·진기 각 3천)를 배치한다 - 앞선 수춘성
+// 전투에서 패주/포획됐던 흔적은 이 장면 진입 시 전부 리젠된다.
 // 아직 추격/도착 판정(승패) 로직은 붙이지 않은 상태다 - 다음 단계에서
 // 이니셔티브 전투 엔진에 "적을 피해 목적지에 도달" 승리조건을 얹을 예정.
 (function () {
   const w = 36, h = 25;
-  const grid = makeGrid(w, h, 0);
+  const grid = makeGrid(w, h, 4); // 기본은 전부 숲/바위(이동 불가)
+
+  // 갈림길 중심과 세 갈래 끝점(그림 속 오솔길 위치에 맞춘 좌표).
+  const junction = { x:17, y:13 };
+  const topEnd = { x:14, y:1 };     // 위쪽 가지 - 고순이 내려오는 방향
+  const gateEnd = { x:33, y:3 };    // 오른쪽 가지 - 우상단 관문(광릉行 출구)
+  const swEnd = { x:4, y:23 };      // 왼쪽아래 가지 - 원술군이 올라오는 방향
+
+  // 갈림길 한복판을 넉넉히 뚫고, 세 가지를 각각 이어 붙인다 - 끝으로 갈수록
+  // 살짝 좁아지지만 "최대한 넓게" 요청대로 시작폭 9~10, 끝폭도 6 이상으로
+  // 그림의 풀밭 폭을 넉넉히 덮는다.
+  fillCorridor(grid, junction.x, junction.y, junction.x, junction.y, 10, 10, 0);
+  fillCorridor(grid, junction.x, junction.y, topEnd.x, topEnd.y, 9, 6, 0);
+  fillCorridor(grid, junction.x, junction.y, gateEnd.x, gateEnd.y, 9, 6, 0);
+  fillCorridor(grid, junction.x, junction.y, swEnd.x, swEnd.y, 9, 7, 0);
 
   MAPS.hoesu = {
     name: '회수평야',
@@ -650,20 +687,20 @@ const SEOJU_AREA_LABELS = [
     tiles: grid,
     backgroundKey: 'hoesu_overview',
     apMovement: true,
-    playerStart: { x:28, y:13 },
+    playerStart: { x:16, y:13 },
     camera: { viewportW:800, viewportH:480 },
     decor: [
-      { type:'mapLabel', x:8, y:4, label:'여포군 고순' },
-      { type:'mapLabel', x:10, y:20, label:'원술군 잔여 부대' },
-      { type:'mapLabel', x:34, y:13, label:'광릉' },
+      { type:'mapLabel', x:14, y:2, label:'여포군 고순' },
+      { type:'mapLabel', x:5, y:22, label:'원술군 잔여 부대' },
+      { type:'mapLabel', x:32, y:4, label:'광릉行 관문' },
     ],
     npcs: [
-      { id:'gosun', x:8, y:4, label:'고순 군세', fixed:true },
-      { id:'giryeong', x:9, y:19, label:'기령 군세', fixed:true },
-      { id:'janghun', x:11, y:20, label:'장훈 군세', fixed:true },
-      { id:'akchwi', x:9, y:21, label:'악취 군세', fixed:true },
-      { id:'jingi', x:11, y:19, label:'진기 군세', fixed:true },
-      { id:'yubi', x:29, y:13, label:'유비 군세', fixed:true },
+      { id:'gosun', x:14, y:3, label:'고순 군세', fixed:true },
+      { id:'giryeong', x:5, y:20, label:'기령 군세', fixed:true },
+      { id:'janghun', x:6, y:22, label:'장훈 군세', fixed:true },
+      { id:'akchwi', x:4, y:21, label:'악취 군세', fixed:true },
+      { id:'jingi', x:7, y:20, label:'진기 군세', fixed:true },
+      { id:'yubi', x:17, y:13, label:'유비 군세', fixed:true },
     ],
   };
 })();
