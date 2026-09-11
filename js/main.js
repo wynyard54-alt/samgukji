@@ -1719,10 +1719,14 @@ function captureCommander(id, afterCb) {
 }
 
 // 포획한 적장을 데리고 있는 동안 아군이 다른 전투에서 패배하면, 혼란을 틈타 모두 풀려난다.
+// 'resolved'를 쓰면 mapview.js가 이후 모든 지도에서 영구히 숨겨버리므로,
+// 기령의 패주 판정과 같은 이유로 'routed'를 써서 나중 장면에 다시
+// 등장할 수 있게 한다(예: 사로잡았던 장수가 있어도 후퇴전에는 다시 풀려나
+// 추격해야 하는 경우).
 function releaseCapturedOnDefeat() {
   if (!GameState.capturedCommanders.length) return;
   const names = GameState.capturedCommanders.map((id) => ROSTER[id].name).join(', ');
-  for (const id of GameState.capturedCommanders) GameState.npcStatus[id] = 'resolved';
+  for (const id of GameState.capturedCommanders) GameState.npcStatus[id] = 'routed';
   GameState.capturedCommanders = [];
   toast(`포획해두었던 ${names}이(가) 혼란을 틈타 달아났다.`);
 }
