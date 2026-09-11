@@ -1049,20 +1049,27 @@ const MapView = (function () {
         const n = effectiveNpc(n0);
         if (Math.abs(n.x-target.x)+Math.abs(n.y-target.y) !== 1) continue;
         const isMainHero = target.id === GameState.mainHero;
+        // 이 활성화에서 이동하고 남은 행동력 - 상대가 관우든 유비군이든, 이
+        // 교전에 쓸 수 있는 예산은 결국 "적이 이번 턴에 남긴 몫"으로 똑같다.
+        const remainingBudget = moveBudget != null ? Math.max(0, moveBudget - apUsed) : null;
         meta = { apUsed, targetId: target.id, isMainHero };
         if (isMainHero) {
           // 문자 그대로의 플레이어와 붙으면 예전처럼 직접 고를 수 있는 교전
           // 메뉴를 띄운다 - engagedCommanderId를 함께 실어 보내, main.js가
           // (직전이 유비군 차례였더라도) 이번 교전은 항상 관우 쪽임을 정확히
-          // 알 수 있게 한다.
-          interact(n, false, { engagedCommanderId: target.id });
+          // 알 수 있게 한다. remainingBudget도 함께 넘겨, 메뉴에서 [일기토]/
+          // [전투]/[책략] 중 무엇을 고르든 그 행동력은 관우 자신의 턴 예산이
+          // 아니라 "지금 다가와 붙은 적이 남긴 몫"에서 깎이게 한다 - 안 그러면
+          // 관우 차례가 아닐 때(적이 먼저 다가온 경우) 관우 자신의 남은
+          // 행동력이 0이라 일기토가 부당하게 거절된다.
+          interact(n, false, { engagedCommanderId: target.id, remainingBudget });
         } else if (onAllyEngage) {
           // 유비군 같은 아군과 붙었을 때는, 유비군이 먼저 적에게 다가가 붙을 때와
           // 똑같은 콜백(onAllyEngage)을 그대로 재사용해 자동으로 전투를 발동시킨다 -
           // "누가 먼저 다가갔는지"는 결과에 영향이 없어야 하므로. moveBudget이
           // 있으면(회남 벌판) 이동하고 남은 행동력도 함께 넘겨, 그 예산으로
           // 몇 번 더 붙을지는 main.js(handleAllyEngage)가 스스로 정한다.
-          onAllyEngage(target.id, n0.id, moveBudget != null ? Math.max(0, moveBudget - apUsed) : null);
+          onAllyEngage(target.id, n0.id, remainingBudget);
         }
         engaged = true;
         break; // 한 번에 한 전투만 발동

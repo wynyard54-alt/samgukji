@@ -262,7 +262,12 @@ const ROSTER = {
   yanghong: { id:'yanghong', name:'양홍', birth:145, deathReal:199, deathVirtual:235, kind:'flavor', affiliation:'원술군',
     stats:{atk:22, def:24, spd:22, int:72, cha:58, lead:22},
     bio:'원술을 섬긴 신하로 기령을 보좌해 군무를 도왔다.', intro:'원술 님 밑에서 장사를 맡고 있는 양홍이오. 기령 장군을 돕고 있소.', sprite:SPRITE_COALITION },
-  gyoyu: { id:'gyoyu', name:'교유', birth:158, deathReal:195, deathVirtual:248, kind:'enemy', forced:null, affiliation:'원술군', troop:4000, warArmy:'ally',
+  // 예전엔 "교유=항상 유비군 상대"를 뜻하는 warArmy:'ally' 정적 플래그가
+  // 있었지만, 실제로 맞닥뜨린 쪽을 항상 정확히 판정하는 activeCommanderId
+  // 메커니즘(main.js resolveWarArmy)이 생기면서 오히려 관우가 직접 교유를
+  // 공격해도 유비군의 전투로 잘못 처리되는 버그의 원인이 되어 제거했다 -
+  // 이제 기령·교유 모두 실제로 누가 다가가 붙었는지만으로 정확히 판정된다.
+  gyoyu: { id:'gyoyu', name:'교유', birth:158, deathReal:195, deathVirtual:248, kind:'enemy', forced:null, affiliation:'원술군', troop:4000,
     stats:{atk:70, def:67, spd:75, int:69, cha:50, lead:74},
     bio:'원술을 섬긴 장수로 여러 전투에 나섰다.', intro:'유비 그자가 감히 우리 주공을 노린단 말이냐!', sprite:SPRITE_COALITION },
   wonsul: { id:'wonsul', name:'원술', birth:155, deathReal:199, deathVirtual:245, kind:'flavor', affiliation:'원술군', troop:8000,

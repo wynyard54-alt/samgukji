@@ -59,10 +59,23 @@ let stage = 'title';
 let centerAlertTimer = null;
 let pyeongwonCheckpoint = null; // 어양(구 평원현 지도) 도착 시점 GameState 스냅샷 (장순전 패배시 이 시점으로 복귀)
 let coalitionDepartCheckpoint = null; // 반동탁연합 출정(군세 편성) 직전 GameState 스냅샷 (여포전 등 호로관 이후 패배시 이 시점으로 복귀)
-// 지금 "행동/전투를 거는 쪽"이 관우가 아닐 때(회남 벌판의 속도순 전투에서
-// 유비군 차례일 때) 그 커맨더 id를 담는다 - resolveWarArmy가 이걸 최우선으로
-// 본다. 관우 차례거나 이 시스템을 안 쓰는 지도에서는 항상 null이다.
+// 지금 실제로 "행동/전투를 거는 쪽"의 커맨더 id를 담는다 - resolveWarArmy가
+// 이걸 최우선으로 본다. 전쟁 라운드 중에는 관우/유비 자기 차례가 시작될 때
+// (activateWarUnit) 항상 명시적으로 채워지고, 적이 자동으로 관우/유비 중
+// 누군가에게 다가가 붙을 때도 그 대상으로 채워진다 - null로 남겨두면
+// resolveWarArmy가 정적인 rd.warArmy 플래그로 새버릴 수 있어(예전에 교유가
+// 그 플래그를 갖고 있어 관우가 직접 교유를 쳐도 유비군 전투로 잘못
+// 판정되던 버그의 원인이었다), 이제는 이 시스템을 쓰는 동안 null로 두지 않는다.
+// 이 시스템을 안 쓰는 지도에서는 항상 null이다.
 let activeCommanderId = null;
+// 적이 자기 차례에 자동으로 관우에게 다가가 붙어 [일기토]/[전투]/[책략]
+// 메뉴가 뜰 때, 그 메뉴에서 쓰는 행동력은 관우 자신의 턴 예산(GameState.ap)이
+// 아니라 "그 적이 이번 활성화에서 이동하고 남은 행동력"이어야 한다 - 관우
+// 차례가 아닐 때(적이 먼저 다가온 경우) 관우의 GameState.ap는 지난 자기
+// 차례의 소진된 값 그대로라, 그걸 그대로 쓰면 일기토가 부당하게 거절된다.
+// null이면(관우가 자기 차례에 직접 다가가 붙은 경우) 평소처럼 관우 자신의
+// 행동력을 쓴다.
+let engagementBudget = null;
 
 const DEADLINES = { takhyeon: 186, pyeongwon: 188 };
 const JANGSUN_TROOP_GOAL = 2000; // 유우가 요구하는 최소 모병 규모 (장순 3000명에 맞선 승산 확보용)
@@ -158,8 +171,18 @@ function spend(n) {
 // 일기토/전투/책략처럼 교전 메뉴에서 쓰는 행동력은 spend()와 달리 항상
 // 관우군(GameState.ap)이 아니라 "지금 실제로 싸우는 쪽"의 행동력을 써야 한다 -
 // 회남 벌판에서 유비군 차례에 이 메뉴를 쓰면 activeCommanderId가 'yubi'로
-// 되어 있어 GameState.allyAp에서 대신 깎인다.
+// 되어 있어 GameState.allyAp에서 대신 깎인다. engagementBudget이 설정돼
+// 있으면(적이 자기 차례에 자동으로 다가와 붙어 이 메뉴가 뜬 경우) 관우/유비
+// 자신의 행동력 대신 그 적이 남긴 몫에서 깎는다.
 function spendCombatAP(n) {
+  if (engagementBudget != null) {
+    if (engagementBudget < n) {
+      centerAlert('적 군세의 행동력이 부족해 더는 몰아붙이지 못한다.');
+      return false;
+    }
+    engagementBudget -= n;
+    return true;
+  }
   const useAlly = activeCommanderId === 'yubi';
   const ok = useAlly ? GameState.spendAllyAP(n) : GameState.spendAP(n);
   if (!ok) {
@@ -426,6 +449,11 @@ function interactNPC(id, context) {
   // 실어 보낸다 - 직전이 유비군 차례였어도(activeCommanderId가 'yubi'로 남아
   // 있어도) 이번 교전은 항상 관우 쪽임을 정확히 반영하기 위함이다.
   if (context && context.engagedCommanderId) activeCommanderId = context.engagedCommanderId;
+  // remainingBudget도 마찬가지로 그 적이 자동으로 다가와 붙을 때만 실려온다 -
+  // 있으면 이번 교전 메뉴의 행동력을 관우 자신이 아니라 이 값에서 깎고,
+  // 없으면(관우가 직접 다가가 붙은 평소의 경우) null로 되돌려 원래대로
+  // 관우 자신의 행동력을 쓰게 한다.
+  engagementBudget = (context && 'remainingBudget' in context) ? context.remainingBudget : null;
   const st = GameState.npcStatus[id];
   // 미방은 이미 마음을 정한 상태라, 손건과 달리 친밀도를 쌓을 필요 없이
   // 서주에서 찾아가 인사만 나누면 곧바로 등용된다("찾아서 등용"). 미축·진규·
@@ -542,7 +570,16 @@ function interactNPC(id, context) {
   }
 
   if (rd.kind === 'enemy') {
-    if (stage === 'warmap' && !rd.forced) { openWarCommandMenu(id); return; }
+    if (stage === 'warmap' && !rd.forced) {
+      // 적이 자기 차례에 이동하느라 행동력을 다 써버렸다면(engagementBudget이
+      // 가장 싼 메뉴 항목의 비용보다도 적으면), 유비군과 마주쳤을 때
+      // (handleAllyEngage) 그냥 접촉만 하고 지나가는 것과 똑같이 이번엔
+      // 교전 메뉴 자체를 띄우지 않는다 - 안 그러면 메뉴는 뜨는데 뭘 골라도
+      // "행동력 부족"만 뜨는 막다른 상황이 된다.
+      if (engagementBudget != null && engagementBudget < Math.min(ARMY_BATTLE_AP_COST, DUEL_AP_COST, STRATEGY_AP_COST)) return;
+      openWarCommandMenu(id);
+      return;
+    }
     const afterCb = stage === 'warmap' ? checkWarmapClear : undefined;
     startFreeBattle(id, afterCb, true);
     return;
@@ -2313,7 +2350,11 @@ function activateWarUnit() {
   const id = warOrder[warIndex];
   if (id === GameState.mainHero || id === 'yubi') {
     const isYubi = id === 'yubi';
-    activeCommanderId = isYubi ? 'yubi' : null;
+    // 여기서 null 대신 항상 GameState.mainHero를 명시해야 한다 - null로
+    // 두면 resolveWarArmy가 activeCommanderId를 못 본 걸로 취급해 정적인
+    // rd.warArmy 플래그(교유 등)로 새버려서, 관우가 자기 차례에 직접 교유를
+    // 공격해도 유비군의 전투로 잘못 판정되는 버그가 생긴다.
+    activeCommanderId = isYubi ? 'yubi' : GameState.mainHero;
     MapView.setControlledUnit(isYubi ? 'yubi' : null);
     if (isYubi) GameState.allyAp = GameState.allyApMax = effectiveApMax();
     else GameState.ap = effectiveApMax();
