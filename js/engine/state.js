@@ -27,7 +27,12 @@ const GameState = {
   combatStatUps: 0, // 공/방/속 상승 누적 횟수 (skillThreshold 도달시 필살공격 습득)
   skillThreshold: 2 + Math.floor(Math.random() * 2), // 2 또는 3
   recruited: [], // ids
-  npcStatus: {}, // id -> 'met' | 'recruited' | 'fled' | 'dead' | 'resolved'
+  npcStatus: {}, // id -> 'met' | 'recruited' | 'fled' | 'dead' | 'resolved' | 'routed'
+  // 'resolved'는 그 인물이 이 게임에서 완전히 끝났다는 뜻(등용 거절 후 방면,
+  // 포로 방면 등)이라 mapview.js가 이후 모든 지도에서 영구히 숨긴다. 반면
+  // 'routed'는 군세전투([전투])에서 병력이 다 무너져 이번 장면에서만
+  // 패주했을 뿐이라, 나중에 다른 장면(원문사극의 기령처럼)에 새로 등장할
+  // 수 있다 - mapview.js는 'routed'를 숨김 대상에 넣지 않는다.
   friendship: {}, // id -> 0~100 (책사형 친밀도 게이지)
   npcVisible: {}, // id -> bool (for chance-based npcs)
   flags: { act1: false, act2: false },

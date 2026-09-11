@@ -1628,7 +1628,12 @@ function resolveArmyBattle(id, opts) {
       captureCommander(id, () => { if (stage === 'warmap') checkWarmapClear(); onComplete({ concluded: true, enemyDown, playerDown }); });
     } else if (enemyDown) {
       Dialogue.show([{ speaker: '내레이션', text: `${rd.name}의 군세가 완전히 무너졌다! (아군 병력 ${army.troop}명 남음)` }], () => {
-        GameState.npcStatus[id] = 'resolved';
+        // 포획(guaranteedCapture)이 아니라 그냥 병력이 무너져 패주한 것뿐이라
+        // 죽거나 사로잡힌 게 아니다 - 'resolved'를 쓰면 mapview.js가 이 인물을
+        // 앞으로 모든 지도에서 영구히 숨겨버려, 기령처럼 나중에 원문사극처럼
+        // 다시 등장해야 하는 인물까지 막혀버린다. 'routed'는 이번 장면에서만
+        // 사라지고(MapView.removeNpc) 이후 다른 장면에 새로 등장할 수 있다.
+        GameState.npcStatus[id] = 'routed';
         MapView.removeNpc(id);
         toast(`${rd.name}이(가) 패주했다.`);
         if (stage === 'warmap') checkWarmapClear();
@@ -2222,7 +2227,7 @@ function goWarmap() {
 
 function checkWarmapClear() {
   const ids = ['hojin', 'jangje', 'beonjo', 'yeopo'];
-  const allDone = ids.every((id) => ['resolved', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]));
+  const allDone = ids.every((id) => ['resolved', 'routed', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]));
   if (allDone) {
     GameState.addFame(30); // 메인퀘스트: 호로관 평정
     endWarInitiative();
@@ -2421,7 +2426,7 @@ function sealHoenamWestGate() {
 }
 
 function checkWonsulRetreat(afterCb) {
-  const done = (id) => ['resolved', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]);
+  const done = (id) => ['resolved', 'routed', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]);
   if (GameState.flags.wonsulRetreated || !done('noebak') || !done('jinran')) {
     if (afterCb) afterCb();
     return;
@@ -2445,7 +2450,7 @@ function checkWonsulRetreat(afterCb) {
 function checkHoenamClear() {
   if (MapView.currentMapId !== 'hoenam' || GameState.flags.hoenamCleared) return;
   checkWonsulRetreat(() => {
-    const done = (id) => ['resolved', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]);
+    const done = (id) => ['resolved', 'routed', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]);
     if (!done('giryeong') || !done('gyoyu')) return;
     GameState.flags.hoenamCleared = true;
     endWarInitiative();
