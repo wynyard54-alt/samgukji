@@ -232,6 +232,7 @@ const MapView = (function () {
   // controlledId가 가리키는 npc)을 따라간다.
   let cameraFocus = null;
   function updateCamera(snap) {
+    if (!map) return;
     const mover = activeMover() || player;
     const fx = cameraFocus ? cameraFocus.x : mover.x;
     const fy = cameraFocus ? cameraFocus.y : mover.y;
