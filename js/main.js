@@ -236,9 +236,11 @@ function getObjectives() {
       else list.push(`${rd.name}의 집 방문 중 (친밀도 ${fs}/100)`);
     });
 
-    if (gs.flags.act1) list.push('안희현으로 이동하기');
+    if (gs.flags.act1) list.push('왼쪽 위 [안희현으로 이동] 버튼을 눌러 다음 이야기로 넘어가자');
   } else if (stage === 'pyeongwon_free') {
-    if (gs.flags.jangsunStarted && !gs.army && gs.npcStatus['jangsun'] !== 'resolved') {
+    if (!gs.flags.jangsunStarted) {
+      list.push('유우를 찾아가 이야기를 들어보자');
+    } else if (!gs.army && gs.npcStatus['jangsun'] !== 'resolved') {
       if (gs.resources.troop < JANGSUN_TROOP_GOAL) {
         list.push(`병사 ${JANGSUN_TROOP_GOAL}명 이상 모으기 (현재 ${gs.resources.troop}명)`);
       } else {
@@ -247,23 +249,33 @@ function getObjectives() {
     } else if (gs.army && gs.npcStatus['jangsun'] === 'resolved') {
       list.push('막사로 돌아가 군세 해산하기');
     } else if (gs.army) {
-      list.push('장순의 반란군 토벌하기');
+      list.push('장순의 반란군을 찾아가 [일기토] 또는 [전투]로 격파하기');
     }
-    if (gs.flags.act2) list.push(`반동탁연합 참전 준비하기 (${DEADLINES.pyeongwon}년까지)`);
+    if (gs.flags.act2) list.push(`왼쪽 위 [반동탁연합 참전 준비] 버튼을 눌러 다음으로 넘어가자 (${DEADLINES.pyeongwon}년까지)`);
   } else if (stage === 'seoju_free') {
     const metCount = SEOJU_GREET_IDS.filter((id) => !!gs.npcStatus[id]).length;
     if (metCount < 3) list.push(`서주의 유력 인사들과 인사 나누기 (${metCount}/3)`);
+    else if (gs.flags.dogyeomDied) list.push('도겸이 세상을 떠났다 - 왼쪽 위 [하비성으로 이동] 버튼을 눌러 다음으로 넘어가자');
   } else if (stage === 'habi_camp') {
     const step = gs.flags.habiStep || 0;
     if (step === 0) list.push('유비를 찾아가자');
     else if (step === 1) list.push(`진등을 찾아가 병사를 모집하며 세력을 키워라 (${gs.resources.troop}/${HABI_RECRUIT_GOAL})`);
     else if (step === 2) list.push('유비를 찾아가 회의에 참석하자');
-    else if (step >= 3) list.push('준비되면 [원술 토벌 출전] 버튼으로 출정하기');
+    else if (step >= 3) list.push('준비되면 왼쪽 위 [원술 토벌 출전] 버튼으로 출정하기');
   } else if (stage === 'camp') {
-    list.push('제후들과 인사하고 손견을 도와 화웅과 맞서기');
+    list.push('손견을 찾아가 이야기를 나누자 (화웅과의 결전으로 이어진다)');
   } else if (stage === 'warmap') {
-    if (MapView.currentMapId === 'hoenam') list.push('기령의 군세를 격파하라');
-    else list.push('호로관의 적 군세를 모두 격파하기');
+    const mapId = MapView.currentMapId;
+    if (mapId === 'hoenam') {
+      const done = (id) => ['resolved', 'routed', 'recruited', 'fled', 'captured'].includes(gs.npcStatus[id]);
+      if (!done('giryeong')) list.push('관우군: 기령의 군세를 격파하라');
+      if (!done('gyoyu')) list.push('유비군: 교유의 군세를 격파하라');
+    } else if (mapId === 'hoesu') {
+      list.push('원술군과 여포군을 피해, 유비군을 이끌고 오른쪽 관문(광릉)으로 탈출하라!');
+      list.push('붙잡히면 전투가 벌어진다 - 이기면 계속 도망칠 수 있다');
+    } else {
+      list.push('호로관의 적 군세를 모두 격파하기 (마지막은 여포다)');
+    }
   } else {
     list.push('전투에 집중하자!');
   }
