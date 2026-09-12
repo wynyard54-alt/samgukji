@@ -1001,6 +1001,18 @@ function castGenericStrategy(id, ctx, deputy) {
 // 효과들이 "상대가 플레이어냐 적이냐"를 가리지 않고 armyFor(id) 하나로
 // 병력/군량/부장을 다룰 수 있다.
 function playerArmies() { return [GameState.army, GameState.allyArmy].filter(Boolean); }
+// 관우군/유비군의 역할이 끝나면(미션 완료든, 더는 그 군세를 쓰지 않는
+// 지도/장면으로 넘어가든) 남은 병력·군량을 세력 자원(GameState.resources)
+// 으로 돌려주고 그 군세 슬롯을 비운다. 새로 "군세의 임무가 끝나는" 지점을
+// 만들 때는 항상 이 함수를 거쳐야 한다 - 안 그러면 병력이 군세 객체 안에
+// 갇힌 채 조용히 사라진다(예: 예전엔 호로관을 평정한 뒤 관우군에 남은
+// 병력이 챕터1 엔딩까지 계속 방치되다 사라졌다).
+function dissolveArmy(field) {
+  const army = GameState[field];
+  if (!army) return;
+  GameState.addResource({ troop: army.troop, rice: army.rice });
+  GameState[field] = null;
+}
 function composeEnemyArmy(rd) {
   ensureEnemyRice(rd);
   return {
@@ -2123,9 +2135,7 @@ function startWonsulExpedition() {
           troop: GameState.army.troop,
           rice: GameState.army.rice,
           onCancel: () => {
-            GameState.resources.troop += GameState.army.troop;
-            GameState.resources.rice += GameState.army.rice;
-            GameState.army = null;
+            dissolveArmy('army');
             document.getElementById('army-box').classList.add('hidden');
             updateHUD();
             startWonsulExpedition();
@@ -2247,6 +2257,11 @@ function checkWarmapClear() {
   if (allDone) {
     GameState.addFame(30); // 메인퀘스트: 호로관 평정
     endWarInitiative();
+    // 호로관 전투가 끝나면 관우군은 더 쓰이지 않는다(함곡관은 관우 개인
+    // 일기토, 그 뒤는 챕터1 엔딩) - 남은 병력·군량을 세력 자원으로
+    // 돌려준다. 예전엔 여기서 돌려주지 않아 챕터1이 끝날 때까지 관우군
+    // 안에 갇힌 채 조용히 사라졌었다.
+    dissolveArmy('army');
     updateHUD();
     offerCapturedRecruits(() => Dialogue.show(STORY.warmap_clear, goHamgokgwan));
     return;
@@ -2594,8 +2609,7 @@ function animateYubiDeparture(onDone) {
 }
 
 function disbandJangsunArmy() {
-  GameState.addResource({ troop: GameState.army.troop, rice: GameState.army.rice });
-  GameState.army = null;
+  dissolveArmy('army');
   MAPS.pyeongwon.apMovement = false;
   updateHUD();
   Dialogue.show(STORY.jangsun_victory, () => {
