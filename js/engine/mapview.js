@@ -1029,16 +1029,22 @@ const MapView = (function () {
   // 갖게 되어도 이 함수는 손댈 필요가 없다.
   function friendlyTargets() {
     const targets = [];
+    // 회수평야에서 관우가 미끼로 쓰이다 군세가 무너지면(main.js
+    // handleHoesuArmyDown), 관우는 더는 유효한 목표가 아니다 - 안 그러면
+    // 적 AI가 이미 병력이 0인 관우에게 계속 몰려들어 유비군을 놓아준다.
+    const gwanwooDown = !!GameState.flags.hoesuGwanwooDown;
     const armies = (typeof playerArmies === 'function') ? playerArmies() : [];
     for (const army of armies) {
       const cid = army.commanderId;
+      if (cid === GameState.mainHero && gwanwooDown) continue;
       const pos = (cid === GameState.mainHero) ? { x: player.x, y: player.y } : liveNpcs.find((n) => n.id === cid);
       if (pos) targets.push({ id: cid, x: pos.x, y: pos.y, troop: army.troop });
     }
     // 아직 군세를 편성하기 전이거나 위 목록에서 어떤 이유로든 빠졌더라도,
     // 문자 그대로의 조작 캐릭터는 항상 최소한의 목표로 남아있어야 한다
-    // (예전부터 항상 그래왔던 동작을 그대로 보장).
-    if (!targets.some((t) => t.id === GameState.mainHero)) {
+    // (예전부터 항상 그래왔던 동작을 그대로 보장) - 단, 관우가 이미
+    // 탈락한 상태라면 이 기본값으로도 되살아나면 안 된다.
+    if (!gwanwooDown && !targets.some((t) => t.id === GameState.mainHero)) {
       targets.push({ id: GameState.mainHero, x: player.x, y: player.y, troop: Infinity });
     }
     return targets;

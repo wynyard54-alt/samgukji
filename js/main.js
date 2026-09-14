@@ -1711,7 +1711,7 @@ function resolveArmyBattle(id, opts) {
     } else {
       Dialogue.show([{ speaker: '내레이션', text: `아군이 ${rd.name}의 군세에 완전히 밀려 무너졌다.` }], () => {
         releaseCapturedOnDefeat();
-        if (stage === 'warmap' && MapView.currentMapId === 'hoesu') handleHoesuDefeat();
+        if (stage === 'warmap' && MapView.currentMapId === 'hoesu') handleHoesuArmyDown(army === GameState.army);
         else toast('전열을 정비해 다시 도전하자.');
         onComplete({ concluded: true, enemyDown, playerDown });
       });
@@ -2599,6 +2599,9 @@ function activateWarUnit() {
   if (!warRoundActive) return;
   while (warIndex < warOrder.length) {
     const id = warOrder[warIndex];
+    // 회수평야에서 관우가 미끼로 쓰이다 군세가 무너지면(handleHoesuArmyDown)
+    // 더 이상 차례를 받지 않는다 - 유비군만으로 계속 진행한다.
+    if (id === GameState.mainHero && GameState.flags.hoesuGwanwooDown) { warIndex++; continue; }
     if (id === GameState.mainHero || id === 'yubi' || MapView.liveNpcIds.includes(id)) break;
     warIndex++; // 이번 라운드 도중 이미 격파/포획된 대상은 건너뛴다
   }
@@ -2759,6 +2762,7 @@ function goGwangneungRetreat() {
   GameState.ap = effectiveApMax();
   showScreen('screen-explore');
   GameState.flags.hoesuCleared = false;
+  GameState.flags.hoesuGwanwooDown = false;
   MapView.load('hoesu', {
     onInteract: interactNPC,
     onApSpent: updateHUD,
@@ -2826,6 +2830,22 @@ function handleHoesuDefeat() {
       { label: '다시 도전한다', cb: () => goGwangneungRetreat() },
     ]);
   });
+}
+
+// 관우군이 무너져도 유비군이 살아있다면 곧바로 재도전시키지 않는다 - 관우가
+// 미끼로 적을 붙잡아준 사이 유비군만 무사히 관문까지 가면 되는 구도라, 이
+// 경우는 관우를 이후 턴에서 빼고(activateWarUnit) 유비군 호위만 계속한다.
+// 유비군이 무너진 경우(관우 생사 무관)에는 호위 대상을 잃은 것이므로 그대로
+// 재도전(handleHoesuDefeat)으로 넘어간다.
+function handleHoesuArmyDown(wasGwanwooArmy) {
+  if (GameState.flags.hoesuCleared) return;
+  const yubiAlive = GameState.allyArmy && GameState.allyArmy.troop > 0;
+  if (wasGwanwooArmy && yubiAlive) {
+    GameState.flags.hoesuGwanwooDown = true;
+    toast('관우군이 무너졌다! 하지만 유비군은 아직 무사하다 - 유비군만이라도 관문까지 이끌자.');
+    return;
+  }
+  handleHoesuDefeat();
 }
 
 // 수춘성에서 사로잡아 등용 대기 중이던 적장이 있어도, 광릉 도주 중까지
