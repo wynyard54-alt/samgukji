@@ -383,18 +383,18 @@ const STORY = {
   // 어기고, 이에 분노한 여포를 진궁이 만류하며 "유비를 죽이지 말고 방패로
   // 삼으라" 권한다. 여포가 하비를 차지한 뒤 유비의 처자식을 돌려주고 소패에
   // 머물게 하는 것으로 이어진다 - 관우/유비 시점이 아니라 여포 진영을 비추는
-  // 컷씬(gwangneung_wonsul_yeopo_deal과 같은 구성). 그림은 아직 없다.
+  // 컷씬(gwangneung_wonsul_yeopo_deal과 같은 구성).
   hoesu_yeopo_betrayal: [
-    { speaker: '내레이션', text: '한편, 하비의 여포 진영에는 원술이 보낸 답신이 도착해 있었다.' },
-    { speaker: '원술', text: '유비를 아직 죽이지 못했다 들었소. 약조를 지키지 못했으니 보상도 없소이다.' },
-    { speaker: '여포', text: '이런 괘씸한 놈을 보았나! 감히 나를 속이려 들어?' },
-    { speaker: '진궁', text: '주공, 화만 내실 일이 아닙니다. 원술도 원소도 호락호락한 상대가 아니니, 차라리 유비를 살려두어 우리의 방패로 삼는 것이 낫습니다.' },
-    { speaker: '여포', text: '방패라… 그도 그렇군. 좋다, 유비를 불러오너라.' },
-    { speaker: '내레이션', text: '여포가 사람을 보내 유비를 불렀다.' },
-    { speaker: '여포', text: '그대의 처자식은 내가 잘 돌보고 있었소. 이제 데려가시오.' },
-    { speaker: '유비', text: '고맙소, 여 장군. 이 은혜는 잊지 않겠소.' },
-    { speaker: '여포', text: '대신 서주는 이미 내 것이 되었으니, 그대는 소패에 머물도록 하시오.' },
-    { speaker: '내레이션', text: '유비 일행은 결국 소패성에 몸을 의탁하게 되었다.' },
+    { speaker: '내레이션', text: '한편, 하비의 여포 진영에는 원술이 보낸 답신이 도착해 있었다.', scene: 'assets/illust/hoesu_yeopo_betrayal.jpg' },
+    { speaker: '원술', text: '유비를 아직 죽이지 못했다 들었소. 약조를 지키지 못했으니 보상도 없소이다.', scene: 'assets/illust/hoesu_yeopo_betrayal.jpg' },
+    { speaker: '여포', text: '이런 괘씸한 놈을 보았나! 감히 나를 속이려 들어?', scene: 'assets/illust/hoesu_yeopo_betrayal.jpg' },
+    { speaker: '진궁', text: '주공, 화만 내실 일이 아닙니다. 원술도 원소도 호락호락한 상대가 아니니, 차라리 유비를 살려두어 우리의 방패로 삼는 것이 낫습니다.', scene: 'assets/illust/hoesu_yeopo_betrayal.jpg' },
+    { speaker: '여포', text: '방패라… 그도 그렇군. 좋다, 유비를 불러오너라.', scene: 'assets/illust/hoesu_yeopo_betrayal.jpg' },
+    { speaker: '내레이션', text: '여포가 사람을 보내 유비를 불렀다.', scene: 'assets/illust/yubi_family_reunite.jpg' },
+    { speaker: '여포', text: '그대의 처자식은 내가 잘 돌보고 있었소. 이제 데려가시오.', scene: 'assets/illust/yubi_family_reunite.jpg' },
+    { speaker: '유비', text: '고맙소, 여 장군. 이 은혜는 잊지 않겠소.', scene: 'assets/illust/yubi_family_reunite.jpg' },
+    { speaker: '여포', text: '대신 서주는 이미 내 것이 되었으니, 그대는 소패에 머물도록 하시오.', scene: 'assets/illust/yubi_family_reunite.jpg' },
+    { speaker: '내레이션', text: '유비 일행은 결국 소패성에 몸을 의탁하게 되었다.', scene: 'assets/illust/yubi_family_reunite.jpg' },
   ],
 
   // TODO(챕터2 다음 장면, 소패): 하비 함락 이후 유비 일행이 소패에 머물게 되는
