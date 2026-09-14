@@ -1186,9 +1186,16 @@ const MapView = (function () {
     if(npc && mover && Math.abs(npc.x-mover.x)+Math.abs(npc.y-mover.y)===1)interact(npc,false);
   });
 
+  // 회수평야 탈출씬처럼 "특정 npc(유비군 등)가 목적지에 도착했는지"를
+  // main.js 쪽에서 판정해야 할 때 쓰는 범용 위치 조회 - 없으면 null.
+  function npcPos(id) {
+    const n = liveNpcs.find((x) => x.id === id);
+    return n ? { x: n.x, y: n.y } : null;
+  }
+
   return {
     load,render,removeNpc,addNpc,walkNpcPath,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,setPlayerPos,
-    panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,showDamageFloat,showAttackBump,setControlledUnit,
+    panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,showDamageFloat,showAttackBump,setControlledUnit,npcPos,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},
     get playerPos(){return {x:player.x,y:player.y,dir:player.dir};},

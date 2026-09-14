@@ -1676,7 +1676,8 @@ function resolveArmyBattle(id, opts) {
     } else {
       Dialogue.show([{ speaker: '내레이션', text: `아군이 ${rd.name}의 군세에 완전히 밀려 무너졌다.` }], () => {
         releaseCapturedOnDefeat();
-        toast('전열을 정비해 다시 도전하자.');
+        if (stage === 'warmap' && MapView.currentMapId === 'hoesu') handleHoesuDefeat();
+        else toast('전열을 정비해 다시 도전하자.');
         onComplete({ concluded: true, enemyDown, playerDown });
       });
     }
@@ -2700,17 +2701,49 @@ function goGwangneungRetreat() {
   releaseCapturedForRetreat();
   GameState.ap = effectiveApMax();
   showScreen('screen-explore');
+  GameState.flags.hoesuCleared = false;
   MapView.load('hoesu', {
     onInteract: interactNPC,
     onApSpent: updateHUD,
     onApBlocked,
-    onStep: renderMinimap,
+    onStep: () => { renderMinimap(); checkHoesuRetreat(); },
     onAllyEngage: handleAllyEngage,
   });
   updateHUD();
   Dialogue.show(STORY.gwangneung_wonsul_yeopo_deal, () => {
     MapView.lockMovement(false);
     centerAlert('원술과 여포 군대를 피해 유비군세를 광릉으로 무사히 탈출시켜라', 4000);
+  });
+}
+
+// 지도 우상단 관문(js/data/maps.js MAPS.hoesu의 gateEnd={x:33,y:3}) 부근에
+// 관우/유비 두 군세가 모두 들어오면 탈출 성공으로 판정한다. 매 이동(onStep)마다
+// 확인하며, 전투 승패와는 무관한 "도착 여부"만 보는 별개의 판정이다.
+const HOESU_GATE = { x: 33, y: 3 };
+function nearHoesuGate(pos) {
+  return !!pos && Math.abs(pos.x - HOESU_GATE.x) + Math.abs(pos.y - HOESU_GATE.y) <= 3;
+}
+function checkHoesuRetreat() {
+  if (stage !== 'warmap' || MapView.currentMapId !== 'hoesu' || GameState.flags.hoesuCleared) return;
+  if (!nearHoesuGate(MapView.playerPos) || !nearHoesuGate(MapView.npcPos('yubi'))) return;
+  GameState.flags.hoesuCleared = true;
+  endWarInitiative();
+  MapView.lockMovement(true);
+  Dialogue.show(STORY.hoesu_escape_win, () => {
+    toast('광릉 탈출에 성공했다! (다음 이야기는 이어질 예정)');
+  });
+}
+
+// 회수평야에서 관우군/유비군 중 어느 쪽이든 전투에서 완전히 무너지면(resolveArmyBattle의
+// playerDown 분기) 협공을 뚫지 못한 것으로 보고 이 장면을 처음부터 다시 시도하게 한다.
+function handleHoesuDefeat() {
+  if (GameState.flags.hoesuCleared) return;
+  endWarInitiative();
+  MapView.lockMovement(true);
+  Dialogue.show([{ speaker: '내레이션', text: '결국 원술과 여포의 협공에 무너지고 말았다...' }], () => {
+    showChoice('전열을 가다듬어 다시 시도해야 한다.', [
+      { label: '다시 도전한다', cb: () => goGwangneungRetreat() },
+    ]);
   });
 }
 
