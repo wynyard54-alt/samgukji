@@ -3624,7 +3624,11 @@ function resumeExploreStage(targetStage, playerPos, mapId) {
   } else if (targetStage === 'camp') {
     MapView.load('camp', opts);
   } else if (targetStage === 'warmap') {
-    MapView.load(mapId === 'hoenam' ? 'hoenam' : 'warmap', opts);
+    // mapId === 'hoenam'만 따로 봐주던 시절 코드가 남아있어, 그 뒤에 추가된
+    // 회수평야(hoesu)를 저장하고 불러오면 항상 호로관(warmap)으로 잘못
+    // 복원되는 버그가 있었다 - 저장된 mapId가 실존하는 지도면 그대로 쓰고,
+    // (없거나 옛 저장 데이터라 비어있을 때만) 호로관으로 되돌아간다.
+    MapView.load(MAPS[mapId] ? mapId : 'warmap', { ...opts, onAllyEngage: handleAllyEngage });
   } else if (targetStage === 'habi_camp') {
     MapView.load('habi', { ...opts, onAmbientInteract: runAmbientEvent });
   } else if (targetStage === 'seoju_free') {
