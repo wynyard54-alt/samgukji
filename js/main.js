@@ -2778,19 +2778,19 @@ function goGwangneungRetreat() {
   });
 }
 
-// 지도 우상단 관문(js/data/maps.js MAPS.hoesu의 gateEnd={x:33,y:3}) 쪽 오솔길은
-// 갈림길에서 대각선으로 뻗어나가 폭이 계속 좁아지므로, 정확히 (33,3) 한 점에서
-// 반경만 재면 실제로 관문 근처까지 가고도 판정 범위 밖으로 종종 벗어난다 -
-// 그 좁은 점 대신, 관문 쪽 오솔길 전체를 덮는 사각 구역(x 25 이상 · y 10 이하)에
-// 들어오면 성공으로 본다. mapview.js의 drawHoesuGateZone()이 이 함수와 똑같은
-// 판정으로 그 타일들을 파랗게 칠해 눈에 보이게 한다.
+// 지도 우상단 관문 - 배경 그림(assets/field/hoesu_map_v1.jpg)에서 실제 성문
+// 구조물(지붕+성벽)이 그려진 자리를 타일 좌표로 환산해 직접 확인했다
+// (이미지 1295x906, 지도 36x25칸이므로 1칸≈36x36px). 성문 지붕/통로가 걸쳐
+// 있는 칸은 대략 x 31~35 · y 0~4 범위였다 - 그 아래(y 5 이상)는 아직 성문
+// 앞 벌판일 뿐이라 성공 판정에서 뺐다. mapview.js의 drawHoesuGateZone()이
+// 이 함수와 똑같은 판정으로 그 타일들을 파랗게 칠해 눈에 보이게 한다.
 //
 // 판정은 유비군만 본다 - 관우는 뒤에서 적을 막고 유비군을 호위하는 역할이지,
 // 관우 자신이 관문까지 갈 필요는 없다(위에서 여러 번 확인한 설계). 매 이동
 // (onStep)마다 확인하며, 전투 승패와는 무관한 "도착 여부"만 보는 별개의 판정이다.
 const HOESU_GATE = { x: 33, y: 3 }; // 미니맵 파란 점 표시용 좌표
 function isHoesuGateTile(x, y) {
-  return x >= 25 && y <= 10;
+  return x >= 31 && y <= 4;
 }
 function nearHoesuGate(pos) {
   return !!pos && isHoesuGateTile(pos.x, pos.y);
