@@ -293,13 +293,17 @@ if (false) (function () {
       { id:'jeonhae', x:13, y:12, label:'전해', randomSpawn:true },
       { id:'eomgang', x:28, y:5, label:'엄강', randomSpawn:true },
       { id:'jowoon', x:35, y:12, label:'조운(?)', randomSpawn:true },
-      // 어양의 랜덤등장 책사(전주·최염)는 둘 다 discoverable이라, 등장할
+      // 어양의 랜덤등장 책사(전주·최염)는 둘 다 randomSpawn이라, 등장할
       // 때까지는 플레이어가 무작정 돌아다니며 기다려야 했다 - 유우가 병사를
       // 모으라고 부탁하는데 정작 책사 등용 창구가 하나도 확정적으로 없던
       // 셈이다. 전주는 (최염과 달리) chance 굴림 없이 언젠가는 반드시
-      // 등장하는 쪽이라, randomSpawn/discoverable을 걷어내고 상인(sangin)과
-      // 같은 방식으로 처음부터 그 자리에 그대로 서 있게 한다.
-      { id:'jeonju', x:20, y:12, label:'전주', fixed:true, residence:{ x:20, y:5, label:'전주' } },
+      // 등장하는 쪽이라, randomSpawn만 걷어내 처음부터 그 자리에 있게
+      // 한다 - discoverable/discoveryText는 그대로 둬서, 가까이 다가가면
+      // 나오는 발견 대사("선생님, 이제 세상에 나가셔야죠"...)는 이전과
+      // 똑같이 재생된다. 발견 전까지는 이름 없이 군중에 섞여 보인다.
+      { id:'jeonju', x:20, y:12, label:'', discoverable:true, discoveryRange:2,
+        discoveryText:'마을에서 떠들썩한 소리가 들린다. "선생님, 이제 세상에 나가셔야죠." "자네만한 인재가 없는데 왜 이곳에서 서책만 읽는가?"',
+        residence:{ x:20, y:5, label:'전주' } },
       { id:'jeonye', x:27, y:21, label:'', randomSpawn:true, discoverable:true, discoveryRange:2,
         discoveryText:'유비 세력 막사 근처를 서성이던 젊은 학자가, 삼형제를 유심히 바라보다 다가온다.' },
       { id:'yeomyu', x:36, y:16, label:'', randomSpawn:true, discoverable:true, discoveryRange:2, hideAfterJangsun:true,
