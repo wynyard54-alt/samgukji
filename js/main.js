@@ -2176,7 +2176,7 @@ const MICHUK_TIERS = [
 function handleMichukRecruit() {
   showChoice('미축: "저에게 금을 주시면 호위병들을 모아보겠습니다."', [
     ...MICHUK_TIERS.map((t) => ({
-      label: `금 ${t.gold} → 병사 ${t.troop}명 (행동력 ${t.ap})`,
+      label: `[금${t.gold} 제공]`,
       cb: () => {
         if (GameState.resources.gold < t.gold) { toast(`금이 부족합니다. (금 ${t.gold} 필요)`); return; }
         if (!spend(t.ap)) return;
@@ -2184,7 +2184,7 @@ function handleMichukRecruit() {
         GameState.flags.habiMichukDone = true;
         GameState.addResource({ troop: t.troop });
         updateHUD();
-        Dialogue.show([{ speaker: '미축', text: '가진 재산을 털어 호위병들을 모아왔습니다.' }], () => {
+        Dialogue.show([{ speaker: '미축', text: '주공께서 내려주신 금으로 호위병들을 모아왔습니다.' }], () => {
           toast(`병사 ${t.troop}명이 모였다. (금 ${t.gold} 소모, 병사 ${GameState.resources.troop})`);
         });
       },
@@ -2312,7 +2312,7 @@ function startTimingMinigame({ title, zones, onResult }) {
 
   let pos = 0;
   let dir = 1;
-  const speed = 1.6; // %/프레임
+  const speed = 1.28; // %/프레임 (한 방향 왕복에 약 1.3초)
   let rafId = null;
 
   function tick() {
