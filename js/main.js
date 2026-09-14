@@ -210,6 +210,7 @@ const LOCATION_NAMES = {
   seoju: '서주성',
   habi: '하비성 관청',
   hoenam: '회남 벌판',
+  hoesu: '회수평야',
 };
 
 function getObjectives() {
