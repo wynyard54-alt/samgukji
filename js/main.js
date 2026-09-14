@@ -2778,18 +2778,20 @@ function goGwangneungRetreat() {
   });
 }
 
-// 지도 우상단 관문(js/data/maps.js MAPS.hoesu의 gateEnd={x:33,y:3}, 반경 3짜리
-// 원형으로 뚫려 있다) 안쪽에 유비군만 들어오면 탈출 성공으로 판정한다 - 관우는
-// 몸으로 뒤를 막아주는 역할이라 꼭 관문까지 갈 필요는 없다는 피드백을 반영해,
-// 관우 도착 여부는 더 이상 보지 않는다. 매 이동(onStep)마다 확인하며, 전투
-// 승패와는 무관한 "도착 여부"만 보는 별개의 판정이다.
-const HOESU_GATE = { x: 33, y: 3 };
+// 지도 우상단 관문(js/data/maps.js MAPS.hoesu의 gateEnd={x:33,y:3}) 쪽 오솔길은
+// 갈림길에서 대각선으로 뻗어나가 폭이 계속 좁아지므로, 정확히 (33,3) 한 점에서
+// 반경만 재면 실제로 관문 근처까지 가고도 판정 범위 밖으로 종종 벗어난다 -
+// 그 좁은 점 대신, 관문 쪽 오솔길 전체를 덮는 사각 구역(x 25 이상 · y 10 이하)에
+// 들어오면 성공으로 본다. 관우/유비 둘 중 누구든 먼저 그 구역에 들어오면
+// 되고, 매 이동(onStep)마다 확인한다 - 전투 승패와는 무관한 "도착 여부"만
+// 보는 별개의 판정이다.
+const HOESU_GATE = { x: 33, y: 3 }; // 미니맵 파란 점 표시용 좌표
 function nearHoesuGate(pos) {
-  return !!pos && Math.abs(pos.x - HOESU_GATE.x) + Math.abs(pos.y - HOESU_GATE.y) <= 5;
+  return !!pos && pos.x >= 25 && pos.y <= 10;
 }
 function checkHoesuRetreat() {
   if (stage !== 'warmap' || MapView.currentMapId !== 'hoesu' || GameState.flags.hoesuCleared) return;
-  if (!nearHoesuGate(MapView.npcPos('yubi'))) return;
+  if (!nearHoesuGate(MapView.playerPos) && !nearHoesuGate(MapView.npcPos('yubi'))) return;
   GameState.flags.hoesuCleared = true;
   endWarInitiative();
   MapView.lockMovement(true);
