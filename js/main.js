@@ -2759,6 +2759,7 @@ function goGwangneungRetreat() {
   GameState.ap = effectiveApMax();
   showScreen('screen-explore');
   GameState.flags.hoesuCleared = false;
+  GameState.flags.hoesuGateHint = false;
   MapView.load('hoesu', {
     onInteract: interactNPC,
     onApSpent: updateHUD,
@@ -2783,11 +2784,21 @@ function goGwangneungRetreat() {
 // 확인하며, 전투 승패와는 무관한 "도착 여부"만 보는 별개의 판정이다.
 const HOESU_GATE = { x: 33, y: 3 };
 function nearHoesuGate(pos) {
-  return !!pos && Math.abs(pos.x - HOESU_GATE.x) + Math.abs(pos.y - HOESU_GATE.y) <= 3;
+  return !!pos && Math.abs(pos.x - HOESU_GATE.x) + Math.abs(pos.y - HOESU_GATE.y) <= 4;
 }
 function checkHoesuRetreat() {
   if (stage !== 'warmap' || MapView.currentMapId !== 'hoesu' || GameState.flags.hoesuCleared) return;
-  if (!nearHoesuGate(MapView.playerPos) || !nearHoesuGate(MapView.npcPos('yubi'))) return;
+  const heroNear = nearHoesuGate(MapView.playerPos);
+  const yubiNear = nearHoesuGate(MapView.npcPos('yubi'));
+  if (!heroNear || !yubiNear) {
+    // 관우 혼자만 관문에 닿아서는 안 끝난다 - 왜 안 끝나는지 모르겠다는
+    // 피드백이 있어, 한쪽만 도착했을 때 딱 한 번 안내해준다.
+    if (heroNear && yubiNear === false && !GameState.flags.hoesuGateHint) {
+      GameState.flags.hoesuGateHint = true;
+      toast('관우는 도착했다! 유비군도 함께 관문까지 데려와야 한다.');
+    }
+    return;
+  }
   GameState.flags.hoesuCleared = true;
   endWarInitiative();
   MapView.lockMovement(true);
