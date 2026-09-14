@@ -2256,13 +2256,22 @@ function handleJingyuRecruit() {
 }
 
 // mapview.js에서 NPC 라벨 옆에 진행 완료 표시([...] -> ❗)를 붙일 대상 목록.
-function pendingRewardNpcIds() {
-  const ids = [];
-  if (stage === 'habi_camp' && GameState.flags.habiJingyuAskedMonth != null && !GameState.flags.habiJingyuDone) {
+// 하비 관청의 5인(조표/미축/장비/진규/진등) 머리 위에 뜨는 말풍선 표시.
+// '?'는 아직 그 인물의 1회성 모병을 안 써봤다는 뜻이고, 진규만 3달을
+// 기다린 뒤 '!'로 바뀌어 "가서 대화하면 결과를 받을 수 있다"를 알려준다.
+function habiRecruitMark(id) {
+  if (stage !== 'habi_camp') return null;
+  if (id === 'jopyo') return GameState.flags.habiJopyoDone ? null : '?';
+  if (id === 'michuk') return GameState.flags.habiMichukDone ? null : '?';
+  if (id === 'jangbi') return GameState.flags.habiJangbiDone ? null : '?';
+  if (id === 'jindeung') return GameState.flags.habiJindeungMinigameDone ? null : '?';
+  if (id === 'jingyu') {
+    if (GameState.flags.habiJingyuDone) return null;
+    if (GameState.flags.habiJingyuAskedMonth == null) return '?';
     const elapsed = absMonth(GameState.year, GameState.month) - GameState.flags.habiJingyuAskedMonth;
-    if (elapsed >= 3) ids.push('jingyu');
+    return elapsed >= 3 ? '!' : null;
   }
-  return ids;
+  return null;
 }
 
 // ---- 진등: 태산/낭야 군벌 설득 - 좌우로 움직이는 게이지에 타이밍을 맞추는 미니게임 (1회성) ----

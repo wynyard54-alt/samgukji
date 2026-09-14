@@ -576,10 +576,17 @@ const MapView = (function () {
       drawPersonSprite(x,y,{palette,archetype:scholar?'scholar':'warrior',scale:1.04,dir:'down',heroId:n.id});
     }
 
+    // 하비 관청 모병 5인 - 아직 안 써본 인물은 머리 위에 [?], 3달을 기다린
+    // 진규만 준비되면 [!]로 바뀌어 "가서 받아오자"를 알려준다.
+    const habiMark = (typeof habiRecruitMark === 'function') ? habiRecruitMark(n.id) : null;
+    if (habiMark) {
+      ctx.fillStyle='rgba(45,40,34,.82)';ctx.beginPath();ctx.roundRect(x-13,worldY(n.y)-20,26,17,7);ctx.fill();
+      ctx.fillStyle='#eadfca';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.fillText(habiMark,x,worldY(n.y)-8);
+    }
+
     // 등용된 장수는 마을에 남아 모병/훈련을 돕는다 - 이름표에 담당 역할을 표기한다.
     if (GameState.npcStatus[n.id] === 'recruited') {
-      const rewardMark = (typeof pendingRewardNpcIds === 'function' && pendingRewardNpcIds().includes(n.id)) ? ' [...]' : '';
-      drawTag(x, worldY(n.y)-7, `${rd.name} · ${scholar ? '모병' : '훈련'}${rewardMark}`, '#2f4d33');
+      drawTag(x, worldY(n.y)-7, `${rd.name} · ${scholar ? '모병' : '훈련'}`, '#2f4d33');
     } else if (n._atResidence) {
       drawTag(x, worldY(n.y)-7, n._label || `${rd.name}의 집`, '#72542f');
     } else if (!hidden) {
@@ -591,8 +598,7 @@ const MapView = (function () {
       // 유비 마커는 GameState.allyArmy(별도로 편성한 유비군)를 같은 형식으로 보여준다 -
       // 유비 본인(ROSTER.yubi)에는 troop 필드가 없으므로 rd.troop 분기로는 못 잡는다.
       // 특정 지도로 한정하지 않는다 - 유비군이 등장하는 지도라면 어디서든 보여야 한다.
-      const rewardMark = (typeof pendingRewardNpcIds === 'function' && pendingRewardNpcIds().includes(n.id)) ? ' [...]' : '';
-      const baseLabel = (n.label || rd.name) + rewardMark;
+      const baseLabel = n.label || rd.name;
       const label = (rd.kind === 'enemy' && rd.troop != null)
         ? `${baseLabel} · 병${rd.troop} · 무${enemyArmyGrade(rd)} · 지${gradeFor(rd.stats.int, JIRYEOK_GRADES)}`
         : (n.id === 'yubi' && GameState.allyArmy)
