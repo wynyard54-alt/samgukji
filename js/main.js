@@ -2207,7 +2207,7 @@ function fightHwangeonBoss(n) {
   const rd = ROSTER[ids[n - 1]];
   Dialogue.show([{ speaker: rd.name, text: rd.intro }], () => {
     Battle.start({
-      player: GameState.heroData(), enemy: rd, maxRounds: 3,
+      player: GameState.heroData(), enemy: rd,
       startHp: heroCurrentHp(),
       onEnd: (result) => {
         GameState.heroHp = result.playerHp;

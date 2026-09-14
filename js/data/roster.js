@@ -81,7 +81,7 @@ const ROSTER = {
   // 챕터2 하비성 관청 - 장비가 발견해 관우에게 넘기는 잔당 두목 3인.
   // 정사/연의에 없는 필러 인물이라 이름은 임의로 지었다.
   hwangeonjan1: { id:'hwangeonjan1', name:'갈웅', birth:158, deathReal:194, deathVirtual:248, kind:'enemy', forced:null, affiliation:'황건적',
-    stats:{atk:65, def:60, spd:55, int:20, cha:30, lead:30}, bio:'황건적 잔당의 두목으로, 서주 인근에서 약탈을 일삼았다.', intro:'크윽… 이 몸이 졌소이다!', sprite:SPRITE_YELLOWTURBAN },
+    stats:{atk:65, def:60, spd:55, int:20, cha:30, lead:30}, bio:'황건적 잔당의 두목으로, 서주 인근에서 약탈을 일삼았다.', intro:'네놈들이 감히 우리 구역을 넘봐? 어디 한번 붙어보자!', sprite:SPRITE_YELLOWTURBAN },
   hwangeonjan2: { id:'hwangeonjan2', name:'방충', birth:156, deathReal:194, deathVirtual:246, kind:'enemy', forced:null, affiliation:'황건적',
     stats:{atk:73, def:66, spd:62, int:20, cha:32, lead:32}, bio:'황건적 잔당의 두목으로, 서주 인근에서 약탈을 일삼았다.', intro:'감히… 좋다, 승부를 겨뤄보자!', sprite:SPRITE_YELLOWTURBAN },
   hwangeonjan3: { id:'hwangeonjan3', name:'손조', birth:154, deathReal:194, deathVirtual:244, kind:'enemy', forced:null, affiliation:'황건적',
