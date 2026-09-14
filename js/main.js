@@ -295,6 +295,12 @@ function renderLocationBanner() {
 // 실제로 등장해 있는(스토리 게이트를 통과한) 경우에만 표시된다.
 const MINIMAP_QUEST_NPC_IDS = ['yubi', 'yuwoo', 'jeongwonji', 'jangsun'];
 
+// 회수평야는 처음 들어오면 어디로 도망쳐야 할지 감이 안 온다는 피드백이 있어,
+// 추격해오는 여포/원술군 5개 부대는 빨간 점으로, 탈출 목표인 광릉行 관문은
+// 파란 점으로 미니맵에 항상 표시한다(다른 지도의 초록 점과 달리 발견 여부와
+// 무관하게 처음부터 보인다).
+const HOESU_ENEMY_IDS = ['gosun', 'giryeong', 'janghun', 'akchwi', 'jingi'];
+
 function renderMinimap() {
   const canvas = document.getElementById('minimap-canvas');
   const ctx = canvas.getContext('2d');
@@ -336,6 +342,27 @@ function renderMinimap() {
       ctx.arc(nx, ny, 3, 0, Math.PI * 2);
       ctx.fill();
     }
+  }
+
+  if (mapId === 'hoesu' && map) {
+    const liveIds2 = new Set(MapView.liveNpcIds);
+    ctx.fillStyle = '#e74c3c';
+    for (const id of HOESU_ENEMY_IDS) {
+      if (!liveIds2.has(id)) continue;
+      const npc = map.npcs.find((n) => n.id === id);
+      if (!npc) continue;
+      const nx = (npc.x / Math.max(1, size.w)) * w;
+      const ny = (npc.y / Math.max(1, size.h)) * h;
+      ctx.beginPath();
+      ctx.arc(nx, ny, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#3b82f6';
+    const gx = (HOESU_GATE.x / Math.max(1, size.w)) * w;
+    const gy = (HOESU_GATE.y / Math.max(1, size.h)) * h;
+    ctx.beginPath();
+    ctx.arc(gx, gy, 3.5, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   const px = (pos.x / Math.max(1, size.w)) * w;

@@ -210,8 +210,10 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .hud-panel{
   position:absolute; background:rgba(16,13,10,1); color:#f5ecd6;
   border:1px solid rgba(233,214,168,.35); border-radius:8px;
-  pointer-events:none;
+  pointer-events:none; transition:opacity .15s ease;
 }
+/* 관우가 패널 바로 아래(뒤)로 지나갈 때 - 인물이 비쳐 보이게 낮춘다 */
+.hud-panel.panel-fade{ opacity:.25; }
 
 /* 상단 바: 좌측 자원/우측 행동버튼 */
 #hud-top{
@@ -247,7 +249,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 /* 아군 군세 정보 (미니맵 바로 아래) - 미션/임무 배너(#location-banner)와
    같은 상단 줄에 있으면 문구가 길어 배너를 가리는 문제가 있어 분리했다. */
 #hud-army{
-  top:146px; right:10px; z-index:4; padding:6px 10px;
+  top:146px; right:10px; z-index:4; padding:6px 10px; font-size:12px;
   color:#e9dcae; font-weight:600; max-width:200px;
 }
 #hud-army.hidden{ display:none; }
@@ -1078,44 +1080,44 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
    보조 패널(미니맵/임무 트래커)은 숨기고 필수 요소만 배치하되, 글자는 손에
    들고 보기 충분한 크기를 유지한다 (너무 작게 줄이면 안 보인다는 피드백 반영). */
 #explore-viewport.compact #hud-top{
-  padding:7px 10px; gap:8px; font-size:13px;
+  padding:5px 8px; gap:6px; font-size:10.5px;
   flex-wrap:nowrap;
 }
-#explore-viewport.compact #hud-left{ gap:8px; overflow-x:auto; flex:1 1 auto; -webkit-overflow-scrolling:touch; }
+#explore-viewport.compact #hud-left{ gap:6px; overflow-x:auto; flex:1 1 auto; -webkit-overflow-scrolling:touch; }
 #explore-viewport.compact #hud-left span{ white-space:nowrap; }
-#explore-viewport.compact #hud-actions{ flex:none; gap:6px; }
-#explore-viewport.compact #hud-actions button{ font-size:12px; padding:6px 9px; }
+#explore-viewport.compact #hud-actions{ flex:none; gap:5px; }
+#explore-viewport.compact #hud-actions button{ font-size:10.5px; padding:5px 8px; }
 
-#explore-viewport.compact #location-banner{ top:44px; left:8px; padding:6px 10px; max-width:56%; }
-#explore-viewport.compact #location-name{ font-size:13px; margin-bottom:1px; }
-#explore-viewport.compact #location-task{ font-size:11.5px; }
+#explore-viewport.compact #location-banner{ top:38px; left:6px; padding:5px 8px; max-width:56%; }
+#explore-viewport.compact #location-name{ font-size:11.5px; margin-bottom:1px; }
+#explore-viewport.compact #location-task{ font-size:10px; }
 
 /* 모바일(컴팩트)에서도 미니맵은 작게라도 계속 보여준다 - 화면이 좁아 한눈에
    지도가 안 보이는 모바일일수록 오히려 미니맵이 더 필요하다는 피드백 반영.
    위치 배너(좌측, 최대 56% 폭)와 겹치지 않게 우측에 작게 배치한다. */
-#explore-viewport.compact #minimap-panel{ top:44px; right:6px; padding:4px 5px; }
-#explore-viewport.compact #minimap-title{ font-size:9px; margin-bottom:2px; }
-#explore-viewport.compact #minimap-canvas{ width:62px; height:44px; }
-#explore-viewport.compact #hud-army{ top:112px; right:6px; padding:4px 8px; font-size:11px; max-width:150px; }
+#explore-viewport.compact #minimap-panel{ top:38px; right:6px; padding:3px 4px; }
+#explore-viewport.compact #minimap-title{ font-size:8px; margin-bottom:1px; }
+#explore-viewport.compact #minimap-canvas{ width:56px; height:40px; }
+#explore-viewport.compact #hud-army{ top:98px; right:6px; padding:3px 7px; font-size:9.5px; max-width:130px; }
 
 #explore-viewport.compact #player-panel,
 #explore-viewport.player-compact #player-panel{
-  bottom:8px; left:8px; padding:6px 8px; gap:7px; align-items:center;
+  bottom:6px; left:6px; padding:4px 6px; gap:5px; align-items:center;
 }
 #explore-viewport.compact #player-portrait,
-#explore-viewport.player-compact #player-portrait{ width:40px; height:40px; border-radius:7px; }
+#explore-viewport.player-compact #player-portrait{ width:32px; height:32px; border-radius:6px; }
 #explore-viewport.compact #player-info,
 #explore-viewport.player-compact #player-info{ display:flex; flex-direction:column; }
 #explore-viewport.compact #player-name,
-#explore-viewport.player-compact #player-name{ font-size:13px; margin-bottom:0; }
+#explore-viewport.player-compact #player-name{ font-size:11px; margin-bottom:0; }
 #explore-viewport.compact .stat-row,
 #explore-viewport.player-compact .stat-row{ display:none; }
 #explore-viewport.compact .hp-row,
 #explore-viewport.player-compact .hp-row{ display:flex; margin-bottom:0; padding-bottom:0; border-bottom:none; }
 #explore-viewport.compact .hp-row .stat-bar,
-#explore-viewport.player-compact .hp-row .stat-bar{ width:56px; }
+#explore-viewport.player-compact .hp-row .stat-bar{ width:44px; }
 #explore-viewport.compact .hp-row .stat-val,
-#explore-viewport.player-compact .hp-row .stat-val{ width:46px; font-size:11px; }
+#explore-viewport.player-compact .hp-row .stat-val{ width:38px; font-size:9.5px; }
 
 #explore-viewport.compact #bottom-menu{
   /* 세로로 든 상태(회전 프리젠테이션)에서는 화면 중앙이 아니라 터치패드 쪽에

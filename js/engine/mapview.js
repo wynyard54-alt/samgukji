@@ -381,6 +381,26 @@ const MapView = (function () {
     if (map.backgroundKey) drawMapForegroundCrops();
     else drawFrontDecor();
     drawLocationRibbon();
+    updateHudFade();
+  }
+
+  // 관우가 미션 배너/미니맵/스탯 패널 뒤로 지나가면 그 밑에 가려 안 보이는
+  // 문제가 있었다 - 패널 영역과 관우의 화면상 실제 위치(캔버스 CSS 표시
+  // 크기 기준으로 환산)가 겹치는 동안만 반투명하게 만들어 인물이 비쳐 보이게 한다.
+  const HUD_FADE_PANEL_IDS = ['location-banner', 'minimap-panel', 'player-panel'];
+  function updateHudFade() {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const scaleX = rect.width / camera.w, scaleY = rect.height / camera.h;
+    const px = rect.left + (worldX(player.x) + TILE / 2) * scaleX;
+    const py = rect.top + (worldY(player.y) + TILE * 0.9) * scaleY;
+    for (const id of HUD_FADE_PANEL_IDS) {
+      const el = document.getElementById(id);
+      if (!el || el.classList.contains('hidden')) continue;
+      const r = el.getBoundingClientRect();
+      const over = px >= r.left && px <= r.right && py >= r.top && py <= r.bottom;
+      el.classList.toggle('panel-fade', over);
+    }
   }
 
   function drawMapBackground() {
