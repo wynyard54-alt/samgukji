@@ -387,18 +387,26 @@ const MapView = (function () {
   // 관우가 미션 배너/미니맵/스탯 패널 뒤로 지나가면 그 밑에 가려 안 보이는
   // 문제가 있었다 - 패널 영역과 관우의 화면상 실제 위치(캔버스 CSS 표시
   // 크기 기준으로 환산)가 겹치는 동안만 반투명하게 만들어 인물이 비쳐 보이게 한다.
+  // 발밑 한 점만 검사하면(예전 방식) 캐릭터 몸통/머리가 이미 패널에 걸쳐
+  // 있어도 발이 패널 바깥이면 안 걸린 걸로 판정돼 실제로는 반쯤 가려진 채
+  // 안 뜨는 경우가 있었다 - drawHero()의 스프라이트 앵커(발밑)를 기준으로
+  // 캐릭터가 차지하는 대략적인 사각형(좌우 TILE, 위로 2TILE 정도) 전체가
+  // 패널과 겹치는지를 본다.
   const HUD_FADE_PANEL_IDS = ['location-banner', 'minimap-panel', 'player-panel'];
   function updateHudFade() {
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     const scaleX = rect.width / camera.w, scaleY = rect.height / camera.h;
-    const px = rect.left + (worldX(player.x) + TILE / 2) * scaleX;
-    const py = rect.top + (worldY(player.y) + TILE * 0.9) * scaleY;
+    const anchorX = worldX(player.x) + TILE / 2, anchorY = worldY(player.y) + TILE * 0.94;
+    const left = rect.left + (anchorX - TILE * 0.6) * scaleX;
+    const right = rect.left + (anchorX + TILE * 0.6) * scaleX;
+    const top = rect.top + (anchorY - TILE * 2) * scaleY;
+    const bottom = rect.top + (anchorY + TILE * 0.3) * scaleY;
     for (const id of HUD_FADE_PANEL_IDS) {
       const el = document.getElementById(id);
       if (!el || el.classList.contains('hidden')) continue;
       const r = el.getBoundingClientRect();
-      const over = px >= r.left && px <= r.right && py >= r.top && py <= r.bottom;
+      const over = left < r.right && right > r.left && top < r.bottom && bottom > r.top;
       el.classList.toggle('panel-fade', over);
     }
   }
