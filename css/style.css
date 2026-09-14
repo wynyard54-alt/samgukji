@@ -201,6 +201,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
    많다)가 이 상단 바에 그대로 가려지는 문제가 있었다. */
 #explore-viewport.scene-active #location-banner,
 #explore-viewport.scene-active #minimap-panel,
+#explore-viewport.scene-active #hud-army,
 #explore-viewport.scene-active #player-panel,
 #explore-viewport.scene-active #bottom-menu,
 #explore-viewport.scene-active #hud-top,
@@ -228,8 +229,6 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 #hud-actions button:hover{ background:var(--accent-strong); }
 #hud-actions button.hidden{ display:none; }
-#hud-army{ color:#e9dcae; font-weight:600; }
-#hud-army.hidden{ display:none; }
 
 /* 위치/현재 할 일 배너 (좌상단, 상단바 아래) */
 #location-banner{
@@ -244,6 +243,14 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 #minimap-title{ font-size:11px; margin-bottom:3px; }
 #minimap-canvas{ display:block; border-radius:4px; background:#3a4a2f; }
+
+/* 아군 군세 정보 (미니맵 바로 아래) - 미션/임무 배너(#location-banner)와
+   같은 상단 줄에 있으면 문구가 길어 배너를 가리는 문제가 있어 분리했다. */
+#hud-army{
+  top:146px; right:10px; z-index:4; padding:6px 10px;
+  color:#e9dcae; font-weight:600; max-width:200px;
+}
+#hud-army.hidden{ display:none; }
 
 /* 플레이어 초상화 + 스텟 패널 (좌하단) */
 #player-panel{
@@ -1089,6 +1096,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #explore-viewport.compact #minimap-panel{ top:44px; right:6px; padding:4px 5px; }
 #explore-viewport.compact #minimap-title{ font-size:9px; margin-bottom:2px; }
 #explore-viewport.compact #minimap-canvas{ width:62px; height:44px; }
+#explore-viewport.compact #hud-army{ top:112px; right:6px; padding:4px 8px; font-size:11px; max-width:150px; }
 
 #explore-viewport.compact #player-panel,
 #explore-viewport.player-compact #player-panel{

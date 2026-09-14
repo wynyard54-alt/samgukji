@@ -2713,6 +2713,11 @@ function goGwangneungRetreat() {
   Dialogue.show(STORY.gwangneung_wonsul_yeopo_deal, () => {
     MapView.lockMovement(false);
     centerAlert('원술과 여포 군대를 피해 유비군세를 광릉으로 무사히 탈출시켜라', 4000);
+    // 이 씬도 회남 벌판처럼 속도순 이니셔티브 전투다 - 이걸 빼먹으면 "휴식"
+    // 버튼이 초기화 전의 기본 동작(월간 진행 + 행동력 재보급)으로 남아,
+    // 관우가 자유 이동으로 한 번 움직인 뒤 휴식을 눌러 행동력을 통째로 다시
+    // 받는 이중 행동 버그가 생긴다.
+    startWarRound();
   });
 }
 
