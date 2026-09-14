@@ -359,7 +359,6 @@ const MapView = (function () {
       drawGround();
       drawBackDecor();
     }
-    drawHoesuGateZone();
     drawFireTiles();
     drawAreaLabels();
     if (map.backgroundKey) drawMapLandmarkLabels();
@@ -457,24 +456,6 @@ const MapView = (function () {
   // 화염 타일 연출 - 전용 이미지(tile_fire)가 field-assets.js 매니페스트에
   // 등록되면 그걸 그대로 쓰고, 아직 없으면 절차적으로 그린 불꽃으로 대신한다
   // (다른 배경 그래픽들이 PNG 우선/도형 대체로 그려지는 방식과 동일하다).
-  // 회수평야에서 "정확히 어디가 성공 타일이냐"는 질문이 있어, main.js의
-  // isHoesuGateTile(x,y) 판정과 똑같은 타일들을 파란색으로 옅게 덧칠해
-  // 눈으로 바로 보이게 한다 - 걸을 수 없는 타일(숲/바위)은 제외한다.
-  function drawHoesuGateZone() {
-    if (mapId !== 'hoesu' || typeof isHoesuGateTile !== 'function') return;
-    for (let ty = 0; ty < map.height; ty++) {
-      const py = worldY(ty);
-      if (py < -TILE || py > camera.h) continue;
-      for (let tx = 0; tx < map.width; tx++) {
-        if (!isHoesuGateTile(tx, ty) || !isWalkable(tx, ty)) continue;
-        const px = worldX(tx);
-        if (px < -TILE || px > camera.w) continue;
-        ctx.fillStyle = 'rgba(59,130,246,.3)';
-        ctx.fillRect(px, py, TILE, TILE);
-      }
-    }
-  }
-
   function drawFireTiles() {
     if (!mapId) return;
     const tiles = StatusEffects.fireTilesForMap(mapId);
