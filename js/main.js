@@ -273,7 +273,6 @@ function getObjectives() {
       if (!done('gyoyu')) list.push('유비군: 교유의 군세를 격파하라');
     } else if (mapId === 'hoesu') {
       list.push('원술군과 여포군을 피해, 유비군을 이끌고 오른쪽 관문(광릉)으로 탈출하라!');
-      list.push('붙잡히면 전투가 벌어진다 - 이기면 계속 도망칠 수 있다');
     } else {
       list.push('호로관의 적 군세를 모두 격파하기 (마지막은 여포다)');
     }
