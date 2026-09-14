@@ -2693,8 +2693,30 @@ function checkHoenamClear() {
 // gwangneung_wonsul_yeopo_deal 참고). 회남 벌판과 똑같은 크기의 빈 벌판
 // (js/data/maps.js MAPS.hoesu, "회수평야")에 관우군/유비군을 그대로 옮겨오고,
 // 좌상단에 고순(여포군), 좌하단에 원술군 잔여 4개 부대를 새로 배치한다.
+// 회수평야 진입 시점의 관우군/유비군 병력·군량과 지도상 npc 위치를 한 번만
+// 저장해둔다 - handleHoesuDefeat의 "다시 도전한다"는 이 스냅샷으로 되돌려야
+// 한다. 안 그러면 (1) 직전 시도에서 깎인 병력이 재도전에도 그대로 남고
+// (2) mapview.js가 MAPS.hoesu.npcs 객체를 직접 이동시켜 두므로(참조 공유)
+// 적/유비가 직전 시도에서 멈춘 자리 그대로 재도전에도 남는다.
+let hoesuEntrySnapshot = null;
 function goGwangneungRetreat() {
   stage = 'warmap';
+  if (!hoesuEntrySnapshot) {
+    hoesuEntrySnapshot = {
+      armyTroop: GameState.army.troop, armyRice: GameState.army.rice,
+      allyTroop: GameState.allyArmy.troop, allyRice: GameState.allyArmy.rice,
+      npcPos: Object.fromEntries(MAPS.hoesu.npcs.map((n) => [n.id, { x: n.x, y: n.y }])),
+    };
+  } else {
+    GameState.army.troop = hoesuEntrySnapshot.armyTroop;
+    GameState.army.rice = hoesuEntrySnapshot.armyRice;
+    GameState.allyArmy.troop = hoesuEntrySnapshot.allyTroop;
+    GameState.allyArmy.rice = hoesuEntrySnapshot.allyRice;
+  }
+  MAPS.hoesu.npcs.forEach((n) => {
+    const pos = hoesuEntrySnapshot.npcPos[n.id];
+    if (pos) { n.x = pos.x; n.y = pos.y; }
+  });
   // 앞선 수춘성 전투에서 패주(routed)/포획됐던 흔적(낮아진 병력, 지휘관
   // 교체 등)이 이 장면까지 이어지지 않도록, 등장하는 5개 부대를 모두
   // 정해진 병력으로 리젠한다.
