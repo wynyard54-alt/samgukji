@@ -447,6 +447,14 @@ function updateHUD() {
     } else {
       progressBtn.classList.add('hidden');
     }
+  } else if (stage === 'warmap' && MapView.currentMapId === 'hoesu') {
+    if (gs.flags.hoesuCleared) {
+      progressBtn.classList.remove('hidden');
+      progressBtn.textContent = '소패성으로 이동';
+      progressBtn.onclick = goSopaeCamp;
+    } else {
+      progressBtn.classList.add('hidden');
+    }
   } else {
     progressBtn.classList.add('hidden');
   }
@@ -2735,8 +2743,17 @@ function checkHoesuRetreat() {
   endWarInitiative();
   MapView.lockMovement(true);
   Dialogue.show(STORY.hoesu_escape_win, () => {
-    toast('광릉 탈출에 성공했다! (다음 이야기는 이어질 예정)');
+    Dialogue.show(STORY.hoesu_yeopo_betrayal, () => {
+      updateHUD(); // btn-progress에 [소패성으로 이동]을 띄운다
+      centerAlert('유비 일행이 소패에 몸을 의탁하게 되었다. 우측 상단 [소패성으로 이동]으로 계속하자.', 4000);
+    });
   });
+}
+
+// 소패성 지도는 아직 만들어지지 않았다 - 지금은 이야기 전개상 여기서
+// 한 단락을 매듭짓고, 다음 단계에서 실제 지도를 붙일 예정이다.
+function goSopaeCamp() {
+  toast('소패성 이야기는 다음 업데이트에서 이어집니다.');
 }
 
 // 회수평야에서 관우군/유비군 중 어느 쪽이든 전투에서 완전히 무너지면(resolveArmyBattle의
