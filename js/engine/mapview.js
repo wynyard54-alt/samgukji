@@ -580,8 +580,10 @@ const MapView = (function () {
     // 진규만 준비되면 [!]로 바뀌어 "가서 받아오자"를 알려준다.
     const habiMark = (typeof habiRecruitMark === 'function') ? habiRecruitMark(n.id) : null;
     if (habiMark) {
-      ctx.fillStyle='rgba(45,40,34,.82)';ctx.beginPath();ctx.roundRect(x-13,worldY(n.y)-20,26,17,7);ctx.fill();
-      ctx.fillStyle='#eadfca';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.fillText(habiMark,x,worldY(n.y)-8);
+      // 이름표(drawTag)가 y-22~y-4 범위를 차지하므로, 그보다 위에 그려야
+      // 이 말풍선이 이름표에 덮여 사라지지 않는다.
+      ctx.fillStyle='rgba(45,40,34,.82)';ctx.beginPath();ctx.roundRect(x-13,worldY(n.y)-40,26,17,7);ctx.fill();
+      ctx.fillStyle='#eadfca';ctx.font='bold 13px sans-serif';ctx.textAlign='center';ctx.fillText(habiMark,x,worldY(n.y)-28);
     }
 
     // 등용된 장수는 마을에 남아 모병/훈련을 돕는다 - 이름표에 담당 역할을 표기한다.
