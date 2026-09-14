@@ -590,7 +590,8 @@ const MapView = (function () {
       // 유비 마커는 GameState.allyArmy(별도로 편성한 유비군)를 같은 형식으로 보여준다 -
       // 유비 본인(ROSTER.yubi)에는 troop 필드가 없으므로 rd.troop 분기로는 못 잡는다.
       // 특정 지도로 한정하지 않는다 - 유비군이 등장하는 지도라면 어디서든 보여야 한다.
-      const baseLabel = n.label || rd.name;
+      const rewardMark = (typeof pendingRewardNpcIds === 'function' && pendingRewardNpcIds().includes(n.id)) ? ' [...]' : '';
+      const baseLabel = (n.label || rd.name) + rewardMark;
       const label = (rd.kind === 'enemy' && rd.troop != null)
         ? `${baseLabel} · 병${rd.troop} · 무${enemyArmyGrade(rd)} · 지${gradeFor(rd.stats.int, JIRYEOK_GRADES)}`
         : (n.id === 'yubi' && GameState.allyArmy)

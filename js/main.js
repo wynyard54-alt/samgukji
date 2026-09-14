@@ -259,7 +259,7 @@ function getObjectives() {
   } else if (stage === 'habi_camp') {
     const step = gs.flags.habiStep || 0;
     if (step === 0) list.push('유비를 찾아가자');
-    else if (step === 1) list.push(`진등을 찾아가 병사를 모집하며 세력을 키워라 (${gs.resources.troop}/${HABI_RECRUIT_GOAL})`);
+    else if (step === 1) list.push(`성 안 사람들을 찾아가 병사를 모아 세력을 키워라 (${gs.resources.troop}/${HABI_RECRUIT_GOAL})`);
     else if (step === 2) list.push('유비를 찾아가 회의에 참석하자');
     else if (step >= 3) list.push('준비되면 왼쪽 위 [원술 토벌 출전] 버튼으로 출정하기');
   } else if (stage === 'camp') {
@@ -488,9 +488,19 @@ function interactNPC(id, context) {
     });
     return;
   }
-  // 진등은 씬1(서주 자유탐방)에서 이미 등용된 상태로 하비 관청에 들어올 수
-  // 있으므로, 아래의 "이미 등용됨" 일괄 차단보다 먼저 확인해야 한다.
-  if (id === 'jindeung' && stage === 'habi_camp') { handleJindeungRecruit(); return; }
+  // 하비성 관청에서 병사 5000명을 모으는 미션은 진등 혼자 광클하는 대신,
+  // 성 안 다섯 명(조표/미축/장비/진규/진등)이 각자 한 번씩 다른 방식으로
+  // 병력을 보태는 구조다 - 각자 한 번 쓰고 나면(플래그로 기록) 그 다음부터는
+  // 아래의 "이미 등용됨" 일괄 처리(interactRecruitedGeneral, 책사형이면
+  // AP2+금30 모병)로 자연히 넘어간다. 다섯 다 이미 등용된 상태로 하비
+  // 관청에 들어오므로, 그 일괄 처리보다 먼저 확인해야 한다.
+  if (stage === 'habi_camp') {
+    if (id === 'jopyo' && !GameState.flags.habiJopyoDone) { handleJopyoGift(); return; }
+    if (id === 'michuk' && !GameState.flags.habiMichukDone) { handleMichukRecruit(); return; }
+    if (id === 'jangbi' && !GameState.flags.habiJangbiDone) { startJangbiHwangeonChallenge(); return; }
+    if (id === 'jingyu') { const r = handleJingyuRecruit(); if (r) return; }
+    if (id === 'jindeung' && !GameState.flags.habiJindeungMinigameDone) { startJindeungMinigame(); return; }
+  }
   // 등용된 지력형 장수의 모병 상호작용(interactRecruitedGeneral)은 챕터1
   // 마을(탁현/평원)뿐 아니라 챕터2의 서주·하비 관청에서도 그대로 열려 있어야
   // 한다 - 안 그러면 미축·미방·진규 같은 책사형 인물들이 등용된 뒤 그냥
@@ -2079,7 +2089,7 @@ function handleHabiYubi() {
             Dialogue.show(STORY.habi_yeopo_result, () => {
               GameState.flags.habiStep = 1;
               updateHUD();
-              toast('진등을 찾아가 병사를 모집하며 세력을 키우자.');
+              toast('성 안 사람들을 찾아가 병사를 모아 세력을 키우자.');
             });
           });
         } },
@@ -2088,7 +2098,7 @@ function handleHabiYubi() {
             Dialogue.show(STORY.habi_yeopo_result, () => {
               GameState.flags.habiStep = 1;
               updateHUD();
-              toast('진등을 찾아가 병사를 모집하며 세력을 키우자.');
+              toast('성 안 사람들을 찾아가 병사를 모아 세력을 키우자.');
             });
           });
         } },
@@ -2146,23 +2156,188 @@ function startWonsulExpedition() {
   });
 }
 
-// 진등에게 직접 찾아가 병사를 모집한다 - 행동력을 써서 병력을 조금씩
-// 늘리는, 자동 증가가 아닌 실제 플레이어 행동으로 채우는 미션이다. 목표
-// (HABI_RECRUIT_GOAL)를 채운 뒤에도 모집 자체는 막지 않는다 - 이후 원술
-// 정벌에 데려갈 병력을 더 불려두고 싶을 수 있으므로, 그 뒤로는 그냥 평범한
-// 상시 모집 NPC로 남는다.
-function handleJindeungRecruit() {
-  const step = GameState.flags.habiStep || 0;
-  if (step === 0) {
-    Dialogue.show([{ speaker: '진등', text: '이 진등, 힘닿는 데까지 병력을 모아보겠습니다.' }]);
-    return;
-  }
-  if (!spend(2)) return;
-  const gained = 300 + Math.floor(Math.random() * 300);
-  GameState.addResource({ troop: gained });
+// ---- 조표: 여포를 받아준 것에 대한 감사로 사병 일부를 즉시 제공 (1회성) ----
+function handleJopyoGift() {
+  GameState.flags.habiJopyoDone = true;
+  GameState.addResource({ troop: 500 });
   updateHUD();
-  const progressNote = step === 1 ? `(${GameState.resources.troop}/${HABI_RECRUIT_GOAL})` : `(총 ${GameState.resources.troop}명)`;
-  Dialogue.show([{ speaker: '진등', text: `근방 장정들을 더 모아왔습니다. 병사 ${gained}명을 더 모았습니다. ${progressNote}` }]);
+  Dialogue.show([{ speaker: '조표', text: '내 사위 여포를 받아줬으니, 나도 사병 일부를 내놓겠소.' }], () => {
+    toast(`병사 500명이 추가되었다. (병사 ${GameState.resources.troop})`);
+  });
+}
+
+const MICHUK_TIERS = [
+  { gold: 100, ap: 3, troop: 1500 },
+  { gold: 200, ap: 6, troop: 3000 },
+  { gold: 300, ap: 9, troop: 4500 },
+];
+
+// ---- 미축: 금을 낸 만큼 호위병을 모아준다 (1회성, 3단계 중 택1) ----
+function handleMichukRecruit() {
+  showChoice('미축: "저에게 금을 주시면 호위병들을 모아보겠습니다."', [
+    ...MICHUK_TIERS.map((t) => ({
+      label: `금 ${t.gold} → 병사 ${t.troop}명 (행동력 ${t.ap})`,
+      cb: () => {
+        if (GameState.resources.gold < t.gold) { toast(`금이 부족합니다. (금 ${t.gold} 필요)`); return; }
+        if (!spend(t.ap)) return;
+        GameState.resources.gold -= t.gold;
+        GameState.flags.habiMichukDone = true;
+        GameState.addResource({ troop: t.troop });
+        updateHUD();
+        Dialogue.show([{ speaker: '미축', text: '가진 재산을 털어 호위병들을 모아왔습니다.' }], () => {
+          toast(`병사 ${t.troop}명이 모였다. (금 ${t.gold} 소모, 병사 ${GameState.resources.troop})`);
+        });
+      },
+    })),
+    { label: '그만둔다', cb: () => {} },
+  ]);
+}
+
+// ---- 장비: 황건적 잔당 두목 3인과 연속 일기토 (1회성) ----
+function startJangbiHwangeonChallenge() {
+  Dialogue.show([{ speaker: '장비', text: '형님, 황건적 잔당 일부가 싸움을 걸어왔는데, 제압하고 군세를 흡수하는건 어떻소?' }], () => {
+    GameState.heroHp = null;
+    updateHUD();
+    fightHwangeonBoss(1);
+  });
+}
+
+function fightHwangeonBoss(n) {
+  const ids = ['hwangeonjan1', 'hwangeonjan2', 'hwangeonjan3'];
+  const rd = ROSTER[ids[n - 1]];
+  Dialogue.show([{ speaker: rd.name, text: rd.intro }], () => {
+    Battle.start({
+      player: GameState.heroData(), enemy: rd, maxRounds: 3,
+      startHp: heroCurrentHp(),
+      onEnd: (result) => {
+        GameState.heroHp = result.playerHp;
+        updateHUD();
+        if (result.outcome !== 'win') {
+          toast(`${rd.name}에게 밀렸다... 다음에 다시 도전하자.`);
+          return;
+        }
+        if (n < 3) { fightHwangeonBoss(n + 1); return; }
+        GameState.flags.habiJangbiDone = true;
+        GameState.addResource({ troop: 1000 });
+        updateHUD();
+        Dialogue.show([{ speaker: '장비', text: '이걸로 잔당은 끝이오! 남은 자들도 형님께 귀순하겠다는군.' }], () => {
+          toast(`두목 3인을 제압하고 병사 1000명이 귀순했다. (병사 ${GameState.resources.troop})`);
+        });
+      },
+    });
+  });
+}
+
+// ---- 진규: 3달간 모병 방을 붙이고 기다리는 1회성 미션 (진행 중엔 머리 위에 표시가 뜬다) ----
+// interactNPC에서 반환값으로 처리 여부를 판단한다: true면 이 함수가 처리했으니
+// 그대로 끝내고, false면(이미 완료된 상태) 아래의 평범한 모병 NPC 처리로 넘긴다.
+function handleJingyuRecruit() {
+  if (GameState.flags.habiJingyuDone) return false;
+  if (GameState.flags.habiJingyuAskedMonth == null) {
+    GameState.flags.habiJingyuAskedMonth = absMonth(GameState.year, GameState.month);
+    Dialogue.show([
+      { speaker: '진규', text: '지금 서주에는 유비님의 명망이 아주 높습니다. 모집 방을 붙이시면 많은 백성들이 지원할 것입니다.' },
+      { speaker: '진규', text: '3달의 시간을 주시면 성 곳곳에 방을 붙여 의병을 모아 보겠습니다.' },
+    ]);
+    return true;
+  }
+  const elapsed = absMonth(GameState.year, GameState.month) - GameState.flags.habiJingyuAskedMonth;
+  if (elapsed < 3) {
+    Dialogue.show([{ speaker: '진규', text: '아직 방을 붙이고 백성들의 지원을 기다리는 중입니다. 조금만 더 기다려 주십시오.' }]);
+    return true;
+  }
+  GameState.flags.habiJingyuDone = true;
+  GameState.addResource({ troop: 2000 });
+  updateHUD();
+  Dialogue.show([{ speaker: '진규', text: '2000명의 백성이 방을 보고 지원했습니다!' }], () => {
+    toast(`병사 2000명이 모였다. (병사 ${GameState.resources.troop})`);
+  });
+  return true;
+}
+
+// mapview.js에서 NPC 라벨 옆에 진행 완료 표시([...] -> ❗)를 붙일 대상 목록.
+function pendingRewardNpcIds() {
+  const ids = [];
+  if (stage === 'habi_camp' && GameState.flags.habiJingyuAskedMonth != null && !GameState.flags.habiJingyuDone) {
+    const elapsed = absMonth(GameState.year, GameState.month) - GameState.flags.habiJingyuAskedMonth;
+    if (elapsed >= 3) ids.push('jingyu');
+  }
+  return ids;
+}
+
+// ---- 진등: 태산/낭야 군벌 설득 - 좌우로 움직이는 게이지에 타이밍을 맞추는 미니게임 (1회성) ----
+function startJindeungMinigame() {
+  if (!spend(5)) return;
+  Dialogue.show([{ speaker: '진등', text: '태산과 낭야에 군벌 몇 명이 있다 들었습니다. 한번 설득해보겠습니다!' }], () => {
+    startTimingMinigame({
+      title: '태산·낭야 군벌 설득',
+      zones: [
+        { width: 10, result: 'critical' },
+        { width: 50, result: 'success' },
+      ],
+      onResult: (result) => {
+        GameState.flags.habiJindeungMinigameDone = true;
+        if (result === 'critical') {
+          GameState.addResource({ troop: 2000 });
+          updateHUD();
+          Dialogue.show([{ speaker: '진등', text: '군벌들이 흔쾌히 응했습니다! 2000명이 귀순했습니다.' }], () => {
+            toast(`[대성공] 병사 2000명이 귀순했다. (병사 ${GameState.resources.troop})`);
+          });
+        } else if (result === 'success') {
+          GameState.addResource({ troop: 1200 });
+          updateHUD();
+          Dialogue.show([{ speaker: '진등', text: '설득이 통했습니다. 1200명이 귀순했습니다.' }], () => {
+            toast(`[성공] 병사 1200명이 귀순했다. (병사 ${GameState.resources.troop})`);
+          });
+        } else {
+          Dialogue.show([{ speaker: '진등', text: '아쉽게도 이번엔 설득이 통하지 않았습니다…' }], () => {
+            toast('[실패] 군벌 설득에 실패했다.');
+          });
+        }
+      },
+    });
+  });
+}
+
+// 재사용 가능한 타이밍 미니게임 - 0~100을 왕복하는 표시자를 클릭/스페이스바로
+// 멈춰 중앙(50)과의 거리로 결과를 가른다. zones는 [{width, result}, ...] 형태로
+// 폭이 좁은 항목부터 넣으면 되고(중앙에 가까운 특수 구간이 먼저 매치), 어느
+// zone에도 못 들면 'fail'을 결과로 넘긴다.
+function startTimingMinigame({ title, zones, onResult }) {
+  const box = document.getElementById('timing-minigame');
+  const track = document.getElementById('timing-track');
+  const marker = document.getElementById('timing-marker');
+  document.getElementById('timing-title').textContent = title || '';
+  box.classList.remove('hidden');
+
+  let pos = 0;
+  let dir = 1;
+  const speed = 1.6; // %/프레임
+  let rafId = null;
+
+  function tick() {
+    pos += dir * speed;
+    if (pos >= 100) { pos = 100; dir = -1; }
+    if (pos <= 0) { pos = 0; dir = 1; }
+    marker.style.left = pos + '%';
+    rafId = requestAnimationFrame(tick);
+  }
+  rafId = requestAnimationFrame(tick);
+
+  function finish() {
+    cancelAnimationFrame(rafId);
+    document.removeEventListener('keydown', onKey);
+    track.removeEventListener('click', onClick);
+    box.classList.add('hidden');
+    const dist = Math.abs(pos - 50);
+    const zone = zones.find((z) => dist <= z.width / 2);
+    onResult(zone ? zone.result : 'fail');
+  }
+  function onKey(e) { if (e.code === 'Space') { e.preventDefault(); finish(); } }
+  function onClick() { finish(); }
+
+  document.addEventListener('keydown', onKey);
+  track.addEventListener('click', onClick);
 }
 
 // 반동탁연합 출정(군세 편성) 직전 시점의 GameState를 남겨둔다 - 진행 버튼과

@@ -78,6 +78,14 @@ const ROSTER = {
     stats:{atk:90, def:75, spd:85, int:30, cha:58, lead:64}, bio:'황건적의 장수로 북해를 포위했다가 태사자의 활약에 밀려 물러났다.', intro:'크윽… 북해를 넘본 것이 실수였군. 그대들 밑에서 다시 시작해보겠소.', sprite:SPRITE_YELLOWTURBAN },
   goseung: { id:'goseung', name:'고승', birth:162, deathReal:205, deathVirtual:252, kind:'enemy', forced:null, affiliation:'황건적',
     stats:{atk:41, def:32, spd:38, int:32, cha:40, lead:32}, bio:'황건적의 장수로 관군과 맞서 싸웠다.', intro:'크윽… 살려만 준다면 뭐든 하겠소!', sprite:SPRITE_YELLOWTURBAN },
+  // 챕터2 하비성 관청 - 장비가 발견해 관우에게 넘기는 잔당 두목 3인.
+  // 정사/연의에 없는 필러 인물이라 이름은 임의로 지었다.
+  hwangeonjan1: { id:'hwangeonjan1', name:'갈웅', birth:158, deathReal:194, deathVirtual:248, kind:'enemy', forced:null, affiliation:'황건적',
+    stats:{atk:45, def:40, spd:40, int:20, cha:30, lead:30}, bio:'황건적 잔당의 두목으로, 서주 인근에서 약탈을 일삼았다.', intro:'크윽… 이 몸이 졌소이다!', sprite:SPRITE_YELLOWTURBAN },
+  hwangeonjan2: { id:'hwangeonjan2', name:'방충', birth:156, deathReal:194, deathVirtual:246, kind:'enemy', forced:null, affiliation:'황건적',
+    stats:{atk:50, def:44, spd:42, int:20, cha:32, lead:32}, bio:'황건적 잔당의 두목으로, 서주 인근에서 약탈을 일삼았다.', intro:'감히… 좋다, 승부를 겨뤄보자!', sprite:SPRITE_YELLOWTURBAN },
+  hwangeonjan3: { id:'hwangeonjan3', name:'손조', birth:154, deathReal:194, deathVirtual:244, kind:'enemy', forced:null, affiliation:'황건적',
+    stats:{atk:55, def:48, spd:44, int:22, cha:34, lead:34}, bio:'황건적 잔당의 마지막 두목으로, 앞선 두 두목의 원수를 갚으려 나섰다.', intro:'내 동료들의 원수, 내가 갚아주마!', sprite:SPRITE_YELLOWTURBAN },
   muangug: { id:'muangug', name:'무안국', birth:155, deathReal:192, deathVirtual:245, kind:'enemy', forced:null, affiliation:'재야',
     stats:{atk:81, def:70, spd:47, int:36, cha:44, lead:48}, bio:'본래 공손찬의 장수로, 반동탁연합 시절 여포와 맞서 싸우다 크게 다쳤다.', intro:'…이 몸싸움, 내가 졌소. 그대들을 따르겠소.' },
 
