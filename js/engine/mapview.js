@@ -110,8 +110,25 @@ const MapView = (function () {
     camera.h = size.h;
     canvas.width = camera.w;
     canvas.height = camera.h;
+    // CSS의 #game-canvas{width:100%;height:auto}가 내부 해상도(camera.w/h)
+    // 비율로 알아서 표시 크기를 맞춰주는 데 기대는 대신, 여기서 직접
+    // 픽셀로 못박는다 - handleCanvasTap이 canvas.getBoundingClientRect()로
+    // 되돌려 계산하는 sx/sy 배율이 이 표시 크기에 그대로 의존하므로, 자동
+    // 계산이 어긋나는 환경(카카오톡 인앱 브라우저 등)에서는 클릭이 전부
+    // 엉뚱한 칸으로 판정될 수 있다.
+    canvas.style.width = camera.w + 'px';
+    canvas.style.height = camera.h + 'px';
     if (viewportEl) {
       viewportEl.style.width = camera.w + 'px';
+      // 높이는 CSS의 #game-canvas{height:auto}가 캔버스 width/height 속성
+      // 비율로부터 알아서 계산해주는 데 맡겨왔는데, 그 계산을 신뢰할 수
+      // 없는 웹뷰(카카오톡 인앱 브라우저 등)에서는 여기서 구한 camera.w/h
+      // 비율과 실제 화면에 그려지는 높이가 어긋날 수 있다 - 그러면 클릭
+      // 핸들러가 canvas.getBoundingClientRect()로 되돌려 계산하는 sx/sy
+      // 배율 전체가 틀어져, 화면에 보이는 범위 하이라이트와 달리 클릭이
+      // 전부 엉뚱한 칸으로 판정될 수 있다. width처럼 height도 직접 픽셀로
+      // 못박아 그 계산 자체를 없앤다.
+      viewportEl.style.height = camera.h + 'px';
       viewportEl.classList.toggle('compact', camera.w < COMPACT_HUD_THRESHOLD);
       // 회전 프리젠테이션(세로로 든 모바일)은 계산된 지도 폭 자체는 넓게 잡힐 때가
       // 많아 .compact(폭 기준)가 안 걸리지만, 실기기 화면은 작으므로 인물 스텟

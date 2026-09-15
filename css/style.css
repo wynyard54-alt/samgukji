@@ -796,6 +796,16 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 #center-alert.hidden{ display:none; }
 
+/* 지금 불러온 파일이 실제로 몇 번째 배포본인지 눈으로 바로 확인하는 배지 -
+   버그가 안 고쳐진 게 코드 문제인지, 그냥 캐시/인앱 브라우저가 옛날
+   파일을 계속 물고 있는 건지를 추측 대신 확인하려고 둔다. 다른 UI를
+   가리거나 클릭을 막지 않도록 아주 작고 옅게, 화면 구석에만 둔다. */
+#build-version{
+  position:fixed; right:4px; bottom:2px; z-index:999;
+  font-size:9px; color:rgba(0,0,0,0.35); pointer-events:none;
+  font-family:"Noto Sans KR",sans-serif;
+}
+
 /* ===== Duel VFX layer (GPT visual vertical slice / BASE 3b3524f) ===== */
 #battle-screen{overflow:hidden;background:#17140f;padding:18px 24px 20px;isolation:isolate;}
 #duel-arena{position:absolute;inset:0;z-index:-1;overflow:hidden;background:linear-gradient(#d8b875 0 44%,#9d7a45 45% 60%,#625238 61%);}
