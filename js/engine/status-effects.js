@@ -43,6 +43,10 @@ const StatusEffects = (function () {
     apMult: '행동력 배율', moveCostMult: '이동소모 배율', stratSuccessMult: '책략성공률 배율',
     moveMoraleCost: '이동시 사기감소', forceFirstStrike: '선제공격 확정', noCounter: '반격불가(1회)',
     guaranteedCapture: '포박 확정',
+    // 병종 상성 관련 4종(응변진/철벽수성/벽력거·야습) - main.js의 unitTypeDamageMult/
+    // armyAttackRange가 이 상태를 확인해 상성 배율·공격 사거리에 반영한다.
+    forceTypeAdvantage: '병종 상성 무조건 우위', ignoreTypeDisadvantage: '병종 상성 불리 무효화',
+    rangeOverride: '공격 사거리 임시 변경', doubleAttack: '다음 공격 2회 발동',
   };
   const ALL_LABELS = Object.assign({}, ARMY_STATUS_LABELS, BUFF_LABELS);
   const DEBUFF_TYPES = new Set(Object.keys(ARMY_STATUS_LABELS));
@@ -121,6 +125,12 @@ const StatusEffects = (function () {
   // 마지막 단계에서 곱한다.
   function stratSuccessMult(id) {
     return activeStatuses(id).filter((s) => s.type === 'stratSuccessMult').reduce((m, s) => m * (s.magnitude || 1), 1);
+  }
+  // 벽력거/야습처럼 "이번만 사거리를 N칸으로" 늘리는 책략용 - main.js의
+  // armyAttackRange가 병종 기본 사거리보다 이 값을 우선한다. 여러 개 겹치면
+  // 가장 큰 값을 쓴다.
+  function rangeOverride(id) {
+    return activeStatuses(id).filter((s) => s.type === 'rangeOverride').reduce((m, s) => Math.max(m, s.magnitude || 0), 0) || null;
   }
 
   // ---- 책략 사용 횟수 제한 ----
@@ -224,7 +234,7 @@ const StatusEffects = (function () {
     applyArmyStatus, clearArmyStatus, activeStatuses, hasStatus, tickArmyStatus, tickAllArmyStatus,
     isConfused, isTaunted, tauntSourceId,
     dmgDealtMult, dmgTakenMult, gradeBoostAmount, hasImmunity, evadeChance, rollEvade,
-    apMult, moveCostMult, stratSuccessMult, moveMoraleCost, drainMorale, isPlayerCommander,
+    apMult, moveCostMult, stratSuccessMult, moveMoraleCost, drainMorale, isPlayerCommander, rangeOverride,
     canUseThisScene, markUsedThisScene, resetSceneUsage, canUseThisMonth, markUsedThisMonth,
     igniteTile, extinguishTile, fireTilesForMap, tickFireTiles,
     linkChain, unlinkChain, chainedWith, propagateDamage,

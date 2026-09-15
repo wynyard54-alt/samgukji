@@ -975,7 +975,10 @@ function openWarCommandMenu(id) {
   }
   showChoice(`${rd.name} 군세와 마주쳤다. 어떻게 하시겠습니까?`, [
     { label: '일기토', cb: () => attemptDuelChallenge(id) },
-    { label: '전투', cb: () => resolveArmyBattle(id) },
+    // engagementBudget이 설정돼 있으면(적이 자동으로 다가와 붙어 이 메뉴가
+    // 뜬 경우) 이 교전은 적이 다가와 붙인 것이라, 궁병 사거리 판정에서
+    // "누가 다가갔는지"를 정확히 반영해야 한다.
+    { label: '전투', cb: () => resolveArmyBattle(id, { initiator: engagementBudget != null ? 'enemy' : 'player' }) },
     { label: '책략', cb: () => attemptStrategy(id) },
   ]);
 }
@@ -1055,8 +1058,46 @@ function playerArmies() { return [GameState.army, GameState.allyArmy].filter(Boo
 function dissolveArmy(field) {
   const army = GameState[field];
   if (!army) return;
-  GameState.addResource({ troop: army.troop, rice: army.rice });
+  const refund = { troop: army.troop, rice: army.rice };
+  // 궁병/기병으로 편성했던 만큼의 활/군마도 같이 돌려준다 - 전투로 병력이
+  // 줄었으면 남은 병력 수만큼만(활/군마도 병사와 1:1로 같이 소모되므로).
+  if (army.unitType === 'archer') refund.bow = army.troop;
+  else if (army.unitType === 'cavalry') refund.horse = army.troop;
+  GameState.addResource(refund);
   GameState[field] = null;
+}
+
+// ---------------- 병종(보병/궁병/기병) ----------------
+// 군세 편성창에서 고른 unitType을 army 객체에 그대로 저장해두고(기본값
+// 'infantry'), 전투 산식(사거리/상성)과 지도 이동(기병 기동력)이 이 값 하나로
+// 전부 갈라진다. 적 군세는 아직 병종을 배정하지 않아 전부 보병 취급이지만,
+// 나중에 ROSTER 데이터에 unitType을 넣어주기만 하면 이 시스템이 그대로 반응한다.
+const UNIT_TYPE_NAMES = { infantry: '보병', archer: '궁병', cavalry: '기병' };
+// 가위바위보 상성: 보병이 궁병을, 궁병이 기병을, 기병이 보병을 이긴다.
+const UNIT_TYPE_BEATS = { infantry: 'archer', archer: 'cavalry', cavalry: 'infantry' };
+function unitTypeOf(army) { return (army && army.unitType) || 'infantry'; }
+// 궁병은 기본 사거리 2(인접칸+1칸 더) - 벽력거/야습처럼 책략이 임시로 사거리를
+// 늘려주면(rangeOverride) 그 값을 우선한다.
+function armyAttackRange(commanderId, army) {
+  const override = StatusEffects.rangeOverride(commanderId);
+  if (override) return override;
+  return unitTypeOf(army) === 'archer' ? 2 : 1;
+}
+// 우세 상성이면 주는피해 +15%, 열세 상성이면 -5%(그만큼 상대가 덜 맞는 셈) -
+// 응변진(forceTypeAdvantage)/철벽수성(ignoreTypeDisadvantage)이 이 결과를 덮어쓴다.
+function unitTypeDamageMult(attackerId, defenderId, attackerType, defenderType) {
+  if (StatusEffects.hasStatus(attackerId, 'forceTypeAdvantage')) return 1.15;
+  let mult = 1;
+  if (UNIT_TYPE_BEATS[attackerType] === defenderType) mult = 1.15;
+  else if (UNIT_TYPE_BEATS[defenderType] === attackerType) mult = 0.95;
+  if (mult === 0.95 && StatusEffects.hasStatus(attackerId, 'ignoreTypeDisadvantage')) return 1;
+  if (mult === 1.15 && StatusEffects.hasStatus(defenderId, 'ignoreTypeDisadvantage')) return 1;
+  return mult;
+}
+// 기병은 보병보다 기동력이 1.5배(2 행동력에 3칸) - 타일당 소모 행동력에
+// 곱하는 배율이므로 2/3을 곱한다. mapview.js의 tryMove/computeAiPath가 쓴다.
+function unitTypeMoveCostMult(commanderId) {
+  return unitTypeOf(armyFor(commanderId)) === 'cavalry' ? (2 / 3) : 1;
 }
 function composeEnemyArmy(rd) {
   ensureEnemyRice(rd);
@@ -1145,6 +1186,13 @@ function npcMapPos(id) {
 function tileDist(a, b) {
   return (a && b) ? Math.abs(a.x - b.x) + Math.abs(a.y - b.y) : Infinity;
 }
+// npcMapPos(id)는 지도 npc 목록에서만 찾으므로 문자 그대로의 조작 캐릭터
+// (관우)는 못 찾는다 - 그쪽은 MapView.playerPos를 따로 봐야 한다. 궁병
+// 사거리 판정(resolveArmyBattle)처럼 "관우군이든 유비군이든" 위치가
+// 필요한 곳에서 이 함수 하나로 both를 처리한다.
+function mapPosOf(id) {
+  return id === GameState.mainHero ? MapView.playerPos : npcMapPos(id);
+}
 function shuffled(arr) {
   const a = arr.slice();
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
@@ -1202,11 +1250,9 @@ function markStrategyUsed(sid) {
 }
 
 // 각 책략의 실제 효과 구현. (targetId, deputyId) -> 결과 서술 문자열(내레이션에 씀).
-// 아래 시스템이 아직 없어서 그에 의존하는 8개만 STRATEGY_EFFECTS에서
-// 빠져 있다 - 그 시스템들이 생기면 이어서 채운다. 나머지는 여기 없으면
-// castGenericStrategy(범용 약화 책략)로 대신 나간다.
-//  - 병종/사거리/성벽 내구도: 응변진, 철벽수성, 벽력거, 연노지휘, 야습
-//  - "적이 책략을 시전한다"는 시스템: 반계, 책략봉쇄, 간파
+// "적이 책략을 시전한다"는 시스템이 아직 없어 그에 의존하는 3개(반계/책략봉쇄/
+// 간파)만 STRATEGY_EFFECTS에서 빠져 있다 - 그 시스템이 생기면 이어서 채운다.
+// 나머지는 여기 없으면 castGenericStrategy(범용 약화 책략)로 대신 나간다.
 // 아래 모든 효과는 caster가 플레이어든 적이든 동일하게 동작한다 - "아군/적"은
 // alliesOf(casterId)/enemiesOf(casterId)로, 병력·군량은 armyFor(id)로,
 // 사기는 moraleOf/boostSideMorale로 조회·적용해서 어느 쪽이 캐스터인지
@@ -1310,10 +1356,29 @@ const STRATEGY_EFFECTS = {
   },
 
   // ---- B급 ----
-  // (응변진/철벽수성/벽력거는 병종·사거리·성벽 내구도 시스템이 아직 없어
-  // 제외했고, 반계/책략봉쇄/간파는 "적이 책략을 시전한다"는 시스템 자체가
-  // 없어서 아직 보류한다 - 이 셋은 STRATEGY_EFFECTS에 없어 castable
-  // 목록에서 자동으로 빠진다.)
+  // (반계/책략봉쇄/간파는 "적이 책략을 시전한다"는 시스템 자체가 없어서
+  // 아직 보류한다 - 이 셋은 STRATEGY_EFFECTS에 없어 castable 목록에서
+  // 자동으로 빠진다. 철벽수성/벽력거의 성·요새 타일 관련 절반은 성벽
+  // 내구도 시스템이 아직 없어 병종 관련 부분만 구현했다.)
+  eungbyeonjin(targetId, deputyId, casterId) {
+    StatusEffects.applyArmyStatus(casterId, 'forceTypeAdvantage', { turns: 3 });
+    return '아군 진형이 상대 병종에 맞춰 즉각 바뀌어, 당분간 병종 상성에서 반드시 우위를 점한다.';
+  },
+  cheolbyeoksuseong(targetId, deputyId, casterId) {
+    StatusEffects.applyArmyStatus(casterId, 'ignoreTypeDisadvantage', { turns: 3 });
+    return '아군이 철벽같이 수비 태세를 갖춰, 당분간 병종 상성 불리를 받지 않는다.';
+  },
+  byeokryeokgeo(targetId, deputyId, casterId) {
+    if (unitTypeOf(armyFor(casterId)) !== 'archer') return '궁병 군세가 아니라 벽력거를 배치할 수 없었다.';
+    StatusEffects.applyArmyStatus(casterId, 'rangeOverride', { turns: 1, magnitude: 10 });
+    StatusEffects.applyArmyStatus(casterId, 'dmgDealtMult', { turns: 1, magnitude: 1.3 });
+    return '벽력거를 배치해 사거리가 크게 늘고, 다음 공격의 위력도 크게 강해졌다.';
+  },
+  yaseup(targetId, deputyId, casterId) {
+    StatusEffects.applyArmyStatus(casterId, 'rangeOverride', { turns: 1, magnitude: 5 });
+    StatusEffects.applyArmyStatus(targetId, 'noCounter', { turns: 1 });
+    return `야습을 감행해 다음 공격은 병종에 상관없이 5칸까지 닿으며, ${ROSTER[targetId].name}은(는) 반격하지 못할 것이다.`;
+  },
   // 퇴로봉쇄: [전투]의 "적 격파" 분기에는 guaranteedCapture를 확인해 포획을
   // 강제하도록 연결해뒀지만, "플레이어가 격파당하는" 분기에는 대응하는
   // 포획 판정 자체가 없다(그런 개념 자체가 아직 없음) - 그래서 적이 이걸
@@ -1396,8 +1461,12 @@ const STRATEGY_EFFECTS = {
   },
 
   // ---- C급 ----
-  // (연노지휘는 병종 궁병 시스템이 아직 없어 제외, 책략봉쇄도 반계/간파와
-  // 같은 이유로 보류한다.)
+  // (책략봉쇄는 반계/간파와 같은 이유로 보류한다.)
+  yeonnojihwi(targetId, deputyId, casterId) {
+    if (unitTypeOf(armyFor(casterId)) !== 'archer') return '궁병 군세가 아니라 연노를 갖출 수 없었다.';
+    StatusEffects.applyArmyStatus(casterId, 'doubleAttack', { turns: 1 });
+    return '연노를 갖춰 다음 궁병 공격이 두 번 발동될 것이다.';
+  },
   giseup(targetId, deputyId, casterId) {
     StatusEffects.applyArmyStatus(casterId, 'forceFirstStrike', { turns: 1 });
     StatusEffects.applyArmyStatus(targetId, 'apMult', { turns: 2, magnitude: 0.5 });
@@ -1615,6 +1684,20 @@ function resolveArmyBattle(id, opts) {
   }];
   let enemyDown = false, playerDown = false;
 
+  // 궁병 사거리(2칸) 지원 - 이 교전이 실제로 몇 칸 거리에서 붙었는지에 따라
+  // 인접칸에서만 반격 가능한 병종(보병/기병)은 반격을 못 할 수 있다.
+  // initiator는 "누가 다가가 붙었는지"로, 그쪽은 거리와 무관하게 항상 자기
+  // 몫의 공격이 나간다(다가갈 때 이미 자기 사거리 안으로 들어온 것이므로) -
+  // opts.initiator를 안 넘기는 옛 호출부는 전부 플레이어 쪽이 다가간 경우다.
+  const initiator = opts.initiator || 'player';
+  const playerType = unitTypeOf(army);
+  const enemyType = unitTypeOf(rd);
+  const engageDistance = tileDist(mapPosOf(playerKey), mapPosOf(id));
+  const playerRange = armyAttackRange(playerKey, army);
+  const enemyRange = armyAttackRange(id, rd);
+  const playerCanReach = initiator === 'player' || engageDistance <= playerRange;
+  const enemyCanReach = initiator === 'enemy' || engageDistance <= enemyRange;
+
   // 연환계로 묶인 군세끼리는 한쪽이 입는 피해의 일부를 나머지도 함께 입는다.
   function chainDamage(otherId, amount) {
     const other = ROSTER[otherId];
@@ -1629,7 +1712,10 @@ function resolveArmyBattle(id, opts) {
   // 적용한 다음, 병력에 실제로 반영되기 직전 마지막 관문으로 판정한다
   // (일기토가 아니라 군세간 [전투]이므로 이 순서가 맞다).
   function finalDamage(baseDmg, attackerId, defenderId) {
-    const withMult = Math.max(1, Math.round(baseDmg * StatusEffects.dmgDealtMult(attackerId) * StatusEffects.dmgTakenMult(defenderId)));
+    const attackerType = attackerId === playerKey ? playerType : enemyType;
+    const defenderType = attackerId === playerKey ? enemyType : playerType;
+    const typeMult = unitTypeDamageMult(attackerId, defenderId, attackerType, defenderType);
+    const withMult = Math.max(1, Math.round(baseDmg * StatusEffects.dmgDealtMult(attackerId) * StatusEffects.dmgTakenMult(defenderId) * typeMult));
     return StatusEffects.rollEvade(defenderId) ? 0 : withMult;
   }
 
@@ -1651,25 +1737,42 @@ function resolveArmyBattle(id, opts) {
     if (army.troop <= 0) playerDown = true;
   }
 
+  // 연노지휘(doubleAttack)는 궁병 군세에만 적용되며, 쓰이면 그 즉시 소모된다.
+  function strikeThenMaybeDouble(strikerId, strikeFn) {
+    strikeFn();
+    const strikerType = strikerId === playerKey ? playerType : enemyType;
+    const targetDown = strikerId === playerKey ? enemyDown : playerDown;
+    if (!targetDown && strikerType === 'archer' && StatusEffects.hasStatus(strikerId, 'doubleAttack')) {
+      StatusEffects.clearArmyStatus(strikerId, 'doubleAttack');
+      lines.push({ speaker: '내레이션', text: '연노의 지휘로 화살이 한 번 더 날아간다!' });
+      strikeFn();
+    }
+  }
+
   // 혼란에 걸린 쪽은 선타를 맞고도 반격하지 못한다. 매복(noCounter)은 그와
-  // 별개로 "다음 교전 1회"만 막는 것이라, 한 번 쓰이면 즉시 소모된다.
+  // 별개로 "다음 교전 1회"만 막는 것이고, 거리가 자기 사거리 밖이면(궁병에게
+  // 붙잡힌 보병/기병 등) 그와 별개로 아예 반격 자체가 불가능하다.
   if (playerFirst) {
-    playerStrikes();
+    if (playerCanReach) strikeThenMaybeDouble(playerKey, playerStrikes);
+    else lines.push({ speaker: '내레이션', text: `거리가 멀어 ${commanderName}군이 공격하지 못했다!` });
     if (!enemyDown) {
-      if (StatusEffects.isConfused(id)) lines.push({ speaker: '내레이션', text: `${rd.name}의 군세는 혼란에 빠져 반격하지 못했다!` });
+      if (!enemyCanReach) lines.push({ speaker: '내레이션', text: `거리가 멀어 ${rd.name}의 군세가 반격하지 못했다!` });
+      else if (StatusEffects.isConfused(id)) lines.push({ speaker: '내레이션', text: `${rd.name}의 군세는 혼란에 빠져 반격하지 못했다!` });
       else if (StatusEffects.hasStatus(id, 'noCounter')) {
         lines.push({ speaker: '내레이션', text: `매복에 당한 ${rd.name}의 군세가 반격하지 못했다!` });
         StatusEffects.clearArmyStatus(id, 'noCounter');
-      } else enemyStrikes();
+      } else strikeThenMaybeDouble(id, enemyStrikes);
     }
   } else {
-    enemyStrikes();
+    if (enemyCanReach) strikeThenMaybeDouble(id, enemyStrikes);
+    else lines.push({ speaker: '내레이션', text: `거리가 멀어 ${rd.name}의 군세가 공격하지 못했다!` });
     if (!playerDown) {
-      if (StatusEffects.isConfused(playerKey)) lines.push({ speaker: '내레이션', text: `${commanderName}군은 혼란에 빠져 반격하지 못했다!` });
+      if (!playerCanReach) lines.push({ speaker: '내레이션', text: `거리가 멀어 ${commanderName}군이 반격하지 못했다!` });
+      else if (StatusEffects.isConfused(playerKey)) lines.push({ speaker: '내레이션', text: `${commanderName}군은 혼란에 빠져 반격하지 못했다!` });
       else if (StatusEffects.hasStatus(playerKey, 'noCounter')) {
         lines.push({ speaker: '내레이션', text: `매복에 당한 ${commanderName}군이 반격하지 못했다!` });
         StatusEffects.clearArmyStatus(playerKey, 'noCounter');
-      } else playerStrikes();
+      } else strikeThenMaybeDouble(playerKey, playerStrikes);
     }
   }
 
@@ -2530,6 +2633,9 @@ function handleAllyEngage(allyId, targetId, remainingBudget) {
     }
     resolveArmyBattle(targetId, {
       freeAction: true,
+      // remainingBudget이 있으면(runAiTurn이 넘겨준 경우) 적이 다가와 붙은
+      // 것이고, 없으면(runAllyChases) 아군이 먼저 다가가 붙은 것이다.
+      initiator: remainingBudget != null ? 'enemy' : 'player',
       onComplete: (outcome) => {
         if (outcome.concluded) { activeCommanderId = prev; return; }
         attemptOnce(budgetLeft - ARMY_BATTLE_AP_COST);
@@ -3344,6 +3450,7 @@ function ensureEnemyRice(rd) {
 }
 
 let armySelectedGenerals = [];
+let armySelectedUnitType = 'infantry';
 let armySteppers = {};
 // 지금 편성 중인 군세가 누구 것인지(관우군/유비군)와, 이미 다른 군세에
 // 배정되어 이 군세에는 중복으로 넣을 수 없는 인물 목록을 담아둔다.
@@ -3390,6 +3497,30 @@ function renderArmyGenerals() {
         armySelectedGenerals.push(id);
       }
       renderArmyGenerals();
+      updateArmyPower();
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+// 병종 선택 칩 - 궁병/기병은 활/군마 보유량만큼만 편성 가능하므로, 고르는 즉시
+// 병사 스테퍼를 그 상한으로 다시 clamp해준다(활 2000개인데 궁병으로 바꾸면
+// 병사가 이미 2000명을 넘던 경우 자동으로 줄어드는 식).
+function renderArmyUnitTypes() {
+  const wrap = document.getElementById('army-unittype-list');
+  wrap.innerHTML = '';
+  ['infantry', 'archer', 'cavalry'].forEach((type) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'army-general-chip' + (armySelectedUnitType === type ? ' selected' : '');
+    let label = UNIT_TYPE_NAMES[type];
+    if (type === 'archer') label += ` (보유 활 ${GameState.resources.bow.toLocaleString()})`;
+    else if (type === 'cavalry') label += ` (보유 군마 ${GameState.resources.horse.toLocaleString()})`;
+    btn.textContent = label;
+    btn.onclick = () => {
+      armySelectedUnitType = type;
+      renderArmyUnitTypes();
+      if (armySteppers['army-troop']) armySteppers['army-troop'].set(armySteppers['army-troop'].get());
       updateArmyPower();
     };
     wrap.appendChild(btn);
@@ -3516,13 +3647,22 @@ function openArmyBox(onConfirm, opts) {
 
   armySelectedGenerals = [];
   renderArmyGenerals();
+  armySelectedUnitType = 'infantry';
+  renderArmyUnitTypes();
 
   const maxTroopByLead = armyMaxTroop(commanderRd);
+  // 궁병/기병 선택 시 병사 수는 "병사 보유량"뿐 아니라 활/군마 보유량으로도
+  // 상한이 걸린다(예: 병사 2만, 활 2000개면 궁병은 최대 2000명).
+  const troopCapByUnitType = () => {
+    if (armySelectedUnitType === 'archer') return GameState.resources.bow;
+    if (armySelectedUnitType === 'cavalry') return GameState.resources.horse;
+    return Infinity;
+  };
   const troopMax = Math.min(maxTroopByLead, GameState.resources.troop);
   document.getElementById('army-troop-max').textContent = troopMax;
   document.getElementById('army-rice-max').textContent = GameState.resources.rice.toLocaleString();
   armySteppers = {
-    'army-troop': makeArmyStepper('army-troop-value', 0, () => Math.min(maxTroopByLead, GameState.resources.troop), 100),
+    'army-troop': makeArmyStepper('army-troop-value', 0, () => Math.min(maxTroopByLead, GameState.resources.troop, troopCapByUnitType()), 100),
     'army-rice': makeArmyStepper('army-rice-value', 0, () => GameState.resources.rice, 1000),
   };
   armySteppers['army-troop'].set(troopMax);
@@ -3548,7 +3688,9 @@ function openArmyBox(onConfirm, opts) {
     const deputy = select.value || null;
     GameState.resources.troop -= troop;
     GameState.resources.rice -= rice;
-    GameState[targetField] = { commanderId, deputy, generals: armySelectedGenerals.slice(), troop, rice };
+    if (armySelectedUnitType === 'archer') GameState.resources.bow -= troop;
+    else if (armySelectedUnitType === 'cavalry') GameState.resources.horse -= troop;
+    GameState[targetField] = { commanderId, deputy, generals: armySelectedGenerals.slice(), troop, rice, unitType: armySelectedUnitType };
     if (targetField === 'army') {
       GameState.morale = 100; // 출정시 사기 초기화 (유비군 등 보조 군세는 별도 사기를 추적하지 않는다)
       GameState.capturedCommanders = [];

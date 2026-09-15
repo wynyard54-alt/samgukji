@@ -812,8 +812,10 @@ const MapView = (function () {
     if (map.apMovement) {
       // 적 AI 행동력(computeAiPath)과 동일한 moveCostMult 배율을 플레이어
       // 이동에도 적용한다 - 나중에 적 책사가 플레이어 쪽에 이 디버프를
-      // 걸어도(반대로) 같은 함수로 처리되도록.
-      const cost = tileMoveCost(nx,ny) * (activeArmy ? StatusEffects.moveCostMult(activeArmy.commanderId) : 1);
+      // 걸어도(반대로) 같은 함수로 처리되도록. 기병(unitTypeMoveCostMult)도
+      // 같은 자리에서 곱해 2행동력에 3칸을 갈 수 있게 한다.
+      const unitCostMult = (activeArmy && typeof unitTypeMoveCostMult === 'function') ? unitTypeMoveCostMult(activeArmy.commanderId) : 1;
+      const cost = tileMoveCost(nx,ny) * (activeArmy ? StatusEffects.moveCostMult(activeArmy.commanderId) : 1) * unitCostMult;
       // 유비군 차례(controlledId 있음)에는 관우군과 별개인 allyAp 예산을 쓴다 -
       // 그래야 관우가 이번 라운드에 쓴 행동력과 무관하게 유비군도 자기 몫을 쓸 수 있다.
       const spent = controlledId ? GameState.spendAllyAP(cost) : GameState.spendAP(cost);
@@ -855,9 +857,18 @@ const MapView = (function () {
     const dirs = player.dir==='up' ? [[0,-1],[-1,0],[1,0],[0,1]] :
       player.dir==='down' ? [[0,1],[-1,0],[1,0],[0,-1]] :
       player.dir==='left' ? [[-1,0],[0,-1],[0,1],[1,0]] : [[1,0],[0,-1],[0,1],[-1,0]];
+    // 궁병 군세(또는 벽력거/야습으로 사거리가 늘어난 상태)면 정면 여러 칸까지
+    // 훑어 적을 찾는다 - 진짜로 편성된 군세(관우군/유비군)일 때만 보병 1칸을
+    // 넘어서고, 그 외(마을 npc와 대화 등)에는 항상 인접 1칸만 본다.
+    const facingId = controlledId || GameState.mainHero;
+    const facingArmy = facingId === GameState.mainHero ? GameState.army
+      : (GameState.allyArmy && GameState.allyArmy.commanderId === facingId ? GameState.allyArmy : null);
+    const range = (facingArmy && typeof armyAttackRange === 'function') ? armyAttackRange(facingId, facingArmy) : 1;
     for (const [dx,dy] of dirs) {
-      const npc=npcAt(player.x+dx,player.y+dy);
-      if(npc){interact(npc,false);return;}
+      for (let r = 1; r <= range; r++) {
+        const npc = npcAt(player.x+dx*r, player.y+dy*r);
+        if (npc) { interact(npc,false); return; }
+      }
     }
     for (const ev of ambientEvents) {
       const p = crowd[ev.index];
@@ -990,17 +1001,22 @@ const MapView = (function () {
   // target 생략시(기존 호출부 전부) 플레이어를 쫓는다. 회남 벌판의 유비군처럼
   // 아군이 다른 NPC(교유)를 목표로 접근할 때는 target에 그 NPC를 넘긴다 -
   // player든 일반 npc든 {x,y}만 있으면 되므로 그대로 재사용 가능하다.
-  function computeAiPath(n0, target, moveBudget) {
+  // range: 이 유닛(n0)이 목표까지 몇 칸 안에 들어오면 멈추고 공격 태세로
+  // 전환할지 - 보병/기병은 1(인접), 궁병은 2(main.js armyAttackRange가 정함).
+  // 생략하면 기존처럼 인접(1)까지 다가간다.
+  function computeAiPath(n0, target, moveBudget, range) {
     target = target || player;
+    range = range || 1;
     const path = [];
     const apScale = StatusEffects.apMult(n0.id);
-    const costScale = StatusEffects.moveCostMult(n0.id);
+    const unitCostMult = (typeof unitTypeMoveCostMult === 'function') ? unitTypeMoveCostMult(n0.id) : 1;
+    const costScale = StatusEffects.moveCostMult(n0.id) * unitCostMult;
     const budget = moveBudget != null ? moveBudget : AI_MOVE_BUDGET;
     let cx = n0.x, cy = n0.y, steps = Math.max(0, Math.floor(budget * apScale));
-    if (Math.abs(cx-target.x)+Math.abs(cy-target.y) <= 1) return path; // 이미 사거리 - 이동 없이 대기 후 공격
+    if (Math.abs(cx-target.x)+Math.abs(cy-target.y) <= range) return path; // 이미 사거리 - 이동 없이 대기 후 공격
     while (steps > 0) {
       const dist = Math.abs(cx-target.x)+Math.abs(cy-target.y);
-      if (dist <= 1) break;
+      if (dist <= range) break;
       const dx = Math.sign(target.x-cx), dy = Math.sign(target.y-cy);
       const preferX = Math.abs(target.x-cx) >= Math.abs(target.y-cy);
       const options = preferX ? [[dx,0],[0,dy]] : [[0,dy],[dx,0]];
@@ -1084,13 +1100,18 @@ const MapView = (function () {
 
     // 계획 단계: 기존처럼 한 명씩 실제 위치를 옮겨가며 서로 겹치지 않는 경로를 계산한 뒤,
     // 다시 시작 위치로 되돌려 전원이 동시에 애니메이션되도록 한다.
-    const plans = hostiles.map((n0) => ({ n0, startX: n0.x, startY: n0.y, path: [], target: pickAiTarget(n0), apUsed: 0 }));
+    const plans = hostiles.map((n0) => ({
+      n0, startX: n0.x, startY: n0.y, path: [], target: pickAiTarget(n0), apUsed: 0,
+      // 궁병이면 사거리 2에서 멈춰 화살을 쏘고, 그 외(보병/기병)는 기존처럼 인접(1)까지 다가간다.
+      range: (typeof armyAttackRange === 'function' && typeof armyFor === 'function') ? armyAttackRange(n0.id, armyFor(n0.id)) : 1,
+    }));
     for (const plan of plans) {
       // 혼란에 빠진 군세는 제자리에서 움직이지 못한다(이미 인접해 있었다면 공격은 그대로 발동).
-      plan.path = StatusEffects.isConfused(plan.n0.id) ? [] : computeAiPath(plan.n0, plan.target, moveBudget);
+      plan.path = StatusEffects.isConfused(plan.n0.id) ? [] : computeAiPath(plan.n0, plan.target, moveBudget, plan.range);
       if (plan.path.length) {
         const last = plan.path[plan.path.length - 1]; plan.n0.x = last.x; plan.n0.y = last.y;
-        const costScale = StatusEffects.moveCostMult(plan.n0.id);
+        const unitCostMult = (typeof unitTypeMoveCostMult === 'function') ? unitTypeMoveCostMult(plan.n0.id) : 1;
+        const costScale = StatusEffects.moveCostMult(plan.n0.id) * unitCostMult;
         plan.apUsed = plan.path.reduce((sum, tile) => sum + tileMoveCost(tile.x, tile.y) * costScale, 0);
       }
       // 견벽거수처럼 "이동하면 사기 감소" 디버프가 걸려 있으면, 실제로 움직인
@@ -1103,9 +1124,9 @@ const MapView = (function () {
 
     const finishTurn = () => {
       let engaged = false, meta = null;
-      for (const { n0, target, apUsed } of plans) {
+      for (const { n0, target, apUsed, range } of plans) {
         const n = effectiveNpc(n0);
-        if (Math.abs(n.x-target.x)+Math.abs(n.y-target.y) !== 1) continue;
+        if (Math.abs(n.x-target.x)+Math.abs(n.y-target.y) > range) continue;
         const isMainHero = target.id === GameState.mainHero;
         // 이 활성화에서 이동하고 남은 행동력 - 상대가 관우든 유비군이든, 이
         // 교전에 쓸 수 있는 예산은 결국 "적이 이번 턴에 남긴 몫"으로 똑같다.
@@ -1168,16 +1189,17 @@ const MapView = (function () {
       const allyNpc = liveNpcs.find((n) => n.id === allyId);
       const targetNpc = liveNpcs.find((n) => n.id === targetId);
       const startX = allyNpc.x, startY = allyNpc.y;
-      const path = StatusEffects.isConfused(allyId) ? [] : computeAiPath(allyNpc, targetNpc);
+      const range = (typeof armyAttackRange === 'function' && typeof armyFor === 'function') ? armyAttackRange(allyId, armyFor(allyId)) : 1;
+      const path = StatusEffects.isConfused(allyId) ? [] : computeAiPath(allyNpc, targetNpc, null, range);
       if (path.length) { const last = path[path.length - 1]; allyNpc.x = last.x; allyNpc.y = last.y; }
       allyNpc.x = startX; allyNpc.y = startY;
-      return { allyId, targetId, allyNpc, targetNpc, path };
+      return { allyId, targetId, allyNpc, targetNpc, path, range };
     });
     render();
 
     const finishChase = () => {
-      for (const { allyId, targetId, allyNpc, targetNpc } of plans) {
-        if (Math.abs(allyNpc.x-targetNpc.x)+Math.abs(allyNpc.y-targetNpc.y) === 1) {
+      for (const { allyId, targetId, allyNpc, targetNpc, range } of plans) {
+        if (Math.abs(allyNpc.x-targetNpc.x)+Math.abs(allyNpc.y-targetNpc.y) <= range) {
           if (onAllyEngage) onAllyEngage(allyId, targetId);
           done(true);
           return; // 한 번에 한 전투만 발동(적 AI와 동일한 규칙)
