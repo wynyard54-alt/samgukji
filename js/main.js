@@ -1218,6 +1218,17 @@ function tileDist(a, b) {
 function tileChebyshev(a, b) {
   return (a && b) ? Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) : Infinity;
 }
+// 실제 "사거리 안"인지 최종 판정 - 체스판 거리(tileChebyshev)만 쓰면 궁병
+// 사거리(2)가 정사각형 5x5 전체(먼 대각선 모서리, 즉 대각선으로 2칸씩
+// 떨어진 칸까지)로 넓어져 버린다. 원하는 모양은 "인접 8칸(대각선 포함)은
+// 병종 상관없이 항상 사거리 안 + 그 밖은 기존 맨해튼 거리로 range 이내"인
+// 마름모꼴이라, 그 둘을 OR로 합친다. range=1(보병/기병)일 때는 이 OR가
+// 곧 "인접 8칸"과 같아져 대각선 인접칸 문제가 풀리고, range=2 이상일
+// 때는 맨해튼 조건이 이미 인접 8칸을 포함하므로 앞의 OR절이 사실상
+// 아무것도 더 넓히지 않는다.
+function inAttackRange(a, b, range) {
+  return tileChebyshev(a, b) <= 1 || tileDist(a, b) <= range;
+}
 // npcMapPos(id)는 지도 npc 목록에서만 찾으므로 문자 그대로의 조작 캐릭터
 // (관우)는 못 찾는다 - 그쪽은 MapView.playerPos를 따로 봐야 한다. 궁병
 // 사거리 판정(resolveArmyBattle)처럼 "관우군이든 유비군이든" 위치가
@@ -1791,11 +1802,12 @@ function resolveArmyBattle(id, opts) {
   const initiator = opts.initiator || 'player';
   const playerType = unitTypeOf(army);
   const enemyType = unitTypeOf(rd);
-  const engageDistance = tileChebyshev(mapPosOf(playerKey), mapPosOf(id));
+  const playerPos = mapPosOf(playerKey);
+  const enemyPos = mapPosOf(id);
   const playerRange = armyAttackRange(playerKey, army);
   const enemyRange = armyAttackRange(id, rd);
-  const playerCanReach = initiator === 'player' || engageDistance <= playerRange;
-  const enemyCanReach = initiator === 'enemy' || engageDistance <= enemyRange;
+  const playerCanReach = initiator === 'player' || inAttackRange(playerPos, enemyPos, playerRange);
+  const enemyCanReach = initiator === 'enemy' || inAttackRange(playerPos, enemyPos, enemyRange);
 
   // 연환계로 묶인 군세끼리는 한쪽이 입는 피해의 일부를 나머지도 함께 입는다.
   function chainDamage(otherId, amount) {

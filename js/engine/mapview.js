@@ -1020,14 +1020,16 @@ const MapView = (function () {
     const costScale = StatusEffects.moveCostMult(n0.id) * unitCostMult;
     const budget = moveBudget != null ? moveBudget : AI_MOVE_BUDGET;
     let cx = n0.x, cy = n0.y, steps = Math.max(0, Math.floor(budget * apScale));
-    // 사거리 판정은 대각선 한 칸을 "거리 1"로 보는 체스판 거리(tileChebyshev)를
-    // 쓴다 - 맨해튼 거리(가로+세로)를 쓰면 대각선으로 붙은 칸이 실제로는
-    // 가까운데도 사거리 밖으로 잘못 계산된다. 다만 실제로 몇 칸을 "걸어야"
-    // 하는지(이동 소모량)는 이동이 4방향뿐이라 여전히 맨해튼 거리가 맞다.
-    if (tileChebyshev({ x: cx, y: cy }, target) <= range) return path; // 이미 사거리 - 이동 없이 대기 후 공격
+    // 사거리 판정은 inAttackRange를 쓴다 - 대각선으로 붙은 8칸은 병종
+    // 상관없이 항상 사거리 안(맨해튼 거리만 쓰면 대각선 인접칸이 실제로는
+    // 가까운데도 사거리 밖으로 잘못 계산된다)이고, 그 밖은 맨해튼 거리로
+    // range 이내인 마름모꼴 - 체스판 거리만 쓰면 사거리 2가 대각선 먼
+    // 모서리까지 포함한 5x5 정사각형이 되어버려 의도한 모양보다 넓어진다.
+    // 다만 실제로 몇 칸을 "걸어야" 하는지(이동 소모량)는 이동이 4방향뿐이라
+    // 여전히 맨해튼 거리가 맞다.
+    if (inAttackRange({ x: cx, y: cy }, target, range)) return path; // 이미 사거리 - 이동 없이 대기 후 공격
     while (steps > 0) {
-      const dist = tileChebyshev({ x: cx, y: cy }, target);
-      if (dist <= range) break;
+      if (inAttackRange({ x: cx, y: cy }, target, range)) break;
       const dx = Math.sign(target.x-cx), dy = Math.sign(target.y-cy);
       const preferX = Math.abs(target.x-cx) >= Math.abs(target.y-cy);
       const options = preferX ? [[dx,0],[0,dy]] : [[0,dy],[dx,0]];
@@ -1137,7 +1139,7 @@ const MapView = (function () {
       let engaged = false, meta = null;
       for (const { n0, target, apUsed, range } of plans) {
         const n = effectiveNpc(n0);
-        if (tileChebyshev(n, target) > range) continue;
+        if (!inAttackRange(n, target, range)) continue;
         const isMainHero = target.id === GameState.mainHero;
         // 이 활성화에서 이동하고 남은 행동력 - 상대가 관우든 유비군이든, 이
         // 교전에 쓸 수 있는 예산은 결국 "적이 이번 턴에 남긴 몫"으로 똑같다.
@@ -1210,7 +1212,7 @@ const MapView = (function () {
 
     const finishChase = () => {
       for (const { allyId, targetId, allyNpc, targetNpc, range } of plans) {
-        if (tileChebyshev(allyNpc, targetNpc) <= range) {
+        if (inAttackRange(allyNpc, targetNpc, range)) {
           if (onAllyEngage) onAllyEngage(allyId, targetId);
           done(true);
           return; // 한 번에 한 전투만 발동(적 AI와 동일한 규칙)
@@ -1265,10 +1267,10 @@ const MapView = (function () {
     // 궁병처럼 사거리가 1보다 넓은 군세는 인접칸이 아니어도(사거리 안이기만
     // 하면) 적을 클릭해서 바로 교전 메뉴를 띄울 수 있어야 한다 - 안 그러면
     // "붙어야만 공격 커맨드가 뜨는" 예전 문제가 그대로 남는다. 거리 판정은
-    // tileChebyshev(체스판 거리)를 써서, 대각선으로 붙은 칸도 실제 가까운
-    // 만큼 사거리 안으로 잡히게 한다(맨해튼 거리를 쓰면 대각선 한 칸이
-    // 거리 2로 계산돼 사거리 밖으로 잘못 밀려난다).
-    if(npc && mover && tileChebyshev(npc, mover)<=controlledArmyRange())interact(npc,false);
+    // inAttackRange를 써서, 대각선으로 붙은 8칸은 항상 사거리 안(맨해튼
+    // 거리만 쓰면 대각선 인접칸이 사거리 밖으로 잘못 밀려난다)이면서도
+    // 사거리 2가 대각선 먼 모서리까지 정사각형으로 넓어지지는 않게 한다.
+    if(npc && mover && inAttackRange(npc, mover, controlledArmyRange()))interact(npc,false);
   });
 
   // 회수평야 탈출씬처럼 "특정 npc(유비군 등)가 목적지에 도착했는지"를
