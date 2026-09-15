@@ -381,11 +381,14 @@ const MapView = (function () {
     const range = controlledArmyRange();
     if (range <= 0) return;
     // 흙길 지형이 이미 노란빛이라 노란/갈색 계열 반투명은 거의 안 보였다 -
-    // 지형에 잘 안 섞이는 하늘색 계열로 채우고, 타일마다 진한 테두리를 더해
-    // 배경이 무슨 색이든(어두운 숲/밝은 흙길 등) 항상 뚜렷이 구분되게 한다.
-    ctx.fillStyle = 'rgba(64, 200, 255, 0.38)';
-    ctx.strokeStyle = 'rgba(20, 130, 210, 0.9)';
-    ctx.lineWidth = 2;
+    // 지형에 잘 안 섞이는 하늘색 계열로 채우고, 타일마다 얇은 테두리를 더해
+    // 배경이 무슨 색이든(어두운 숲/밝은 흙길 등) 구분은 되게 하되, 처음
+    // 진단용으로 넣었을 때의 진하고 눈에 확 띄는 색(불투명도 0.38 채움 +
+    // 굵은 2px 테두리)은 실제 UI로 계속 쓰기엔 촌스럽다는 피드백을 받아
+    // 옅고 은은하게 낮췄다.
+    ctx.fillStyle = 'rgba(120, 205, 245, 0.16)';
+    ctx.strokeStyle = 'rgba(90, 180, 225, 0.4)';
+    ctx.lineWidth = 1;
     for (let dy = -range; dy <= range; dy++) {
       for (let dx = -range; dx <= range; dx++) {
         if (dx === 0 && dy === 0) continue;
