@@ -852,6 +852,18 @@ const MapView = (function () {
     onInteract(npc.id,{ firstDiscovery, discoveryText:npc.discoveryText||'', proximity:!!proximity, atResidence:!!npc._atResidence, ...(meta||{}) });
   }
 
+  // 지금 조작 중인 대상(player 또는 controlledId)이 실제로 편성된 군세
+  // (관우군/유비군)라면 그 군세의 공격 사거리(궁병 2칸, 벽력거/야습 등으로
+  // 임시로 늘어난 경우 포함)를, 아니면(마을 npc와 대화 등) 1칸을 돌려준다.
+  // interactFacing(정면 상호작용)과 canvas 클릭 판정이 똑같이 이 값을 써야
+  // "붙지 않으면 궁병 사거리가 있으나 마나"인 문제가 안 생긴다.
+  function controlledArmyRange() {
+    const facingId = controlledId || GameState.mainHero;
+    const facingArmy = facingId === GameState.mainHero ? GameState.army
+      : (GameState.allyArmy && GameState.allyArmy.commanderId === facingId ? GameState.allyArmy : null);
+    return (facingArmy && typeof armyAttackRange === 'function') ? armyAttackRange(facingId, facingArmy) : 1;
+  }
+
   function interactFacing() {
     if (movementLocked) return;
     const dirs = player.dir==='up' ? [[0,-1],[-1,0],[1,0],[0,1]] :
@@ -860,10 +872,7 @@ const MapView = (function () {
     // 궁병 군세(또는 벽력거/야습으로 사거리가 늘어난 상태)면 정면 여러 칸까지
     // 훑어 적을 찾는다 - 진짜로 편성된 군세(관우군/유비군)일 때만 보병 1칸을
     // 넘어서고, 그 외(마을 npc와 대화 등)에는 항상 인접 1칸만 본다.
-    const facingId = controlledId || GameState.mainHero;
-    const facingArmy = facingId === GameState.mainHero ? GameState.army
-      : (GameState.allyArmy && GameState.allyArmy.commanderId === facingId ? GameState.allyArmy : null);
-    const range = (facingArmy && typeof armyAttackRange === 'function') ? armyAttackRange(facingId, facingArmy) : 1;
+    const range = controlledArmyRange();
     for (const [dx,dy] of dirs) {
       for (let r = 1; r <= range; r++) {
         const npc = npcAt(player.x+dx*r, player.y+dy*r);
@@ -1251,7 +1260,10 @@ const MapView = (function () {
     const x=Math.floor(wx/TILE), y=Math.floor(wy/TILE);
     const npc=npcAt(x,y);
     const mover=activeMover();
-    if(npc && mover && Math.abs(npc.x-mover.x)+Math.abs(npc.y-mover.y)===1)interact(npc,false);
+    // 궁병처럼 사거리가 1보다 넓은 군세는 인접칸이 아니어도(사거리 안이기만
+    // 하면) 적을 클릭해서 바로 교전 메뉴를 띄울 수 있어야 한다 - 안 그러면
+    // "붙어야만 공격 커맨드가 뜨는" 예전 문제가 그대로 남는다.
+    if(npc && mover && Math.abs(npc.x-mover.x)+Math.abs(npc.y-mover.y)<=controlledArmyRange())interact(npc,false);
   });
 
   // 회수평야 탈출씬처럼 "특정 npc(유비군 등)가 목적지에 도착했는지"를
