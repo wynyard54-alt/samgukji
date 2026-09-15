@@ -1209,6 +1209,15 @@ function npcMapPos(id) {
 function tileDist(a, b) {
   return (a && b) ? Math.abs(a.x - b.x) + Math.abs(a.y - b.y) : Infinity;
 }
+// 사거리(공격 가능 거리) 판정 전용 - 대각선으로 1칸 떨어진 칸은 맨해튼
+// 거리로는 2(가로1+세로1)지만 실제로는 대각선 한 칸(체스판 거리로 1)일
+// 뿐이라, tileDist를 그대로 쓰면 궁병 사거리(2) 판정에서 대각선 인접칸이
+// "이미 사거리 끝"으로 잘못 계산된다. 이동 경로/소모량(computeAiPath의
+// 실제 타일 이동 비용 등)은 여전히 tileDist(맨해튼)를 써야 맞다 - 이동은
+// 4방향뿐이라 대각선 한 칸을 가려면 실제로 두 칸을 걸어야 하기 때문이다.
+function tileChebyshev(a, b) {
+  return (a && b) ? Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y)) : Infinity;
+}
 // npcMapPos(id)는 지도 npc 목록에서만 찾으므로 문자 그대로의 조작 캐릭터
 // (관우)는 못 찾는다 - 그쪽은 MapView.playerPos를 따로 봐야 한다. 궁병
 // 사거리 판정(resolveArmyBattle)처럼 "관우군이든 유비군이든" 위치가
@@ -1782,7 +1791,7 @@ function resolveArmyBattle(id, opts) {
   const initiator = opts.initiator || 'player';
   const playerType = unitTypeOf(army);
   const enemyType = unitTypeOf(rd);
-  const engageDistance = tileDist(mapPosOf(playerKey), mapPosOf(id));
+  const engageDistance = tileChebyshev(mapPosOf(playerKey), mapPosOf(id));
   const playerRange = armyAttackRange(playerKey, army);
   const enemyRange = armyAttackRange(id, rd);
   const playerCanReach = initiator === 'player' || engageDistance <= playerRange;
