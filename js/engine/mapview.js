@@ -1364,13 +1364,19 @@ const MapView = (function () {
     const x=Math.floor(wx/TILE), y=Math.floor(wy/TILE);
     const npc=npcAt(x,y) || npcAtLabel(wx,wy);
     const mover=activeMover();
+    const range=controlledArmyRange();
+    const inRange = !!(npc && mover && inAttackRange(npc, mover, range));
+    // touchend/click 이벤트 자체는 도달하는데 판정이 왜 실패하는지 눈으로
+    // 볼 수 있게, 실제로 계산된 타일/찾은 npc/사거리 판정 결과까지 로그에
+    // 남긴다 - 원인이 확정되면 이 호출도 함께 지운다.
+    logCanvasTapDebug(rect, x, y, npc, mover, range, inRange);
     // 궁병처럼 사거리가 1보다 넓은 군세는 인접칸이 아니어도(사거리 안이기만
     // 하면) 적을 클릭해서 바로 교전 메뉴를 띄울 수 있어야 한다 - 안 그러면
     // "붙어야만 공격 커맨드가 뜨는" 예전 문제가 그대로 남는다. 거리 판정은
     // inAttackRange를 써서, 대각선으로 붙은 8칸은 항상 사거리 안(맨해튼
     // 거리만 쓰면 대각선 인접칸이 사거리 밖으로 잘못 밀려난다)이면서도
     // 사거리 2가 대각선 먼 모서리까지 정사각형으로 넓어지지는 않게 한다.
-    if(npc && mover && inAttackRange(npc, mover, controlledArmyRange())){interact(npc,false);return;}
+    if(inRange){interact(npc,false);return;}
     // 적이 아니라 지금 조작 중인 문자 그대로의 플레이어(관우) 자신을 클릭해도
     // 책략만 바로 쓸 수 있게 한다(의병모집처럼 아군 대상 책략은 적과 붙어있을
     // 필요가 없다) - 유비처럼 실제 npc가 있는 경우는 위 분기에서 이미 자기
@@ -1403,6 +1409,20 @@ const MapView = (function () {
     const prev = touchDebugEl.textContent ? touchDebugEl.textContent.split('\n').slice(0, 4) : [];
     touchDebugEl.textContent = [line, ...prev].join('\n');
   }
+  // handleCanvasTap이 실제로 계산해낸 결과(타일 좌표/찾은 npc/사거리
+  // 판정)까지 같은 로그에 보태 찍는다 - touchend는 도달하는데 왜 아무
+  // 일도 안 일어나는지, 엉뚱한 타일을 짚는 건지 사거리 판정이 실패하는
+  // 건지를 구분하는 용도다.
+  function logCanvasTapDebug(rect, tileX, tileY, npc, mover, range, inRange) {
+    if (!touchDebugEl) return;
+    const rectStr = `rect ${Math.round(rect.width)}x${Math.round(rect.height)}`;
+    const npcStr = npc ? npc.id : '없음';
+    const moverStr = mover ? `(${mover.x},${mover.y})` : '없음';
+    const line = `→tile(${tileX},${tileY}) npc=${npcStr} mover=${moverStr} r=${range} 판정=${inRange}`;
+    const prev = touchDebugEl.textContent ? touchDebugEl.textContent.split('\n').slice(0, 5) : [];
+    touchDebugEl.textContent = [line, rectStr, ...prev].join('\n');
+  }
+
   canvas.addEventListener('touchstart', (ev) => {
     const t = ev.touches[0];
     if (t) logTouchDebug('touchstart', t.clientX, t.clientY);
