@@ -1389,10 +1389,6 @@ const MapView = (function () {
     const mover=activeMover();
     const range=controlledArmyRange();
     const inRange = !!(npc && mover && inAttackRange(npc, mover, range));
-    // touchend/click 이벤트 자체는 도달하는데 판정이 왜 실패하는지 눈으로
-    // 볼 수 있게, 실제로 계산된 타일/찾은 npc/사거리 판정 결과까지 로그에
-    // 남긴다 - 원인이 확정되면 이 호출도 함께 지운다.
-    logCanvasTapDebug(rect, x, y, npc, mover, range, inRange);
     // 궁병처럼 사거리가 1보다 넓은 군세는 인접칸이 아니어도(사거리 안이기만
     // 하면) 적을 클릭해서 바로 교전 메뉴를 띄울 수 있어야 한다 - 안 그러면
     // "붙어야만 공격 커맨드가 뜨는" 예전 문제가 그대로 남는다. 거리 판정은
@@ -1418,55 +1414,15 @@ const MapView = (function () {
   // 시간 잠금으로 중복 처리되지 않게 막는다.
   let lastTouchTapAt = 0;
 
-  // 캔버스를 눌러도 "완전히 무반응"이라는 제보가 이어지는데, 실기기에
-  // 원격 디버거를 연결할 방법이 없어 touchstart/touchend/click 중
-  // 어디까지 실제로 도달하는지조차 알 수 없었다 - 화면에 직접 최근
-  // 이벤트 로그를 몇 줄 찍어서, 다음에 또 안 눌릴 때 그 화면을 캡처해
-  // 보내주면 "터치 자체가 캔버스에 안 닿는 건지" "닿긴 하는데 판정이
-  // 틀린 건지"를 바로 구분할 수 있게 하는 임시 진단 도구다. 원인이
-  // 확정되면 지운다.
-  const touchDebugEl = document.getElementById('touch-debug-log');
-  function logTouchDebug(label, clientX, clientY) {
-    if (!touchDebugEl) return;
-    const line = `${label} (${Math.round(clientX)},${Math.round(clientY)})`;
-    const prev = touchDebugEl.textContent ? touchDebugEl.textContent.split('\n').slice(0, 4) : [];
-    touchDebugEl.textContent = [line, ...prev].join('\n');
-  }
-  // handleCanvasTap이 실제로 계산해낸 결과(타일 좌표/찾은 npc/사거리
-  // 판정)까지 같은 로그에 보태 찍는다 - touchend는 도달하는데 왜 아무
-  // 일도 안 일어나는지, 엉뚱한 타일을 짚는 건지 사거리 판정이 실패하는
-  // 건지를 구분하는 용도다.
-  function logCanvasTapDebug(rect, tileX, tileY, npc, mover, range, inRange) {
-    if (!touchDebugEl) return;
-    const rectStr = `rect ${Math.round(rect.width)}x${Math.round(rect.height)}`;
-    const npcStr = npc ? npc.id : '없음';
-    const moverStr = mover ? `(${mover.x},${mover.y})` : '없음';
-    const line = `→tile(${tileX},${tileY}) npc=${npcStr} mover=${moverStr} r=${range} 판정=${inRange}`;
-    const prev = touchDebugEl.textContent ? touchDebugEl.textContent.split('\n').slice(0, 5) : [];
-    touchDebugEl.textContent = [line, rectStr, ...prev].join('\n');
-  }
-
-  canvas.addEventListener('touchstart', (ev) => {
-    const t = ev.touches[0];
-    if (t) logTouchDebug('touchstart', t.clientX, t.clientY);
-  }, { passive: true });
-
   canvas.addEventListener('touchend', (ev) => {
     if (ev.changedTouches.length !== 1) return; // 멀티터치(핀치 등)는 탭으로 보지 않는다
     ev.preventDefault();
     lastTouchTapAt = performance.now();
     const t = ev.changedTouches[0];
-    logTouchDebug('touchend', t.clientX, t.clientY);
     handleCanvasTap(t.clientX, t.clientY);
   }, { passive: false });
 
-  canvas.addEventListener('touchcancel', (ev) => {
-    const t = ev.changedTouches[0];
-    if (t) logTouchDebug('touchcancel', t.clientX, t.clientY);
-  }, { passive: true });
-
   canvas.addEventListener('click', (ev) => {
-    logTouchDebug('click', ev.clientX, ev.clientY);
     if (performance.now() - lastTouchTapAt < 500) return; // 방금 터치로 이미 처리한 탭의 유령 클릭
     handleCanvasTap(ev.clientX, ev.clientY);
   });
