@@ -1356,11 +1356,31 @@ const MapView = (function () {
     return null;
   }
 
+  // css/style.css의 회전 규칙(body{transform:rotate(90deg)})이 걸려 있으면
+  // canvas.getBoundingClientRect()가 돌려주는 rect는 이미 회전이 적용된
+  // "화면에 보이는 그대로"의 값이라, rect.width는 캔버스 내부 세로
+  // 해상도(camera.h)에 대응하고 rect.height는 내부 가로 해상도(camera.w)에
+  // 대응한다 - 그리고 clientX는 캔버스 내부 y축, clientY는 내부 x축에
+  // (부호까지 바뀌어) 대응한다. 이전에는 회전이 없을 때와 똑같이
+  // clientX↔내부x, clientY↔내부y로 그대로 계산했는데, 실기기 스크린샷에
+  // "보이는 범위 안인데 하나도 안 눌린다"는 제보가 계속돼 실제로 캔버스에
+  // 알려진 위치에 색칠한 사각형을 그려두고 스크린샷 픽셀을 직접 검사해
+  // 봤더니, 이 축 자체가 뒤바뀌어 있었다(이전에 "회전 좌표 계산을
+  // 검증했다"고 한 테스트는 이 핸들러가 계산한 좌표를 그대로 역산해서
+  // 되돌리는 자기 자신과의 비교였을 뿐, 실제 렌더링된 화면과는 한 번도
+  // 대조해본 적이 없었다 - 그래서 틀린 걸 못 잡았다). 아래 공식이 그
+  // 픽셀 검증으로 확인한 올바른 역변환이다.
   function handleCanvasTap(clientX, clientY) {
     const rect=canvas.getBoundingClientRect();
-    const sx=canvas.width/rect.width, sy=canvas.height/rect.height;
-    const wx=((clientX-rect.left)*sx)+camera.x;
-    const wy=((clientY-rect.top)*sy)+camera.y;
+    let wx, wy;
+    if (isRotatedPresentation()) {
+      wx = (clientY - rect.top) * (canvas.width / rect.height) + camera.x;
+      wy = (rect.right - clientX) * (canvas.height / rect.width) + camera.y;
+    } else {
+      const sx=canvas.width/rect.width, sy=canvas.height/rect.height;
+      wx = (clientX-rect.left)*sx + camera.x;
+      wy = (clientY-rect.top)*sy + camera.y;
+    }
     const x=Math.floor(wx/TILE), y=Math.floor(wy/TILE);
     const npc=npcAt(x,y) || npcAtLabel(wx,wy);
     const mover=activeMover();
