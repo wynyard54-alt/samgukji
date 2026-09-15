@@ -351,6 +351,36 @@ const MapView = (function () {
     return TILE_ROUGH[tile] ? 2 : 1;
   }
 
+  // 사거리가 "말로는 맞는데 실제로 눌러보면 안 된다"는 혼선이 반복돼서,
+  // 지금 조작 중인 유닛의 실제 공격 가능 범위를 반투명 타일로 화면에 직접
+  // 그려준다 - 클릭 판정(handleCanvasTap)과 정확히 같은 controlledArmyRange/
+  // inAttackRange를 쓰므로, 여기 칠해진 칸과 실제로 클릭했을 때 반응하는
+  // 칸이 어긋날 수가 없다(하나가 달라 보이면 그 자체가 진짜 버그를 잡을
+  // 단서가 된다). 이동에 행동력을 쓰는 전쟁 지도(apMovement)에서만 표시한다.
+  function drawAttackRangeOverlay() {
+    if (!map.apMovement) return;
+    const mover = activeMover();
+    if (!mover) return;
+    const range = controlledArmyRange();
+    if (range <= 0) return;
+    // 흙길 지형이 이미 노란빛이라 노란/갈색 계열 반투명은 거의 안 보였다 -
+    // 지형에 잘 안 섞이는 하늘색 계열로 채우고, 타일마다 진한 테두리를 더해
+    // 배경이 무슨 색이든(어두운 숲/밝은 흙길 등) 항상 뚜렷이 구분되게 한다.
+    ctx.fillStyle = 'rgba(64, 200, 255, 0.38)';
+    ctx.strokeStyle = 'rgba(20, 130, 210, 0.9)';
+    ctx.lineWidth = 2;
+    for (let dy = -range; dy <= range; dy++) {
+      for (let dx = -range; dx <= range; dx++) {
+        if (dx === 0 && dy === 0) continue;
+        const tx = mover.x + dx, ty = mover.y + dy;
+        if (tx < 0 || ty < 0 || tx >= map.width || ty >= map.height) continue;
+        if (!inAttackRange(mover, { x: tx, y: ty }, range)) continue;
+        ctx.fillRect(worldX(tx), worldY(ty), TILE, TILE);
+        ctx.strokeRect(worldX(tx) + 1, worldY(ty) + 1, TILE - 2, TILE - 2);
+      }
+    }
+  }
+
   function render() {
     if (!map) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -362,6 +392,7 @@ const MapView = (function () {
     drawFireTiles();
     drawAreaLabels();
     if (map.backgroundKey) drawMapLandmarkLabels();
+    drawAttackRangeOverlay();
 
     const actors = [];
     crowd.forEach((p, idx) => actors.push({ type:'ambient', y:p.y, data:p, idx }));
