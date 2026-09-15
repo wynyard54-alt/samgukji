@@ -153,12 +153,32 @@ function effectiveApMax() {
 function heroMaxHp() { return Battle.maxHP(GameState.heroData().stats); }
 function heroCurrentHp() { return GameState.heroHp != null ? GameState.heroHp : heroMaxHp(); }
 
-// 책사 1명당 매달 금 5 + 지력/5 수입 (성읍이 없는 챕터1이라 쌀 수입은 없음)
+// 책사 1명당 매달 금 5 + 지력/5 수입
 function scholarGoldIncome() {
   return GameState.recruited.reduce((sum, id) => {
     const rd = ROSTER[id];
     if (!rd || !isScholarType(rd)) return sum;
     return sum + 5 + Math.round(rd.stats.int / 5);
+  }, 0);
+}
+
+// ---------------- 영지 군량 생산 ----------------
+// 실제로 다스리는 성/땅이 바뀔 때마다(장순의 난 평정 -> 평원, 도겸 사망 ->
+// 서주(소패/하비/낭야/광릉), 원술과의 싸움으로 여포에게 서주를 빼앗김 ->
+// 없음, 소패에 다시 몸을 의탁 -> 소패) 아래 함수 하나만 갈아끼우면 된다 -
+// 여러 flag를 시간순으로 검사해 "지금 시점"의 영지 목록만 돌려주므로
+// 새로 얻은 땅이 예전 땅을 대신하는 식(합산이 아님)으로 자연히 처리된다.
+function currentTerritoryIds() {
+  if (GameState.flags.sopaeGranted) return ['sopae'];
+  if (GameState.flags.wonsulRetreated) return []; // 원술과 얽힌 사이 여포에게 서주를 빼앗겨 수확할 땅이 없다
+  if (GameState.flags.dogyeomDied) return ['sopae', 'habi', 'nangya', 'gwangneung'];
+  if (GameState.flags.pyeongwonGranted) return ['pyeongwon2'];
+  return []; // 탁현/어양 시절엔 아직 다스리는 땅이 없다
+}
+function territoryRiceIncome() {
+  return currentTerritoryIds().reduce((sum, id) => {
+    const loc = WORLDMAP_LOCATIONS.find((l) => l.id === id);
+    return sum + (loc ? loc.rice : 0);
   }, 0);
 }
 
@@ -415,7 +435,7 @@ function updateHUD() {
   const apMax = showAllyAp ? gs.allyApMax : effectiveApMax();
   document.getElementById('hud-ap').textContent = `행동력 ${Math.min(apCur, apMax)}/${apMax}`;
   document.getElementById('hud-gold').textContent = `금 ${gs.resources.gold}(+${scholarGoldIncome()})`;
-  document.getElementById('hud-rice').textContent = `쌀 ${gs.resources.rice.toLocaleString()}(+0)`;
+  document.getElementById('hud-rice').textContent = `쌀 ${gs.resources.rice.toLocaleString()}(+${territoryRiceIncome()})`;
   document.getElementById('hud-troop').textContent = `병사 ${gs.resources.troop}`;
   document.getElementById('hud-fame').textContent = `명성 ${gs.fame}`;
 
@@ -2007,7 +2027,7 @@ function checkDeadlines() {
       // 대화만 나누고, 이 시점에야 비로소 실제로 합류한다).
       ['michuk', 'mibang', 'jingyu', 'jindeung'].forEach((id) => { if (!gs.recruited.includes(id)) gs.recruit(id, 0); });
       updateHUD();
-      toast('유비가 서주목의 자리를 이어받았다. 미축·미방·진규·진등도 유비를 섬기게 되었다.');
+      toast('유비가 서주목의 자리를 이어받았다. 미축·미방·진규·진등도 유비를 섬기게 되었다. 하비, 소패, 낭야, 광릉의 군량 생산량이 매달 반영됩니다.');
     });
     return true;
   }
@@ -2802,6 +2822,8 @@ function checkWonsulRetreat(afterCb) {
     sealHoenamWestGate();
     Dialogue.show([{ speaker: '내레이션', text: '앞서 나와 있던 뇌박과 진란이 무너지자, 원술은 남은 병력을 이끌고 성 안으로 황급히 물러났다.' }], () => {
       MapView.clearCameraFocus();
+      toast('서주를 여포에게 빼앗겨, 더 이상 영지의 군량 생산량이 들어오지 않습니다.');
+      updateHUD();
       if (afterCb) afterCb();
     });
   });
@@ -2913,6 +2935,8 @@ function checkHoesuRetreat() {
   MapView.lockMovement(true);
   Dialogue.show(STORY.hoesu_escape_win, () => {
     Dialogue.show(STORY.hoesu_yeopo_betrayal, () => {
+      GameState.flags.sopaeGranted = true;
+      toast('소패의 군량 생산량이 매달 반영됩니다.');
       updateHUD(); // btn-progress에 [소패성으로 이동]을 띄운다
       centerAlert('유비 일행이 소패에 몸을 의탁하게 되었다. 우측 상단 [소패성으로 이동]으로 계속하자.', 4000);
     });
@@ -3041,6 +3065,9 @@ function disbandJangsunArmy() {
     toast('명성 +60');
     updateHUD();
     Dialogue.show(STORY.jangsun_aftermath, () => {
+      GameState.flags.pyeongwonGranted = true;
+      toast('평원의 군량 생산량이 매달 반영됩니다.');
+      updateHUD();
       Dialogue.show(STORY.act2_call, () => {
         GameState.flags.act2 = true;
         updateHUD();
@@ -3956,7 +3983,7 @@ function renderWorldMapLegend() {
     title = '병력';
     rows = tierLegendRows(WORLDMAP_TROOPS_THRESHOLDS, WORLDMAP_TROOPS_COLORS, '명');
   } else if (worldMapMode === 'rice') {
-    title = '월간 쌀 생산량';
+    title = '월간 군량 생산량';
     rows = tierLegendRows(WORLDMAP_RICE_THRESHOLDS, WORLDMAP_RICE_COLORS, '석');
   } else {
     title = '세력';
@@ -4577,6 +4604,8 @@ function monthAdvanceClick() {
   }
   const income = scholarGoldIncome();
   if (income > 0) GameState.addResource({ gold: income });
+  const riceIncome = territoryRiceIncome();
+  if (riceIncome > 0) GameState.addResource({ rice: riceIncome });
   updateHUD();
   if (checkDeadlines()) return;
 
@@ -4589,7 +4618,10 @@ function monthAdvanceClick() {
     return;
   }
 
-  const incomeMsg = income > 0 ? ` (책사들의 수완으로 금 ${income} 획득)` : '';
+  const incomeParts = [];
+  if (income > 0) incomeParts.push(`금 ${income}(책사)`);
+  if (riceIncome > 0) incomeParts.push(`군량 ${riceIncome}(영지)`);
+  const incomeMsg = incomeParts.length ? ` (${incomeParts.join(', ')} 획득)` : '';
   const hpMsg = inCampaign || inJangsunMarch ? '체력과 행동력이 재보급되었다.' : '휴식을 취해 체력과 행동력이 모두 회복되었다.';
   const inTown = (stage === 'takhyeon_free' || stage === 'pyeongwon_free') && !inJangsunMarch;
   // 서주 자유탐방도 마을 체류와 같은 결이지만, 챕터1과 지도를 공유하는 탓에
