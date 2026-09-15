@@ -1388,15 +1388,42 @@ const MapView = (function () {
   // 수행하고, 뒤이어 올 수도 있는 "유령 클릭"은 preventDefault + 짧은
   // 시간 잠금으로 중복 처리되지 않게 막는다.
   let lastTouchTapAt = 0;
+
+  // 캔버스를 눌러도 "완전히 무반응"이라는 제보가 이어지는데, 실기기에
+  // 원격 디버거를 연결할 방법이 없어 touchstart/touchend/click 중
+  // 어디까지 실제로 도달하는지조차 알 수 없었다 - 화면에 직접 최근
+  // 이벤트 로그를 몇 줄 찍어서, 다음에 또 안 눌릴 때 그 화면을 캡처해
+  // 보내주면 "터치 자체가 캔버스에 안 닿는 건지" "닿긴 하는데 판정이
+  // 틀린 건지"를 바로 구분할 수 있게 하는 임시 진단 도구다. 원인이
+  // 확정되면 지운다.
+  const touchDebugEl = document.getElementById('touch-debug-log');
+  function logTouchDebug(label, clientX, clientY) {
+    if (!touchDebugEl) return;
+    const line = `${label} (${Math.round(clientX)},${Math.round(clientY)})`;
+    const prev = touchDebugEl.textContent ? touchDebugEl.textContent.split('\n').slice(0, 4) : [];
+    touchDebugEl.textContent = [line, ...prev].join('\n');
+  }
+  canvas.addEventListener('touchstart', (ev) => {
+    const t = ev.touches[0];
+    if (t) logTouchDebug('touchstart', t.clientX, t.clientY);
+  }, { passive: true });
+
   canvas.addEventListener('touchend', (ev) => {
     if (ev.changedTouches.length !== 1) return; // 멀티터치(핀치 등)는 탭으로 보지 않는다
     ev.preventDefault();
     lastTouchTapAt = performance.now();
     const t = ev.changedTouches[0];
+    logTouchDebug('touchend', t.clientX, t.clientY);
     handleCanvasTap(t.clientX, t.clientY);
   }, { passive: false });
 
+  canvas.addEventListener('touchcancel', (ev) => {
+    const t = ev.changedTouches[0];
+    if (t) logTouchDebug('touchcancel', t.clientX, t.clientY);
+  }, { passive: true });
+
   canvas.addEventListener('click', (ev) => {
+    logTouchDebug('click', ev.clientX, ev.clientY);
     if (performance.now() - lastTouchTapAt < 500) return; // 방금 터치로 이미 처리한 탭의 유령 클릭
     handleCanvasTap(ev.clientX, ev.clientY);
   });

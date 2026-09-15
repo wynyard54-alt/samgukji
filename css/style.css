@@ -806,6 +806,17 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   font-family:"Noto Sans KR",sans-serif;
 }
 
+/* 캔버스 탭이 "완전히 무반응"이라는 제보를 실기기에서 직접 확인할 방법이
+   없어 둔 임시 진단 로그 - 최근 touchstart/touchend/click 이벤트를 몇 줄
+   그대로 찍는다. 화면을 가리지 않게 아주 작고 옅게, 지도 위쪽 구석에만
+   둔다. 원인이 확정되면 지운다. */
+#touch-debug-log{
+  position:fixed; left:4px; top:2px; z-index:999;
+  font-size:9px; line-height:1.3; color:rgba(0,0,0,0.4);
+  pointer-events:none; white-space:pre-line; max-width:60vw;
+  font-family:monospace;
+}
+
 /* ===== Duel VFX layer (GPT visual vertical slice / BASE 3b3524f) ===== */
 #battle-screen{overflow:hidden;background:#17140f;padding:18px 24px 20px;isolation:isolate;}
 #duel-arena{position:absolute;inset:0;z-index:-1;overflow:hidden;background:linear-gradient(#d8b875 0 44%,#9d7a45 45% 60%,#625238 61%);}
