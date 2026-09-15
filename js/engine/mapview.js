@@ -1295,11 +1295,11 @@ const MapView = (function () {
     return null;
   }
 
-  canvas.addEventListener('click',(ev)=>{
+  function handleCanvasTap(clientX, clientY) {
     const rect=canvas.getBoundingClientRect();
     const sx=canvas.width/rect.width, sy=canvas.height/rect.height;
-    const wx=((ev.clientX-rect.left)*sx)+camera.x;
-    const wy=((ev.clientY-rect.top)*sy)+camera.y;
+    const wx=((clientX-rect.left)*sx)+camera.x;
+    const wy=((clientY-rect.top)*sy)+camera.y;
     const x=Math.floor(wx/TILE), y=Math.floor(wy/TILE);
     const npc=npcAt(x,y) || npcAtLabel(wx,wy);
     const mover=activeMover();
@@ -1310,6 +1310,28 @@ const MapView = (function () {
     // 거리만 쓰면 대각선 인접칸이 사거리 밖으로 잘못 밀려난다)이면서도
     // 사거리 2가 대각선 먼 모서리까지 정사각형으로 넓어지지는 않게 한다.
     if(npc && mover && inAttackRange(npc, mover, controlledArmyRange()))interact(npc,false);
+  }
+
+  // 실기기 터치에서는 'click'이 합성되지 않거나 크게 늦게 오는 경우가 있다 -
+  // index.html의 document 레벨 touchmove 핸들러가 당겨서 새로고침 방지를
+  // 위해 이동이 조금이라도 있으면 preventDefault를 거는데, 그게 걸린
+  // 터치 시퀀스 뒤에는 일부 브라우저/웹뷰가 뒤이은 click 자체를 만들어주지
+  // 않는다(실제 손가락 탭은 완전히 고정된 채로 떼지는 경우가 거의 없어서
+  // 거의 매번 이 조건에 걸린다). 그래서 touchend에서 직접 같은 판정을
+  // 수행하고, 뒤이어 올 수도 있는 "유령 클릭"은 preventDefault + 짧은
+  // 시간 잠금으로 중복 처리되지 않게 막는다.
+  let lastTouchTapAt = 0;
+  canvas.addEventListener('touchend', (ev) => {
+    if (ev.changedTouches.length !== 1) return; // 멀티터치(핀치 등)는 탭으로 보지 않는다
+    ev.preventDefault();
+    lastTouchTapAt = performance.now();
+    const t = ev.changedTouches[0];
+    handleCanvasTap(t.clientX, t.clientY);
+  }, { passive: false });
+
+  canvas.addEventListener('click', (ev) => {
+    if (performance.now() - lastTouchTapAt < 500) return; // 방금 터치로 이미 처리한 탭의 유령 클릭
+    handleCanvasTap(ev.clientX, ev.clientY);
   });
 
   // 회수평야 탈출씬처럼 "특정 npc(유비군 등)가 목적지에 도착했는지"를
