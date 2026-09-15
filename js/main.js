@@ -1001,14 +1001,20 @@ function openWarCommandMenu(id) {
     toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`);
     return;
   }
-  showChoice(`${rd.name} 군세와 마주쳤다. 어떻게 하시겠습니까?`, [
-    { label: '일기토', cb: () => attemptDuelChallenge(id) },
-    // engagementBudget이 설정돼 있으면(적이 자동으로 다가와 붙어 이 메뉴가
-    // 뜬 경우) 이 교전은 적이 다가와 붙인 것이라, 궁병 사거리 판정에서
-    // "누가 다가갔는지"를 정확히 반영해야 한다.
-    { label: '전투', cb: () => resolveArmyBattle(id, { initiator: engagementBudget != null ? 'enemy' : 'player' }) },
-    { label: '책략', cb: () => attemptStrategy(id) },
-  ]);
+  const options = [];
+  // 일기토는 장수끼리 맞붙는 육탄전이라, 궁병이 사거리(2칸) 밖에서 쏘던
+  // 것과 달리 실제로 붙어 있을 때만 신청할 수 있어야 한다 - 사거리
+  // 판정과 같은 inAttackRange를 그대로 쓰되 range를 항상 1(인접)로
+  // 고정해, 병종에 상관없이 "붙어 있는지"만 본다.
+  if (inAttackRange(mapPosOf(ctx.commanderId), mapPosOf(id), 1)) {
+    options.push({ label: '일기토', cb: () => attemptDuelChallenge(id) });
+  }
+  // engagementBudget이 설정돼 있으면(적이 자동으로 다가와 붙어 이 메뉴가
+  // 뜬 경우) 이 교전은 적이 다가와 붙인 것이라, 궁병 사거리 판정에서
+  // "누가 다가갔는지"를 정확히 반영해야 한다.
+  options.push({ label: '전투', cb: () => resolveArmyBattle(id, { initiator: engagementBudget != null ? 'enemy' : 'player' }) });
+  options.push({ label: '책략', cb: () => attemptStrategy(id) });
+  showChoice(`${rd.name} 군세와 마주쳤다. 어떻게 하시겠습니까?`, options);
 }
 
 // ---- 책략 커맨드 ----
@@ -1782,6 +1788,14 @@ function handleEnemyInitiatedEngagement(id, budget) {
   const rd = ROSTER[id];
   const ctx = resolveWarArmy(rd);
   if (!ctx) { openWarCommandMenu(id); return; }
+  // 궁병 등 사거리 있는 적은 2칸 밖에서도 이 교전이 걸리는데, 일기토는
+  // 육탄전이라 실제로 붙어 있을 때만 신청할 수 있어야 한다 - 플레이어가
+  // 직접 메뉴를 여는 openWarCommandMenu와 같은 조건(inAttackRange range 1)
+  // 이다. 안 붙어 있으면 신청 자체를 굴리지 않고 바로 원거리 자동전투로.
+  if (!inAttackRange(mapPosOf(ctx.commanderId), mapPosOf(id), 1)) {
+    handleAllyEngage(activeCommanderId, id, budget);
+    return;
+  }
   if (rd._duelOfferRolled == null) {
     // duelAcceptChance(challenger, defender)는 "defender가 challenger보다
     // 같거나 강하면 100%, 약할수록 등급차만큼 낮아진다"는 산식이라 - 여기서는
