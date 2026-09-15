@@ -1309,7 +1309,13 @@ const MapView = (function () {
     // inAttackRange를 써서, 대각선으로 붙은 8칸은 항상 사거리 안(맨해튼
     // 거리만 쓰면 대각선 인접칸이 사거리 밖으로 잘못 밀려난다)이면서도
     // 사거리 2가 대각선 먼 모서리까지 정사각형으로 넓어지지는 않게 한다.
-    if(npc && mover && inAttackRange(npc, mover, controlledArmyRange()))interact(npc,false);
+    if(npc && mover && inAttackRange(npc, mover, controlledArmyRange())){interact(npc,false);return;}
+    // 적이 아니라 지금 조작 중인 문자 그대로의 플레이어(관우) 자신을 클릭해도
+    // 책략만 바로 쓸 수 있게 한다(의병모집처럼 아군 대상 책략은 적과 붙어있을
+    // 필요가 없다) - 유비처럼 실제 npc가 있는 경우는 위 분기에서 이미 자기
+    // 자신과의 거리 0으로 잡혀 처리되므로(그의 interactNPC 쪽에서 갈라진다),
+    // 여기서는 npc가 따로 없는 관우만 대상이 된다.
+    if(!controlledId && mover===player && x===mover.x && y===mover.y && onInteract) onInteract(GameState.mainHero,{selfClick:true});
   }
 
   // 실기기 터치에서는 'click'이 합성되지 않거나 크게 늦게 오는 경우가 있다 -

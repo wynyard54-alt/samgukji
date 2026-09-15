@@ -511,6 +511,10 @@ function updateHUD() {
 function interactNPC(id, context) {
   const rd = ROSTER[id];
   if (!rd) return;
+  // 적을 직접 클릭하지 않고 "지금 조작 중인 내 캐릭터(관우) 자신"을 클릭한
+  // 경우 - mapview.js의 canvas 클릭 판정이 npc를 못 찾았을 때만 이 표식과
+  // 함께 부른다. 의병모집처럼 아군 대상 책략은 적과 붙어있을 필요가 없다.
+  if (context && context.selfClick) { attemptStrategySelf(id); return; }
   // 회남 벌판의 속도순 전투에서 적이 자기 차례에 자동으로 관우(문자 그대로의
   // 조작 캐릭터)에게 다가가 붙으면 finishTurn(mapview.js)이 이 값을 함께
   // 실어 보낸다 - 직전이 유비군 차례였어도(activeCommanderId가 'yubi'로 남아
@@ -562,6 +566,13 @@ function interactNPC(id, context) {
   // 인사만 나누는 장식으로만 남아버린다.
   if (st === 'recruited' && (stage === 'takhyeon_free' || stage === 'pyeongwon_free' || stage === 'seoju_free' || stage === 'habi_camp')) { interactRecruitedGeneral(id); return; }
   if (st === 'recruited' || st === 'resolved' || st === 'dead' || st === 'fled') return;
+
+  // 유비군이 자기 차례로 실제 전투에 참여 중일 때 유비를 클릭하면(적을
+  // 클릭했을 때와 마찬가지로) 대화 대신 그의 책략만 바로 쓸 수 있게 한다 -
+  // "행동 중인 아군 군세"인 동안에만이라, activeCommanderId로 지금 정말
+  // 유비군 차례인지까지 확인한다(관우 차례에 우연히 사거리 안에 유비가
+  // 있어도 관우 자신의 행동력이 아니라 유비군 행동력이 깎이는 걸 막는다).
+  if (id === 'yubi' && GameState.allyArmy && activeCommanderId === 'yubi') { attemptStrategySelf('yubi'); return; }
 
   if (id === 'yubi' && stage === 'camp') {
     Dialogue.show([{ speaker: '유비', text: '아우들, 반동탁연합에 합류했으니 이제부터가 진짜 시작일세. 마음 단단히 먹게.' }]);
@@ -1665,6 +1676,70 @@ function attemptStrategy(id) {
     cb: () => castNamedStrategy(sid, id, deputyId, ctx.commanderId),
   }));
   options.push({ label: '기본 계책 (적 공격력 약화)', cb: () => castGenericStrategy(id, ctx, deputy) });
+  showChoice(`${deputy.name}의 책략 - 무엇을 쓰시겠습니까?`, options);
+}
+
+// 적을 직접 지정하지 않고 자기 군세만 클릭해 책략을 쓸 때, 적 대상 책략은
+// 그 시점 사거리(궁병 2/보병·기병 1 등, armyAttackRange와 동일 기준) 안의
+// 적 중 가장 가까운 하나를 자동으로 고른다.
+function nearestEnemyInRange(commanderId) {
+  const pos = mapPosOf(commanderId);
+  const range = armyAttackRange(commanderId, armyFor(commanderId));
+  const candidates = enemiesOf(commanderId).filter((eid) => inAttackRange(pos, mapPosOf(eid), range));
+  if (!candidates.length) return null;
+  candidates.sort((a, b) => {
+    const da = mapPosOf(a), db = mapPosOf(b);
+    return ((da.x - pos.x) ** 2 + (da.y - pos.y) ** 2) - ((db.x - pos.x) ** 2 + (db.y - pos.y) ** 2);
+  });
+  return candidates[0];
+}
+
+// 적을 직접 클릭하지 않고 "지금 행동 중인 내 군세 자신"을 클릭해도 책략을
+// 쓸 수 있게 한다 - 의병모집/격려처럼 아군을 대상으로 하는 책략(strategies.js의
+// needsEnemy가 없는 것들)은 적과 붙어있을 필요가 전혀 없다. 반대로 혼란/화공
+// 처럼 적을 대상으로 하는 책략(needsEnemy:true)은 시전 순간 사거리 안의 적
+// 중 가장 가까운 하나를 자동으로 골라 쓰고, 그런 적이 하나도 없으면
+// "인접한 적이 없습니다"로 막는다 - AP는 실제로 시전이 이뤄질 때만 소모한다.
+function attemptStrategySelf(commanderId) {
+  if (!playerArmies().some((a) => a.commanderId === commanderId)) return;
+  const army = armyFor(commanderId);
+  const deputyId = army.deputy;
+  const deputy = deputyId ? ROSTER[deputyId] : null;
+  if (!deputy) {
+    toast('책략을 쓰려면 군세 편성에서 책사를 부장으로 등용해야 합니다.');
+    return;
+  }
+  if (StatusEffects.hasStatus(commanderId, 'stratBlocked')) {
+    toast('책략봉쇄에 걸려 있어 지금은 책략을 쓸 수 없다.');
+    return;
+  }
+  const withNearbyEnemy = (cb) => {
+    const target = nearestEnemyInRange(commanderId);
+    if (!target) { toast('인접한 적이 없습니다.'); return; }
+    cb(target);
+  };
+  const castable = strategiesFor(deputyId).filter((sid) => STRATEGY_EFFECTS[sid] && strategyIsUsable(sid));
+  const options = castable.map((sid) => ({
+    label: `${STRATEGIES[sid].name}(${STRATEGIES[sid].grade}급)`,
+    cb: () => {
+      if (STRATEGIES[sid].needsEnemy) {
+        withNearbyEnemy((target) => {
+          if (!spendCombatAP(STRATEGY_AP_COST)) return;
+          castNamedStrategy(sid, target, deputyId, commanderId);
+        });
+      } else {
+        if (!spendCombatAP(STRATEGY_AP_COST)) return;
+        castNamedStrategy(sid, commanderId, deputyId, commanderId);
+      }
+    },
+  }));
+  options.push({
+    label: '기본 계책 (적 공격력 약화)',
+    cb: () => withNearbyEnemy((target) => {
+      if (!spendCombatAP(STRATEGY_AP_COST)) return;
+      castGenericStrategy(target, { army, commanderId }, deputy);
+    }),
+  });
   showChoice(`${deputy.name}의 책략 - 무엇을 쓰시겠습니까?`, options);
 }
 
