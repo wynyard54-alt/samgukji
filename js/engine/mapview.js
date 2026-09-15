@@ -1322,6 +1322,19 @@ const MapView = (function () {
       ctx.font = '11px "Noto Sans KR",sans-serif';
       const w = Math.max(50, ctx.measureText(text).width + 14);
       if (wx >= x - w / 2 && wx <= x + w / 2 && wy >= y - 15 && wy <= y + 3) return n;
+      // 이름표 판정과 타일(npcAt) 판정 사이에 좁은 틈이 있다 - 캐릭터
+      // 스프라이트는 drawNpc에서 footY(타일 하단 근처) 기준으로 위쪽으로
+      // 그려지는데(기본 96x96, sx.67/sy.70 → 폭 64px·높이 67px), 그 머리
+      // 꼭대기 근방(대략 타일 위쪽 9px)은 이름표 박스도 타일 박스도 못
+      // 덮는다. 실기기에서 캐릭터 그림 위쪽을 눌렀는데 안 먹힌다는 제보가
+      // 있었던 게 이 틈일 수 있어 drawNpc와 똑같은 계산으로 스프라이트
+      // 그려진 영역 전체를 클릭 판정에 포함시킨다.
+      const hidden = n.discoverable && !GameState.npcStatus[n.id];
+      const spec = (!hidden && rd.sprite) ? rd.sprite : { fw:96, fh:96, sx:.67, sy:.70 };
+      const footY = n.y * TILE + TILE * 0.9;
+      const dw = Math.round(spec.fw * (spec.sx || 1));
+      const dh = Math.round(spec.fh * (spec.sy == null ? (spec.sx || 1) : spec.sy));
+      if (wx >= x - dw / 2 && wx <= x + dw / 2 && wy >= footY - dh && wy <= footY) return n;
     }
     return null;
   }
