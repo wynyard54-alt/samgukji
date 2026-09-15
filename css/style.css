@@ -779,13 +779,20 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 /* 안내 메시지 - 화면 구석의 작은 토스트는 모바일에서 특히 잘 안 보여서,
    모든 안내를 화면 한가운데에 큼직하게 띄운다. top/left 50%는 회전
    트랜스폼 아래에서도(로컬 박스가 화면 전체에 정확히 겹쳐지므로) 항상
-   실제 화면 정중앙으로 그려진다. */
+   실제 화면 정중앙으로 그려진다.
+   전쟁 지도에서는 카메라가 항상 지금 차례인 유닛을 화면 중앙에 맞추므로,
+   "OO의 차례다" 안내가 뜰 때마다 이 박스가 하필 그 유닛/인접한 적이
+   그려지는 자리를 정확히 덮는다 - pointer-events:none이 없으면 그 순간
+   지도를 클릭해도 이 박스가 클릭을 가로채 캔버스까지 전달되지 않는다
+   (회수평야처럼 턴이 자주 바뀌는 지도에서 "눌러도 반응이 없다"는 제보의
+   실제 원인이었다). 메시지는 그대로 안 보이는 채 지나가지 않고, 클릭을
+   막지만 않을 뿐 정해진 시간 뒤 자동으로 사라진다. */
 #center-alert{
   position:fixed; top:50%; left:50%; transform:translate(-50%,-50%);
   background:rgba(28,22,15,0.92); color:#fff8ea; padding:18px 26px; border-radius:14px;
   font-size:17px; font-weight:700; text-align:center; line-height:1.5; max-width:min(78vw,420px);
   z-index:85; box-shadow:0 12px 30px rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.15);
-  cursor:pointer;
+  pointer-events:none;
 }
 #center-alert.hidden{ display:none; }
 

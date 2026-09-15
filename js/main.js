@@ -107,12 +107,6 @@ function centerAlert(msg, holdMs) {
   centerAlertTimer = setTimeout(() => el.classList.add('hidden'), holdMs || 2200);
 }
 
-// 메시지가 다 사라질 때까지 기다리지 않고, 클릭/터치하면 바로 닫을 수 있게 한다.
-document.getElementById('center-alert').addEventListener('click', () => {
-  clearTimeout(centerAlertTimer);
-  document.getElementById('center-alert').classList.add('hidden');
-});
-
 function toast(msg) {
   centerAlert(msg);
 }
