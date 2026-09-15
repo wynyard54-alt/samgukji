@@ -1640,7 +1640,15 @@ function castNamedStrategy(sid, targetId, deputyId, casterCommanderId) {
     // 사라진 상대에게는 다시 커맨드 메뉴를 띄우지 않는다(전투 종료/맵 클리어
     // 체크는 기존 퇴각 처리와 동일하게 넘긴다).
     if (stage === 'warmap') checkWarmapClear();
-    if (MapView.liveNpcIds.includes(targetId)) openWarCommandMenu(targetId);
+    // 의병모집처럼 아군(자기 자신)을 대상으로 쓰는 책략은 targetId가 곧
+    // casterCommanderId다 - 이 경우까지 그대로 openWarCommandMenu(targetId)를
+    // 부르면 "유비 군세와 마주쳤다"는 메뉴가 뜨고, 여기서 [전투]를 고르면
+    // resolveArmyBattle이 activeCommanderId(=유비 자신)로 유비군끼리
+    // 싸우게 만드는 버그가 생긴다. 이 재오픈은 원래 "방금 책략을 쓴 그
+    // 적과의 교전을 계속하라"는 뜻이므로 targetId가 실제 적일 때만 연다.
+    if (targetId !== casterCommanderId && MapView.liveNpcIds.includes(targetId) && ROSTER[targetId].kind === 'enemy') {
+      openWarCommandMenu(targetId);
+    }
   });
 }
 
