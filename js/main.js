@@ -1481,14 +1481,11 @@ const STRATEGY_EFFECTS = {
     return `${ROSTER[targetId].name}의 군량 보급로를 끊어 군량이 크게 줄었다.`;
   },
   uibyeongmojip(targetId, deputyId, casterId) {
-    const allies = alliesOf(casterId);
-    allies.forEach((aid) => {
-      const a = armyFor(aid);
-      const maxTroop = armyMaxTroop(ROSTER[aid]);
-      a.troop = Math.min(maxTroop, Math.round(a.troop * 1.2));
-    });
-    boostSideMorale(allies, 10);
-    return '의병이 모여들어 아군 병력이 늘고 사기도 올랐다.';
+    const a = armyFor(casterId);
+    const maxTroop = armyMaxTroop(ROSTER[casterId]);
+    a.troop = Math.min(maxTroop, Math.round(a.troop * 1.2));
+    boostSideMorale([casterId], 10);
+    return '의병이 모여들어 병력이 늘고 사기도 올랐다.';
   },
 
   // ---- C급 ----

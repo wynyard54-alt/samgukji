@@ -40,7 +40,7 @@ const STRATEGIES = {
   ganpa: { name: '간파', grade: 'B', desc: '2턴간 적의 책략을 100% 회피', characters: ['jeosu', 'ubeon', 'yangsu'] },
   gullyangbogeup: { name: '군량보급', grade: 'B', desc: '아군 군세 현재 군량의 50%를 증가시킴', characters: ['jangwan', 'janggwang', 'maryang'] },
   gullyangchadan: { name: '군량차단', grade: 'B', desc: '타겟 적 군세 현재 군량을 30% 감소시킴', characters: ['jongyo', 'heoyu'] },
-  uibyeongmojip: { name: '의병모집', grade: 'B', desc: '아군 현재 병력의 20% 회복 + 사기 10 상승', characters: ['jegalgeun', 'jingun', 'noshik'] },
+  uibyeongmojip: { name: '의병모집', grade: 'B', desc: '아군 1명의 현재 병력 20% 회복 + 사기 10 상승', characters: ['jegalgeun', 'jingun', 'noshik'] },
   yaseup: { name: '야습', grade: 'B', desc: '공격 가능 범위가 인접칸에서 인접 5칸으로 증가(병종 무관), 공격시 반격당하지 않음', characters: ['iyu'] },
 
   // ---- C급 ----
