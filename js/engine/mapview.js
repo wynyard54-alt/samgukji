@@ -1256,13 +1256,52 @@ const MapView = (function () {
     if(handled)ev.preventDefault();
   });
 
+  // drawNpc가 그리는 이름표(전투력 정보) 문구를 클릭 판정에서도 그대로
+  // 재현한다 - 실제 렌더링(drawNpc, 630~649줄 근방)과 분기가 완전히
+  // 같아야 이름표가 눈에 보이는 범위와 클릭 가능한 범위가 어긋나지 않는다.
+  function clickableLabelFor(n, rd) {
+    const met = !!GameState.npcStatus[n.id];
+    const hidden = n.discoverable && !met;
+    if (GameState.npcStatus[n.id] === 'recruited') return `${rd.name} · ${isScholarType(rd) ? '모병' : '훈련'}`;
+    if (n._atResidence) return n._label || `${rd.name}의 집`;
+    if (hidden) return null;
+    const baseLabel = n.label || rd.name;
+    if (rd.kind === 'enemy' && rd.troop != null) {
+      return `${baseLabel} · 병${rd.troop} · 무${enemyArmyGrade(rd)} · 지${gradeFor(rd.stats.int, JIRYEOK_GRADES)}`;
+    }
+    if (n.id === 'yubi' && GameState.allyArmy) {
+      return `${baseLabel} · 병${GameState.allyArmy.troop} · 무${warArmyGrade({ commanderId:'yubi', army:GameState.allyArmy })} · 지${gradeFor(GameState.allyArmy.deputy && ROSTER[GameState.allyArmy.deputy] ? ROSTER[GameState.allyArmy.deputy].stats.int : 0, JIRYEOK_GRADES)}`;
+    }
+    return baseLabel;
+  }
+  // 이름표(drawTag)는 실제 스프라이트보다 훨씬 넓게 그려져서(병력/등급 정보가
+  // 다 들어가다 보니 타일 2~3개 폭) 플레이어가 작은 스프라이트 대신 그
+  // 이름표를 누르는 게 오히려 자연스럽다 - 정확히 그 타일을 클릭하지
+  // 않아도 이름표가 실제로 그려지는 영역이면 같은 유닛으로 인식한다.
+  function npcAtLabel(wx, wy) {
+    // wx/wy는 클릭 핸들러가 넘겨주는 "카메라 보정을 더한" 순수 월드 픽셀
+    // 좌표(=npcAt이 타일로 나누는 것과 같은 좌표계)다 - worldX/worldY는
+    // 반대로 카메라를 뺀 "캔버스 그리기용" 좌표라 여기서 그대로 쓰면 안 된다.
+    for (const n0 of liveNpcs) {
+      const n = effectiveNpc(n0);
+      const rd = ROSTER[n.id]; if (!rd) continue;
+      const text = clickableLabelFor(n, rd);
+      if (!text) continue;
+      const x = n.x * TILE + TILE / 2, y = n.y * TILE - 7;
+      ctx.font = '11px "Noto Sans KR",sans-serif';
+      const w = Math.max(50, ctx.measureText(text).width + 14);
+      if (wx >= x - w / 2 && wx <= x + w / 2 && wy >= y - 15 && wy <= y + 3) return n;
+    }
+    return null;
+  }
+
   canvas.addEventListener('click',(ev)=>{
     const rect=canvas.getBoundingClientRect();
     const sx=canvas.width/rect.width, sy=canvas.height/rect.height;
     const wx=((ev.clientX-rect.left)*sx)+camera.x;
     const wy=((ev.clientY-rect.top)*sy)+camera.y;
     const x=Math.floor(wx/TILE), y=Math.floor(wy/TILE);
-    const npc=npcAt(x,y);
+    const npc=npcAt(x,y) || npcAtLabel(wx,wy);
     const mover=activeMover();
     // 궁병처럼 사거리가 1보다 넓은 군세는 인접칸이 아니어도(사거리 안이기만
     // 하면) 적을 클릭해서 바로 교전 메뉴를 띄울 수 있어야 한다 - 안 그러면
