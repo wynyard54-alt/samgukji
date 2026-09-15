@@ -648,13 +648,15 @@ function interactNPC(id, context) {
 
   if (rd.kind === 'enemy') {
     if (stage === 'warmap' && !rd.forced) {
-      // 적이 자기 차례에 이동하느라 행동력을 다 써버렸다면(engagementBudget이
-      // 가장 싼 메뉴 항목의 비용보다도 적으면), 유비군과 마주쳤을 때
-      // (handleAllyEngage) 그냥 접촉만 하고 지나가는 것과 똑같이 이번엔
-      // 교전 메뉴 자체를 띄우지 않는다 - 안 그러면 메뉴는 뜨는데 뭘 골라도
-      // "행동력 부족"만 뜨는 막다른 상황이 된다.
-      if (engagementBudget != null && engagementBudget < Math.min(ARMY_BATTLE_AP_COST, DUEL_AP_COST, STRATEGY_AP_COST)) return;
-      openWarCommandMenu(id);
+      // 적이 자기 차례에 스스로 다가와 붙은 경우(engagementBudget 있음)는
+      // 플레이어가 커맨드를 찍는 게 아니라 적 판단(일기토 신청 여부)에 따라
+      // 수락/거절 또는 자동 전투로 흘러간다 - handleEnemyInitiatedEngagement가
+      // 내부적으로 handleAllyEngage를 그대로 재사용하므로, 예산이 부족하면
+      // (유비군이 다가와 붙을 때와 똑같이) 그냥 조용히 아무 일도 없이 끝난다.
+      // 플레이어가 직접 다가가 붙인 경우(engagementBudget 없음)만 기존
+      // 커맨드 메뉴를 그대로 띄운다.
+      if (engagementBudget != null) handleEnemyInitiatedEngagement(id, engagementBudget);
+      else openWarCommandMenu(id);
       return;
     }
     const afterCb = stage === 'warmap' ? checkWarmapClear : undefined;
@@ -1679,6 +1681,40 @@ function attemptDuelChallenge(id) {
   }
 }
 
+// 적이 자기 차례에 스스로 다가와 붙는 경우(engagementBudget 있음)는 플레이어가
+// "공격 커맨드"를 찍는 게 아니라 적 쪽 판단으로 흘러가야 자연스럽다 - 적 군세
+// 등급이 플레이어(또는 유비군)보다 높으면 반드시 일기토를 신청하고, 낮으면
+// 그 등급차만큼 신청 확률이 떨어진다(duelAcceptChance를 그대로 재사용 -
+// "이기는 쪽이 자신 있게 덤빈다"는 같은 의미라 새 공식이 필요 없다). 신청하지
+// 않거나 신청했다가 거절당하면 유비군이 다가와 붙을 때(handleAllyEngage)와
+// 완전히 같은 방식으로 자동 전투로 넘어간다 - 플레이어는 행동력을 쓰지 않는다.
+function handleEnemyInitiatedEngagement(id, budget) {
+  const rd = ROSTER[id];
+  const ctx = resolveWarArmy(rd);
+  if (!ctx) { openWarCommandMenu(id); return; }
+  if (rd._duelOfferRolled == null) {
+    // duelAcceptChance(challenger, defender)는 "defender가 challenger보다
+    // 같거나 강하면 100%, 약할수록 등급차만큼 낮아진다"는 산식이라 - 여기서는
+    // 그 "defender" 자리에 적을 넣어서(플레이어를 challenger 자리에) 그대로
+    // 재사용한다: 적이 플레이어보다 강하면 반드시 신청하고, 약할수록 신청
+    // 확률이 등급차만큼 떨어진다.
+    const chance = duelAcceptChance(warArmyGrade(ctx), enemyArmyGrade(rd));
+    rd._duelOfferRolled = Math.random() * 100 < chance;
+  }
+  if (rd._duelOfferRolled) {
+    rd._duelOfferRolled = false; // 한 번 신청했으면 소모 - 거절당하면 이후로는 그냥 전군전투
+    showChoice(`${rd.name}이(가) 일기토를 신청했다! 어떻게 하시겠습니까?`, [
+      { label: '수락', cb: () => startFreeBattle(id, () => { if (stage === 'warmap') checkWarmapClear(); }, true) },
+      { label: '거절', cb: () => {
+        toast(`${rd.name}의 일기토 신청을 거절했다.`);
+        handleAllyEngage(activeCommanderId, id, budget);
+      } },
+    ]);
+    return;
+  }
+  handleAllyEngage(activeCommanderId, id, budget);
+}
+
 // StatusEffects(js/engine/status-effects.js)는 ROSTER/MapView를 모르는 순수
 // 모듈이라, "화염 타일에 누가 서있는지"/"그 대상에게 피해를 입혀라"는 여기서
 // 어댑터로 연결해준다. 아직 어떤 책략도 igniteTile을 호출하지 않으므로
@@ -1843,6 +1879,7 @@ function resolveArmyBattle(id, opts) {
       return;
     }
     delete GameState.warLocks[id];
+    delete rd._duelOfferRolled; // 전투가 끝났으니 나중에 다시 마주치면(기령처럼) 일기토 신청 여부를 새로 굴린다
     StatusEffects.clearArmyStatus(id);
     StatusEffects.unlinkChain(id);
     if (id === 'jangsun') {
@@ -2918,6 +2955,7 @@ function goGwangneungRetreat() {
     delete ROSTER[id].commanderCaptured;
     delete GameState.npcStatus[id];
     delete GameState.warLocks[id];
+    delete ROSTER[id]._duelOfferRolled;
     StatusEffects.clearArmyStatus(id);
   });
   releaseCapturedForRetreat();
