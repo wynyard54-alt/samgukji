@@ -937,15 +937,16 @@ function getWarLock(id, ctx, enemyMoraleOverride) {
 // 필요 없다("있으면 쓴다"). STRATEGY_EFFECTS의 모든 효과는 alliesOf/
 // enemiesOf/armyFor/moraleOf로 "캐스터가 어느 쪽인지"를 실제로 구분해서
 // 동작하므로(main.js 상단 "군세 통합" 섹션 참고), 구현된 책략이면 전부
-// 적도 그대로 쓸 수 있다 - STRATEGY_EFFECTS에 없는 것(병종/사거리/성벽,
-// 적 책략시전이 필요한 반계·책략봉쇄·간파)만 자동으로 제외된다.
+// 적도 그대로 쓸 수 있다 - STRATEGY_EFFECTS에 없는 것(병종/사거리/성벽
+// 관련 미구현 절반)만 자동으로 제외된다.
 function maybeEnemyCastsStrategy(rd, ctx) {
   if (!rd.deputy) return;
+  if (StatusEffects.hasStatus(rd.id, 'stratBlocked')) return; // 책략봉쇄에 걸려 있으면 아예 시전을 시도하지 않는다
   const advisor = ROSTER[rd.deputy];
   if (!advisor) return;
   const sid = strategiesFor(rd.deputy).find((s) => STRATEGY_EFFECTS[s] && strategyIsUsable(s));
   if (!sid) return;
-  const desc = STRATEGY_EFFECTS[sid](ctx.commanderId, rd.deputy, rd.id);
+  const desc = applyStrategyEffect(sid, ctx.commanderId, rd.deputy, rd.id);
   markStrategyUsed(sid);
   toast(`${rd.name} 진영의 ${advisor.name}이(가) ${STRATEGIES[sid].name}을(를) 시전했다! ${desc}`);
 }
@@ -1270,9 +1271,7 @@ function markStrategyUsed(sid) {
 }
 
 // 각 책략의 실제 효과 구현. (targetId, deputyId) -> 결과 서술 문자열(내레이션에 씀).
-// "적이 책략을 시전한다"는 시스템이 아직 없어 그에 의존하는 3개(반계/책략봉쇄/
-// 간파)만 STRATEGY_EFFECTS에서 빠져 있다 - 그 시스템이 생기면 이어서 채운다.
-// 나머지는 여기 없으면 castGenericStrategy(범용 약화 책략)로 대신 나간다.
+// 여기 없으면 castGenericStrategy(범용 약화 책략)로 대신 나간다.
 // 아래 모든 효과는 caster가 플레이어든 적이든 동일하게 동작한다 - "아군/적"은
 // alliesOf(casterId)/enemiesOf(casterId)로, 병력·군량은 armyFor(id)로,
 // 사기는 moraleOf/boostSideMorale로 조회·적용해서 어느 쪽이 캐스터인지
@@ -1376,10 +1375,22 @@ const STRATEGY_EFFECTS = {
   },
 
   // ---- B급 ----
-  // (반계/책략봉쇄/간파는 "적이 책략을 시전한다"는 시스템 자체가 없어서
-  // 아직 보류한다 - 이 셋은 STRATEGY_EFFECTS에 없어 castable 목록에서
-  // 자동으로 빠진다. 철벽수성/벽력거의 성·요새 타일 관련 절반은 성벽
-  // 내구도 시스템이 아직 없어 병종 관련 부분만 구현했다.)
+  // (철벽수성/벽력거의 성·요새 타일 관련 절반은 성벽 내구도 시스템이 아직
+  // 없어 병종 관련 부분만 구현했다.)
+  // 반계/간파/책략봉쇄는 자기 자신(또는 상대)에게 상태를 걸어두는 것 자체는
+  // 여기서 바로 끝나고, 실제 "무효화/반사/차단"은 그 상태를 확인하는
+  // applyStrategyEffect(다음 책략이 걸릴 때 항상 거치는 관문 - main.js
+  // castNamedStrategy/maybeEnemyCastsStrategy 양쪽 다 이 함수를 통해서만
+  // STRATEGY_EFFECTS를 부른다)와 attemptStrategy/maybeEnemyCastsStrategy의
+  // stratBlocked 확인에서 처리된다.
+  bangye(targetId, deputyId, casterId) {
+    StatusEffects.applyArmyStatus(casterId, 'bangye', { turns: 3 });
+    return '다음에 아군에게 걸려오는 적의 책략을 그대로 되돌려줄 준비를 마쳤다.';
+  },
+  ganpa(targetId, deputyId, casterId) {
+    StatusEffects.applyArmyStatus(casterId, 'ganpa', { turns: 2 });
+    return '앞으로 2턴간 적의 어떤 책략도 미리 꿰뚫어보고 피할 수 있게 되었다.';
+  },
   eungbyeonjin(targetId, deputyId, casterId) {
     StatusEffects.applyArmyStatus(casterId, 'forceTypeAdvantage', { turns: 3 });
     return '아군 진형이 상대 병종에 맞춰 즉각 바뀌어, 당분간 병종 상성에서 반드시 우위를 점한다.';
@@ -1481,7 +1492,10 @@ const STRATEGY_EFFECTS = {
   },
 
   // ---- C급 ----
-  // (책략봉쇄는 반계/간파와 같은 이유로 보류한다.)
+  chaeryakbongswae(targetId, deputyId, casterId) {
+    StatusEffects.applyArmyStatus(targetId, 'stratBlocked', { turns: 2 });
+    return `${ROSTER[targetId].name}의 책사를 옭아매, 앞으로 2턴간 책략을 쓰지 못하게 되었다.`;
+  },
   yeonnojihwi(targetId, deputyId, casterId) {
     if (unitTypeOf(armyFor(casterId)) !== 'archer') return '궁병 군세가 아니라 연노를 갖출 수 없었다.';
     StatusEffects.applyArmyStatus(casterId, 'doubleAttack', { turns: 1 });
@@ -1582,8 +1596,26 @@ const STRATEGY_EFFECTS = {
   },
 };
 
+// 반계/간파처럼 "나에게 걸려오는 적 책략"에 반응하는 상태는 STRATEGY_EFFECTS를
+// 직접 부르지 않고 항상 이 함수를 거쳐야 걸린다 - 플레이어 쪽(castNamedStrategy)과
+// 적 AI 쪽(maybeEnemyCastsStrategy) 두 호출부 모두 이 함수 하나만 거치므로
+// 어느 쪽이 캐스터든 대상의 방어 상태가 똑같이 확인된다. 책략봉쇄(stratBlocked)는
+// "시전 자체를 막는" 효과라 이 함수보다 앞선 단계(attemptStrategy/
+// maybeEnemyCastsStrategy가 애초에 시전을 시도하기 전)에서 따로 확인한다.
+function applyStrategyEffect(sid, targetId, deputyId, casterId) {
+  if (StatusEffects.hasStatus(targetId, 'ganpa')) {
+    return `${ROSTER[targetId].name}이(가) 계책을 미리 꿰뚫어보고 무효화했다!`;
+  }
+  if (StatusEffects.hasStatus(targetId, 'bangye')) {
+    StatusEffects.clearArmyStatus(targetId, 'bangye');
+    const reflected = STRATEGY_EFFECTS[sid](casterId, deputyId, targetId);
+    return `${ROSTER[targetId].name}이(가) 반계로 계책을 그대로 되돌렸다! ${reflected}`;
+  }
+  return STRATEGY_EFFECTS[sid](targetId, deputyId, casterId);
+}
+
 function castNamedStrategy(sid, targetId, deputyId, casterCommanderId) {
-  const desc = STRATEGY_EFFECTS[sid](targetId, deputyId, casterCommanderId);
+  const desc = applyStrategyEffect(sid, targetId, deputyId, casterCommanderId);
   markStrategyUsed(sid);
   Dialogue.show([{ speaker: ROSTER[deputyId].name, text: `${STRATEGIES[sid].name}!` }, { speaker: '내레이션', text: desc }], () => {
     updateHUD();
@@ -1603,6 +1635,11 @@ function attemptStrategy(id) {
   const deputy = deputyId ? ROSTER[deputyId] : null;
   if (!deputy) {
     toast('책략을 쓰려면 군세 편성에서 책사를 부장으로 등용해야 합니다.');
+    openWarCommandMenu(id);
+    return;
+  }
+  if (StatusEffects.hasStatus(ctx.commanderId, 'stratBlocked')) {
+    toast('책략봉쇄에 걸려 있어 지금은 책략을 쓸 수 없다.');
     openWarCommandMenu(id);
     return;
   }

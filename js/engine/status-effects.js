@@ -47,6 +47,9 @@ const StatusEffects = (function () {
     // armyAttackRange가 이 상태를 확인해 상성 배율·공격 사거리에 반영한다.
     forceTypeAdvantage: '병종 상성 무조건 우위', ignoreTypeDisadvantage: '병종 상성 불리 무효화',
     rangeOverride: '공격 사거리 임시 변경', doubleAttack: '다음 공격 2회 발동',
+    // 반계/간파/책략봉쇄 - main.js의 applyStrategyEffect가 책략을 실제로
+    // 걸기 직전에 이 상태들을 확인해서 무효화/반사/시전 차단을 처리한다.
+    ganpa: '적 책략 100% 회피', bangye: '다음 적 책략 무효화+반사', stratBlocked: '책략 시전 불가',
   };
   const ALL_LABELS = Object.assign({}, ARMY_STATUS_LABELS, BUFF_LABELS);
   const DEBUFF_TYPES = new Set(Object.keys(ARMY_STATUS_LABELS));
