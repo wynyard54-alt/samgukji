@@ -3573,7 +3573,13 @@ function renderRosterPanel() {
     const strategyLine = sids.length
       ? `<div class="roster-strategy">책략: ${sids.map((sid) => `${STRATEGIES[sid].name}(${STRATEGIES[sid].grade})`).join(', ')}</div>`
       : '';
-    div.innerHTML = `<div class="roster-row-main"><span class="roster-role${scholar ? ' scholar' : ''}">${label}</span><span class="roster-name">${rd.name}</span></div>${statsLine}${strategyLine}`;
+    // 책사가 목록에서부터 책략 이름을 미리 보여주는 것과 똑같이, 무장도
+    // 필살기를 배웠다면 목록에서부터 이름을 미리 보여준다 - 눌러서 상세보기로
+    // 들어가면(openHeroDetail) 이름별 기력 소모/효과까지 전문이 나온다.
+    const skillLine = (rd.skills && rd.skills.length)
+      ? `<div class="roster-strategy">필살기: ${rd.skills.map((sid) => (SKILL_POOL[sid] ? SKILL_POOL[sid].name : sid)).join(', ')}</div>`
+      : '';
+    div.innerHTML = `<div class="roster-row-main"><span class="roster-role${scholar ? ' scholar' : ''}">${label}</span><span class="roster-name">${rd.name}</span></div>${statsLine}${strategyLine}${skillLine}`;
     div.onclick = () => openHeroDetail(id, label);
     wrap.appendChild(div);
   });
