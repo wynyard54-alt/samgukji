@@ -27,7 +27,24 @@ const Battle = (function () {
       maxHp: mh,
       gauge: 0,
       defending: false,
+      evasionBuff: 0, // 선풍참류 - 다음 피격 판정에 1회만 더해지고 소모된다
+      dmgReduceBuff: 0, // 철벽태세류 - 다음에 받는 피해 1회에 곱해지고 소모된다
     };
+  }
+
+  // 이 전투원이 가진 필살기 중 지금 기력으로 실제로 쓸 수 있는 것들 - 없으면
+  // (필살기를 하나도 안 배웠으면) 예전처럼 기력 100%가 꽉 차야 쓰는 이름 없는
+  // 범용 필살기(dealDamage의 기본값 2.3배) 하나만 있는 것으로 취급한다.
+  function skillPoolOf(actor) {
+    return (actor.data.skills && actor.data.skills.length) ? actor.data.skills : [];
+  }
+  function affordableSkills(actor) {
+    return skillPoolOf(actor).filter((id) => SKILL_POOL[id] && actor.gauge >= SKILL_POOL[id].cost);
+  }
+  function cheapestSkillCost(actor) {
+    const pool = skillPoolOf(actor);
+    if (!pool.length) return 100;
+    return Math.min(...pool.map((id) => (SKILL_POOL[id] ? SKILL_POOL[id].cost : 100)));
   }
 
   function log(msg) {
@@ -51,9 +68,10 @@ const Battle = (function () {
     eHpText.textContent = `${Math.max(0, e.hp)} / ${e.maxHp}`;
     eGaugeFill.style.width = Math.min(100, e.gauge) + '%';
 
-    document.getElementById('btn-ultimate').disabled = p.gauge < 100 || locked;
+    const pThreshold = cheapestSkillCost(p);
+    document.getElementById('btn-ultimate').disabled = p.gauge < pThreshold || locked;
     document.getElementById('btn-ultimate').textContent =
-      p.gauge >= 100 ? '필살공격 선택 (4)' : `필살공격 (기력 ${Math.floor(p.gauge)}%) (4)`;
+      p.gauge >= pThreshold ? '필살공격 선택 (4)' : `필살공격 (기력 ${Math.floor(p.gauge)}%) (4)`;
 
     if (!locked) {
       const attackBtn = actionsEl.querySelector('[data-action="attack"]');
@@ -80,8 +98,12 @@ const Battle = (function () {
     return `hsl(${h},45%,38%)`;
   }
 
-  function evasionRoll(defenderSpd, attackerSpd) {
-    const chance = Math.max(0, Math.min(35, (defenderSpd - attackerSpd) * 0.3 + 5));
+  // 선풍참류로 쌓인 evasionBuff(%p)는 그 다음 피격 판정 딱 한 번에만 더해지고
+  // 결과(회피 성공/실패)와 무관하게 그 자리에서 소모된다.
+  function evasionRoll(defender, attacker) {
+    const bonus = defender.evasionBuff || 0;
+    if (bonus) defender.evasionBuff = 0;
+    const chance = Math.max(0, Math.min(90, (defender.data.stats.spd - attacker.data.stats.spd) * 0.3 + 5 + bonus));
     return Math.random() * 100 < chance;
   }
 
@@ -94,7 +116,7 @@ const Battle = (function () {
     const side = attacker === p ? 'player' : 'enemy';
     const oppSide = side === 'player' ? 'enemy' : 'player';
 
-    if (mode === 'attack' && evasionRoll(defender.data.stats.spd, attacker.data.stats.spd)) {
+    if (mode === 'attack' && evasionRoll(defender, attacker)) {
       log(`${defender.data.name}이(가) ${attacker.data.name}의 공격을 회피했다!`);
       BattleEvents.emit('dodge', {
         attackerSide: side, defenderSide: oppSide,
@@ -102,12 +124,25 @@ const Battle = (function () {
       });
       return;
     }
-    let base = attacker.data.stats.atk * 0.6 - defender.data.stats.def * 0.3;
+    const ignoreDef = mode === 'ultimate' && skillDef && skillDef.ignoreDef;
+    let base = attacker.data.stats.atk * 0.6 - (ignoreDef ? 0 : defender.data.stats.def * 0.3);
     base = Math.max(attacker.data.stats.atk * 0.2, base);
     let mult = mode === 'ultimate' ? (skillDef ? skillDef.dmgMult : 2.3) : 1.3;
+    // 맹호격(자신 체력 기준)/갈기갈기(상대 체력 기준)처럼 조건부로 배율이
+    // 바뀌는 필살기 - 조건 충족시 dmgMult 대신 condMult를 그대로 쓴다.
+    if (mode === 'ultimate' && skillDef && skillDef.condType) {
+      const subject = skillDef.condType === 'selfHp' ? attacker : defender;
+      if (subject.hp / subject.maxHp <= skillDef.condPct) mult = skillDef.condMult;
+    }
     const variance = 0.85 + Math.random() * 0.3;
     let dmg = Math.round(base * mult * variance);
     if (defender.defending && mode !== 'ultimate') dmg = Math.round(dmg * defendMult(defender.data.stats.def));
+    // 철벽태세류로 걸린 dmgReduceBuff는 이 히트가 필살공격이든 일반공격이든
+    // 상관없이 다음 피격 1회에 그대로 적용되고 소모된다.
+    if (defender.dmgReduceBuff) {
+      dmg = Math.round(dmg * (1 - defender.dmgReduceBuff));
+      defender.dmgReduceBuff = 0;
+    }
     defender.hp -= dmg;
 
     let extra = '';
@@ -124,6 +159,12 @@ const Battle = (function () {
         attacker.hp = Math.max(1, attacker.hp - Math.round(attacker.hp * skillDef.selfCostPct));
         extra = ' (반동으로 체력 소모)';
       }
+      if (skillDef.drainGaugePct) {
+        defender.gauge = Math.max(0, defender.gauge - skillDef.drainGaugePct);
+        extra += ' (상대 기력 감소!)';
+      }
+      if (skillDef.nextEvasionBonus) attacker.evasionBuff = skillDef.nextEvasionBonus;
+      if (skillDef.nextDmgReducePct) attacker.dmgReduceBuff = skillDef.nextDmgReducePct;
     }
 
     const skillName = mode === 'ultimate' ? (skillDef ? skillDef.name : '필살공격') : null;
@@ -141,11 +182,11 @@ const Battle = (function () {
     if (actor.hp <= 0) return;
     const side = actor === p ? 'player' : 'enemy';
     if (action === 'attack') {
-      actor.gauge += 12;
+      actor.gauge += 10;
       dealDamage(actor, opponent, 'attack');
     } else if (action === 'defend') {
       actor.defending = true;
-      actor.gauge += 20;
+      actor.gauge += 25;
       log(`${actor.data.name}이(가) 방어 태세를 갖췄다.`);
       BattleEvents.emit('defend', { side, actorId: actor.data.id });
     } else if (action === 'skill') {
@@ -155,17 +196,20 @@ const Battle = (function () {
       log(`${actor.data.name}이(가) 특기를 사용해 숨을 골랐다. (HP +${heal})`);
       BattleEvents.emit('special', { side, actorId: actor.data.id, heal });
     } else if (action === 'ultimate') {
-      actor.gauge = 0;
-      const pool = (actor.data.skills && actor.data.skills.length) ? actor.data.skills : [];
-      const pick = skillId || pool[Math.floor(Math.random() * pool.length)] || null;
+      // 플레이어는 openSkillMenu에서 이미 감당 가능한 필살기만 골라 skillId로
+      // 넘겨준다 - 적은 skillId 없이 들어오므로 지금 감당되는 것 중 무작위로
+      // 하나 고른다(감당되는 게 하나도 없으면(필살기를 안 배운 적) 기존처럼
+      // 이름 없는 범용 필살기를 100% 기력으로 쓴다).
+      const pick = skillId || affordableSkills(actor)[Math.floor(Math.random() * affordableSkills(actor).length)] || null;
       const skillDef = pick ? SKILL_POOL[pick] : null;
+      actor.gauge = Math.max(0, actor.gauge - (skillDef ? skillDef.cost : 100));
       BattleEvents.emit('ultimateStart', { side, actorId: actor.data.id, skillName: skillDef ? skillDef.name : '필살공격' });
       dealDamage(actor, opponent, 'ultimate', skillDef);
     }
   }
 
   function enemyChoose() {
-    if (e.gauge >= 100 && Math.random() < 0.6) return 'ultimate';
+    if (e.gauge >= cheapestSkillCost(e) && Math.random() < 0.6) return 'ultimate';
     if (e.hp / e.maxHp < 0.3 && Math.random() < 0.5) return 'defend';
     const r = Math.random();
     if (r < 0.65) return 'attack';
@@ -185,14 +229,27 @@ const Battle = (function () {
     locked = true;
     p.defending = false; e.defending = false;
     const eAction = enemyChoose();
+    // 전광석화(forceFirst) 판정을 위해 적이 이번에 실제로 쓸 필살기를 미리
+    // 정해둔다 - actGeneric 안에서 그때그때 무작위로 고르면 아직 행동 순서를
+    // 정하기 전인 지금 시점엔 뭘 쓸지 알 수 없다.
+    const eSkillId = eAction === 'ultimate'
+      ? (affordableSkills(e)[Math.floor(Math.random() * affordableSkills(e).length)] || null)
+      : null;
 
     BattleEvents.emit('actionStart', { side: 'player', action: playerAction, actorId: p.data.id });
     BattleEvents.emit('actionStart', { side: 'enemy', action: eAction, actorId: e.data.id });
 
-    const order = p.data.stats.spd >= e.data.stats.spd ? ['p', 'e'] : ['e', 'p'];
+    const pSkillDef = playerAction === 'ultimate' && skillId ? SKILL_POOL[skillId] : null;
+    const eSkillDef = eSkillId ? SKILL_POOL[eSkillId] : null;
+    const pForceFirst = !!(pSkillDef && pSkillDef.forceFirst);
+    const eForceFirst = !!(eSkillDef && eSkillDef.forceFirst);
+    let order;
+    if (pForceFirst && !eForceFirst) order = ['p', 'e'];
+    else if (eForceFirst && !pForceFirst) order = ['e', 'p'];
+    else order = p.data.stats.spd >= e.data.stats.spd ? ['p', 'e'] : ['e', 'p'];
     for (const who of order) {
       if (who === 'p') { if (p.hp > 0) actGeneric(p, e, playerAction, skillId); }
-      else { if (e.hp > 0) actGeneric(e, p, eAction); }
+      else { if (e.hp > 0) actGeneric(e, p, eAction, eSkillId); }
       if (p.hp <= 0 || e.hp <= 0) break;
     }
 
@@ -249,10 +306,11 @@ const Battle = (function () {
 
   function openSkillMenu() {
     skillList.innerHTML = '';
-    const skills = (p.data.skills && p.data.skills.length) ? p.data.skills : [];
-    skills.slice(0, 4).forEach((id) => {
+    // 배운 필살기 중 지금 기력으로 실제로 쓸 수 있는 것만 보여준다 - 버튼이
+    // 활성화된 시점(기력이 제일 싼 필살기의 cost 이상)이라도, 더 비싼 필살기는
+    // 아직 감당이 안 될 수 있다.
+    affordableSkills(p).slice(0, 4).forEach((id) => {
       const def = SKILL_POOL[id];
-      if (!def) return;
       const btn = document.createElement('button');
       btn.innerHTML = `<strong>${def.name}</strong><span>${def.desc}</span>`;
       btn.onclick = () => { closeSkillMenu(); resolveRound('ultimate', id); };
