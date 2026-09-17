@@ -4719,6 +4719,15 @@ function wireMerchantStepperButtons() {
     btn.dataset.wired = '1';
     btn.addEventListener('click', () => buyFromMerchant(MERCHANT_DEALS.find((d) => d.key === btn.dataset.key)));
   });
+  document.querySelectorAll('.merchant-buymax-btn').forEach((btn) => {
+    if (btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', () => {
+      const deal = MERCHANT_DEALS.find((d) => d.key === btn.dataset.key);
+      merchantSteppers[deal.key].set(merchantMaxUnits(deal));
+      buyFromMerchant(deal);
+    });
+  });
 }
 
 function renderMerchantBox() {

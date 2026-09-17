@@ -540,6 +540,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #merchant-desc{ font-size:13px; color:var(--ink-soft); margin:0 0 16px; line-height:1.5; }
 .merchant-row-footer{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:8px; }
 .merchant-row-footer .merchant-cost{ font-size:12.5px; color:var(--ink-soft); }
+.merchant-buy-group{ display:flex; gap:8px; }
 .big-btn.small-btn{ padding:8px 18px; font-size:13px; box-shadow:none; }
 #merchant-hint{ font-size:12px; color:var(--bad); min-height:18px; margin-top:4px; }
 @media (orientation:portrait) and (max-width:1024px){
