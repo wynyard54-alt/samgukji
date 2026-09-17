@@ -436,7 +436,10 @@ const ROSTER = {
     stats:{atk:18, def:18, spd:16, int:87, cha:75, lead:22}, bio:'조조 진영의 명필이자 관료로, 서예가로도 이름이 높았다.', intro:'종요라 하오. 글씨든 정사든, 소홀히 하지 않소.' },
   heoyu: { id:'heoyu', name:'허유', birth:150, deathReal:204, deathVirtual:240, kind:'flavor', affiliation:'조조군',
     stats:{atk:20, def:20, spd:18, int:80, cha:48, lead:20}, bio:'원소를 배신하고 조조에게 투항해 관도대전 승리의 결정적 단서를 제공했으나, 오만함으로 후에 살해당했다.', intro:'허유라 하오. 옛 벗을 찾아 이리로 왔소.' },
-  jegalgeun: { id:'jegalgeun', name:'제갈근', birth:174, deathReal:241, deathVirtual:264, kind:'flavor', affiliation:'손권군',
+  // 챕터2 소패성 - 피난민 행렬을 돕는 모습으로 성문 근처에서 마주치는 장면
+  // 전용(main.js triggerJegalgeunEscort). 등용은 불가능하고(연의에서도 이때는
+  // 아직 각자 다른 길을 가는 사이), 만나서 끝까지 도와주면 명성만 오른다.
+  jegalgeun: { id:'jegalgeun', name:'제갈근', birth:174, deathReal:241, deathVirtual:264, kind:'flavor', affiliation:'손권군', chance:0.15,
     stats:{atk:18, def:20, spd:18, int:74, cha:85, lead:46}, bio:'제갈량의 형으로 손권을 섬겼으며, 아우와는 각기 다른 주군을 모셨다.', intro:'제갈근이라 하오. 아우와는 각자 섬기는 주공이 다를 뿐이오.' },
   iyu: { id:'iyu', name:'이유', birth:140, deathReal:198, deathVirtual:230, kind:'flavor', affiliation:'동탁군',
     stats:{atk:22, def:22, spd:20, int:88, cha:46, lead:26}, bio:'동탁의 책사로, 동탁의 폭정을 뒤에서 설계한 모사다.', intro:'동탁 어른의 계책을 맡고 있는 이유요.' },
@@ -460,7 +463,7 @@ const ROSTER = {
     stats:{atk:18, def:18, spd:16, int:61, cha:48, lead:18}, bio:'특정 세력에 매이지 않고 어지러운 시절을 떠돈 인물로 전해진다.', intro:'이찬이라 하오.' },
   jangso: { id:'jangso', name:'장소', birth:156, deathReal:236, deathVirtual:246, kind:'flavor', affiliation:'손권군',
     stats:{atk:20, def:22, spd:18, int:68, cha:70, lead:30}, bio:'손권을 오래 보좌한 원로 대신으로, 적벽대전 때는 조조에게 항복할 것을 주장하기도 했다.', intro:'강동의 원로, 장소요.' },
-  bojeul: { id:'bojeul', name:'보즐', birth:172, deathReal:246, deathVirtual:262, kind:'flavor', affiliation:'손권군',
+  bojeul: { id:'bojeul', name:'보즐', birth:172, deathReal:246, deathVirtual:262, kind:'recruit', forced:null, affiliation:'소패', chance:0.15,
     stats:{atk:18, def:20, spd:16, int:70, cha:58, lead:20}, bio:'손권을 섬긴 오의 승상으로, 온후한 정치로 신망이 두터웠다.', intro:'보즐이라 하오.' },
   banjun: { id:'banjun', name:'반준', birth:180, deathReal:249, deathVirtual:270, kind:'flavor', affiliation:'손권군',
     stats:{atk:22, def:24, spd:20, int:64, cha:56, lead:24}, bio:'손권 휘하에서 형주 일대의 내정을 맡아 다스린 신하다.', intro:'반준이라 하오.' },
@@ -548,7 +551,7 @@ const ROSTER = {
   // 표기만 같은 별개 인물이라 id를 구분한다.
   jangje_wi: { id:'jangje_wi', name:'장제', birth:180, deathReal:249, deathVirtual:270, kind:'flavor', affiliation:'조조군',
     stats:{atk:22, def:22, spd:20, int:65, cha:54, lead:24}, bio:'조위의 신하로, 사마의의 정변 당시 조상에게 항복을 권하는 데 관여했다.', intro:'조공을 섬기는 장제라 하오.' },
-  jingyo: { id:'jingyo', name:'진교', birth:175, deathReal:237, deathVirtual:265, kind:'flavor', affiliation:'조조군',
+  jingyo: { id:'jingyo', name:'진교', birth:175, deathReal:237, deathVirtual:265, kind:'recruit', forced:null, affiliation:'소패', chance:0.15,
     stats:{atk:16, def:18, spd:16, int:70, cha:56, lead:18}, bio:'조위를 섬긴 신하로 법 집행에서 관대함을 보인 것으로 알려졌다.', intro:'진교라 하오. 법과 절차를 다루고 있소.' },
   yeomsang: { id:'yeomsang', name:'염상', birth:160, deathReal:199, deathVirtual:250, kind:'flavor', affiliation:'원술군',
     stats:{atk:30, def:28, spd:26, int:70, cha:46, lead:34}, bio:'원술을 섬긴 장수로 여러 전투에 참전했다.', intro:'원술군의 염상이오.' },
@@ -960,7 +963,7 @@ const ROSTER = {
     stats:{atk:82, def:88, spd:80, int:62, cha:50, lead:74}, bio:'손책 때부터 오나라를 섬긴 원로 장수다.', intro:'주치라 하오.' },
   yeobeom: { id:'yeobeom', name:'여범', birth:160, deathReal:228, deathVirtual:250, kind:'flavor', forceWarrior:true, affiliation:'오',
     stats:{atk:44, def:42, spd:40, int:55, cha:48, lead:73}, bio:'오나라의 신하로 군수와 재정을 관리했다.', intro:'여범이라 하오. 셈에는 밝은 편이오.' },
-  yeodae: { id:'yeodae', name:'여대', birth:161, deathReal:256, deathVirtual:251, kind:'flavor', affiliation:'오',
+  yeodae: { id:'yeodae', name:'여대', birth:161, deathReal:256, deathVirtual:251, kind:'recruit', forced:null, affiliation:'소패', chance:0.15, recruitTroop:230,
     stats:{atk:82, def:79, spd:80, int:60, cha:50, lead:85}, bio:'오나라의 장수로 남방 교주 일대를 오래도록 안정시켰다.', intro:'여대라 하오. 오래 산 만큼 아는 것도 많소.' },
   yukhang: { id:'yukhang', name:'육항', birth:226, deathReal:274, deathVirtual:316, kind:'flavor', forceWarrior:true, affiliation:'오',
     stats:{atk:44, def:42, spd:40, int:75, cha:60, lead:95}, bio:'육손의 아들로, 오나라 말기까지 서진의 침공을 막아낸 마지막 명장이다.', intro:'육손의 아들, 육항이오. 아버님의 뜻을 잊지 않았소.' },

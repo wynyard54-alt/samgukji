@@ -531,6 +531,47 @@ const SEOJU_AREA_LABELS = [
       { id:'yubi', x:19, y:10, label:'유비', fixed:true },
       { id:'jangbi', x:17, y:10, label:'장비', fixed:true },
       { id:'michuk', x:21, y:10, label:'미축', fixed:true },
+      // 창희 - 태산군 일당의 일원. 탐색 없이 처음부터 노출되어 있고,
+      // 다른 세 명(장패·오돈·손관·윤례)과 달리 저잣거리 근처에서 시비조로
+      // 말을 건다.
+      { id:'changhui', x:27, y:15, label:'창희', fixed:true,
+        discoveryText:'장패 그 왈패녀석과 아는 사이오? 이 지역에서는 나랑 다시 이야기해야 할 거요.' },
+      // 간옹 - 챕터1에서 못 만났다면(랜덤 등장 확률을 못 뚫었다면) 여기서는
+      // 반드시 발견되도록 main.js goSopaeCamp에서 GameState.npcVisible을
+      // 강제로 true로 덮어쓴다. 재회 대사 후 곧바로(친밀도 없이) 등용된다.
+      { id:'ganong', x:16, y:11, label:'', discoverable:true, discoveryRange:2,
+        discoveryText:'유비 일행의 막사 근처에서 낯익은 얼굴이 서성이고 있다.' },
+      // 손건 - 등용 전이라면 탐색 없이 처음부터 노출되고, 등용되면 유비 옆
+      // 자리(residence)로 옮겨간다.
+      { id:'songgeon', x:23, y:11, label:'손건', fixed:true, residence:{ x:20, y:11, label:'손건' } },
+      // 진군 - 서주에서처럼 성 안쪽에서 우연히 마주치는 희귀 출현 인재.
+      { id:'jingun', x:13, y:16, label:'', discoverable:true, discoveryRange:2,
+        discoveryText:'저잣거리 한켠에서 단정한 차림의 선비가 세상 돌아가는 이야기를 나누고 있다.',
+        residence:{ x:14, y:16, label:'진군' } },
+      // 서성 - 여전히 낮은 확률로만 등장(ROSTER.seoseong.chance).
+      { id:'seoseong', x:24, y:20, label:'', discoverable:true, discoveryRange:2,
+        discoveryText:'격랑의 난세라 고향을 떠날 생각이오.',
+        residence:{ x:26, y:20, label:'서성' } },
+      // 태산군 일당(장패·오돈·손관·윤례) - 서주에서 등용하지 못했다면 여기서
+      // 다시 마주친다. 성 밖에 한데 뭉치지 않도록 흩어 배치.
+      { id:'jangpae', x:13, y:20, label:'', discoverable:true, discoveryRange:2,
+        discoveryText:'유비가 서주목이었다고 해서 우리가 그의 부하는 아니오. 실력이 있다면 여포와의 연을 정리하고 그쪽으로 갈 수도 있지.' },
+      { id:'odon', x:27, y:21, label:'', discoverable:true, discoveryRange:2,
+        discoveryText:'장패 형님 뜻이 그렇다면야 - 우리도 딱히 여포에 매인 몸은 아니오.' },
+      { id:'songgwan', x:33, y:20, label:'', discoverable:true, discoveryRange:2,
+        discoveryText:'…댁들도 여기까지 흘러왔군. 아직은 어느 쪽에도 마음을 정하지 못했소.' },
+      { id:'yunrye', x:16, y:23, label:'', discoverable:true, discoveryRange:2,
+        discoveryText:'장패 형님을 따라 여기까지 왔소만, 실력이 있어야 따를 마음도 생기지 않겠소.' },
+      // 제갈근 - main.js triggerJegalgeunEscort가 발견 즉시 대화/호위 장면을
+      // 전부 진행하므로, 여기서는 discoveryText를 별도로 두지 않는다.
+      { id:'jegalgeun', x:19, y:19, label:'', discoverable:true, discoveryRange:2 },
+      // 여대(관청 근처, 낮은 확률), 보즐(농지, 낮은 확률), 진교(주막, 낮은 확률).
+      { id:'yeodae', x:12, y:11, label:'', discoverable:true, discoveryRange:2,
+        discoveryText:'관청엔 무슨 볼일로 오셨소? 아 이야기는 익히 들어왔습니다.' },
+      { id:'bojeul', x:5, y:21, label:'', discoverable:true, discoveryRange:2,
+        discoveryText:'내 비록 지금은 가난한 농사꾼이나, 배움을 게을리 하지 않으며 군자의 삶을 살고자 하오.' },
+      { id:'jingyo', x:10, y:16, label:'', discoverable:true, discoveryRange:2,
+        discoveryText:'유비라는 자가 백성을 아낀다는 소문은 들었습니다.' },
     ],
   };
 })();

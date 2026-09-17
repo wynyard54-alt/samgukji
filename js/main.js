@@ -271,6 +271,10 @@ function getObjectives() {
     const metCount = SEOJU_GREET_IDS.filter((id) => !!gs.npcStatus[id]).length;
     if (metCount < 3) list.push(`서주의 유력 인사들과 인사 나누기 (${metCount}/3)`);
     else if (gs.flags.dogyeomDied) list.push('도겸이 세상을 떠났다 - 왼쪽 위 [하비성으로 이동] 버튼을 눌러 다음으로 넘어가자');
+  } else if (stage === 'sopae_free') {
+    const newRecruits = gs.recruited.filter((id) => !(gs.sopaeRecruitedAtArrival || []).includes(id)).length;
+    if (newRecruits < 3) list.push(`소패를 탐색하여 장수 등용 (${newRecruits}/3)`);
+    else list.push('소패에서 웬만한 인재는 다 모았다 - 당분간 힘을 기르며 지내보자');
   } else if (stage === 'habi_camp') {
     const step = gs.flags.habiStep || 0;
     if (step === 0) list.push('유비를 찾아가자');
@@ -555,6 +559,8 @@ function interactNPC(id, context) {
     if (id === 'jindeung' && !GameState.flags.habiJindeungMinigameDone) { startJindeungMinigame(); return; }
   }
   if (stage === 'sopae_free' && id === 'michuk' && !GameState.flags.sopaeMichukDonated) { handleSopaeMichukDonation(); return; }
+  if (stage === 'sopae_free' && id === 'ganong' && !GameState.recruited.includes('ganong')) { triggerGanongReunion(); return; }
+  if (stage === 'sopae_free' && id === 'jegalgeun' && !GameState.npcStatus['jegalgeun']) { triggerJegalgeunEscort(); return; }
   // 등용된 지력형 장수의 모병 상호작용(interactRecruitedGeneral)은 챕터1
   // 마을(탁현/평원)뿐 아니라 챕터2의 서주·하비·소패 관청에서도 그대로 열려
   // 있어야 한다 - 안 그러면 미축·미방·진규 같은 책사형 인물들이 등용된 뒤
@@ -666,7 +672,7 @@ function interactNPC(id, context) {
       return;
     }
     const afterCb = stage === 'warmap' ? checkWarmapClear : undefined;
-    startFreeBattle(id, afterCb, true);
+    startFreeBattle(id, afterCb, true, context);
     return;
   }
 }
@@ -2037,9 +2043,18 @@ function resolveArmyBattle(id, opts) {
   });
 }
 
-function startFreeBattle(id, afterCb, persistHp) {
+// discoverable(이름없이 있다가 근처에 가면 발견되는) 적장은 context로 discoveryText가
+// 넘어온다 - challengeWarrior와 같은 이유로, 예전엔 이 함수가 context 자체를 받지
+// 않아 kind:'enemy'인 태산군 오돈 등은 discoveryText를 설정해둬도 화면에 안 떴다.
+function startFreeBattle(id, afterCb, persistHp, context) {
   const rd = ROSTER[id];
-  Dialogue.show([{ speaker: rd.name, text: `${rd.name}이(가) 앞을 막아섰다!` }], () => {
+  const firstTime = !GameState.npcStatus[id];
+  const openingLines = [];
+  if (firstTime && context && context.discoveryText) {
+    openingLines.push({ speaker: '내레이션', text: context.discoveryText });
+  }
+  openingLines.push({ speaker: rd.name, text: `${rd.name}이(가) 앞을 막아섰다!` });
+  Dialogue.show(openingLines, () => {
     Battle.start({
       player: GameState.heroData(),
       enemy: rd,
@@ -3156,13 +3171,23 @@ function goSopaeCamp() {
   dissolveArmy('army');
   dissolveArmy('allyArmy');
   sopaeJinguJindeungDepart();
+  // 간옹은 반드시 재등장해야 하므로(챕터1 탁현/평원에서 확률에 걸려 못
+  // 만났을 수 있다) 캐시된 등장 여부를 강제로 덮어쓴다. 서성·진군은
+  // "여전히 낮은 확률"로 다시 판정받아야 하므로, 서주에서 이미 실패로
+  // 굳어버린 캐시가 있다면 지워서 소패에서 새로 굴리게 한다.
+  if (!GameState.recruited.includes('ganong')) GameState.npcVisible.ganong = true;
+  if (!GameState.recruited.includes('seoseong')) delete GameState.npcVisible.seoseong;
+  if (!GameState.recruited.includes('jingun')) delete GameState.npcVisible.jingun;
+  // "소패를 탐색하여 장수 등용 (0/3)" 임무 - 도착 시점 이후 새로 등용한
+  // 인원만 센다(서주 등에서 이미 데려온 인원은 포함하지 않는다).
+  GameState.sopaeRecruitedAtArrival = GameState.recruited.slice();
   showScreen('screen-explore');
   MapView.load('sopae', {
     onInteract: interactNPC,
     onApSpent: updateHUD,
     onApBlocked,
     onAmbientInteract: runAmbientEvent,
-    onStep: renderMinimap,
+    onStep: () => { renderMinimap(); checkJegalgeunEscort(); },
   });
   updateHUD();
   Dialogue.show(STORY.sopae_arrival, () => updateHUD());
@@ -3175,6 +3200,65 @@ function handleSopaeMichukDonation() {
   updateHUD();
   Dialogue.show([{ speaker: '미축', text: '주공이 궁핍해지셨으니, 제 노객 2000명과 가진 재물들을 군자금으로 내어드리겠습니다.' }], () => {
     toast(`병사 2000명, 금 500이 추가되었다. (병사 ${GameState.resources.troop}, 금 ${GameState.resources.gold})`);
+  });
+}
+
+// ---- 간옹: 챕터1에서 못 만났더라도 소패에서는 반드시 재회하고, 곧바로(친밀도
+// 없이) 등용된다. 유비와의 옛 인연을 확인하는 짧은 재회 장면. ----
+function triggerGanongReunion() {
+  GameState.npcStatus['ganong'] = 'met';
+  Dialogue.show([
+    { speaker: '간옹', text: '관공 오랜만이오, 현덕 잘 지내는가?' },
+    { speaker: '유비', text: '헌화! 자네가 어찌 여기까지 왔는가?' },
+    { speaker: '간옹', text: '난처한 상황인듯 한데, 쓰임이 있다면 함께하겠네.' },
+  ], () => {
+    GameState.recruit('ganong', 0);
+    stationRecruitOrRemove('ganong');
+    toast('간옹이(가) 합류했다. (명성 +10)');
+    updateHUD();
+  });
+}
+
+// ---- 제갈근: 성문 근처에서 피난민을 돕는 모습을 보고 남쪽 물가까지 호위한다.
+// 등용은 되지 않지만(연의에서도 이 시점엔 서로 다른 길을 가는 사이), 끝까지
+// 도와주면 명성만 오른다. 도착 판정은 연못 근처 3x3(9칸) 구역 중 아무 곳이나. ----
+const JEGALGEUN_SHORE_TILES = (() => {
+  const tiles = [];
+  for (let y = 24; y <= 26; y++) for (let x = 28; x <= 30; x++) tiles.push({ x, y });
+  return tiles;
+})();
+function triggerJegalgeunEscort() {
+  GameState.npcStatus['jegalgeun'] = 'met';
+  Dialogue.show([
+    { speaker: '피난민', text: '저리 비켜. 여기엔 우리가 먼저 탈거야.' },
+    { speaker: '제갈근', text: '모두가 살려고 떠나는 길인데 서로 싸워 무엇하겠소. 노인과 아이부터 태우시오. 나머지는 내가 함께 걷겠소.' },
+    { speaker: '관우', text: '난세에 보기 드문 처신이군. 이름이 무엇이오?' },
+    { speaker: '제갈근', text: '낭야 양도 사람, 제갈근이라 하오. 장군, 이들을 좀 도와주시겠소?' },
+  ], () => {
+    GameState.flags.jegalgeunEscorting = true;
+    updateHUD();
+    centerAlert('제갈근 일행과 함께 남쪽 물가까지 이동하자.', 4000);
+  });
+}
+function checkJegalgeunEscort() {
+  if (!GameState.flags.jegalgeunEscorting) return;
+  const p = MapView.playerPos;
+  if (!p || !JEGALGEUN_SHORE_TILES.some((t) => t.x === p.x && t.y === p.y)) return;
+  GameState.flags.jegalgeunEscorting = false;
+  MapView.lockMovement(true);
+  Dialogue.show([
+    { speaker: '제갈근', text: '감사합니다. 덕분에 여기까지 무사히 왔소.' },
+    { speaker: '관우', text: '그대 같은 인재라면 우리 형님께서도 반기실 것이오. 함께하지 않겠습니까?' },
+    { speaker: '제갈근', text: '말씀은 감사하오나, 이 난세에 가족을 두고 주군을 만들고 싶지않소, 우선 어딘가 정착한다면 그때 다시 고민해보겠소.' },
+    { speaker: '관우', text: '아쉽군요. 무운을 빕니다.' },
+    { speaker: '제갈근', text: '고향에 어린 아우들이 있는데… 그중 하나는 나보다 훨씬 총명하오. 크게 쓸만 할것이니 만나거든 중히 쓰십시오.' },
+  ], () => {
+    MapView.lockMovement(false);
+    GameState.npcStatus['jegalgeun'] = 'resolved';
+    MapView.removeNpc('jegalgeun');
+    GameState.addFame(20);
+    updateHUD();
+    toast('제갈근 일행을 무사히 배웅했다. (명성 +20)');
   });
 }
 
