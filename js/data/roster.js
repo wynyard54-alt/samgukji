@@ -239,19 +239,18 @@ const ROSTER = {
     stats:{atk:90, def:90, spd:80, int:78, cha:58, lead:85}, bio:'서주 출신으로 훗날 손권을 섬기며 위나라의 침공을 막아낸 명장이다.', intro:'서성이라 하오. 힘 쓰는 일이라면 자신 있으니, 부디 써주시오.' },
   songgwan: { id:'songgwan', name:'손관', birth:160, deathReal:215, deathVirtual:250, kind:'recruit', forced:null, affiliation:'서주', recruitTroop:550,
     stats:{atk:80, def:77, spd:80, int:50, cha:58, lead:74}, bio:'미축·손건과 함께 서주에서 유비를 도운 인물로 전해진다.', intro:'낭야의 손관이라 하오. 같은 고향의 장패가 그대들 밑에 있다기에 찾아왔소.' },
-  // 태산군 일당 - 장패(두목)와 오돈은 원래 산적 무리를 거느렸던 만큼
-  // 등용 시 사병을 크게 데려온다. 장패는 챕터1(평원/어양)에 임시로
-  // 배치해뒀던 것을 챕터2 서주로 옮겨왔다 - 손관과 같은 낭야/태산
-  // 출신이라는 설정으로 이 자리에 함께 둔다.
+  // 태산군 일당(장패·오돈·윤례) - 원래 산적 무리를 거느렸던 만큼 등용 시
+  // 사병을 크게 데려온다. 넷 다 서주성 밖에 각자 흩어져 배치한다(maps.js
+  // seoju.npcs 참고) - 장패는 챕터1(평원/어양)에 임시로 배치해뒀던 것을
+  // 챕터2 서주로 옮겨왔다.
   jangpae: { id:'jangpae', name:'장패', birth:155, deathReal:239, deathVirtual:245, kind:'recruit', forced:null, affiliation:'서주', recruitTroop:920,
     stats:{atk:88, def:75, spd:85, int:44, cha:58, lead:94}, bio:'본래 여포를 섬겼으나 훗날 조조에게 귀순해 서주 일대를 지킨 명장이다.', intro:'태산의 장패라 하오. 힘 쓸 곳을 찾고 있었는데, 마침 잘 만났소.' },
   jopyo: { id:'jopyo', name:'조표', birth:150, deathReal:196, deathVirtual:240, kind:'flavor', affiliation:'서주',
     bio:'서주의 장수로, 장비와의 다툼 끝에 목숨을 잃었다.', intro:'서주의 관원 조표요. …흥, 굴러온 돌이 사는 게 참 편해 보이는구려.', sprite:SPRITE_ELDER },
-  // 장패 무리의 일원 - 지도에 고정 배치하지 않고, 챕터1의 여상과 같은 방식으로
-  // 서주 자유탐방 중 휴식(다음달)할 때 확률적으로 마주치는 돌발 전투로 등장한다
-  // (main.js의 triggerOdonEvent/maybeSeojuRandomEvent 참고).
-  odon: { id:'odon', name:'오돈', birth:158, deathReal:212, deathVirtual:248, kind:'enemy', forced:null, affiliation:'무소속', recruitTroop:650,
-    stats:{atk:75, def:74, spd:72, int:42, cha:50, lead:74}, bio:'떠돌이 무리를 이끌던 장수로 전해진다.', intro:'…소문으로만 듣던 그대들이군. 이 몸이 상대해주겠소.' },
+  odon: { id:'odon', name:'오돈', birth:158, deathReal:212, deathVirtual:248, kind:'enemy', forced:null, affiliation:'서주', recruitTroop:650,
+    stats:{atk:75, def:74, spd:72, int:42, cha:50, lead:74}, bio:'장패와 함께 태산의 산채를 이끌던 장수로 전해진다.', intro:'…소문으로만 듣던 그대들이군. 이 몸이 상대해주겠소.' },
+  yunrye: { id:'yunrye', name:'윤례', birth:165, deathReal:225, deathVirtual:255, kind:'recruit', forced:null, affiliation:'서주', recruitTroop:500,
+    stats:{atk:75, def:73, spd:71, int:50, cha:50, lead:73}, bio:'장패를 따라 태산의 산채에서 함께 지내던 장수로 전해진다.', intro:'태산의 윤례라 하오. 장패 형님을 따라 여기까지 왔소.' },
 
   // ---- 챕터2 (관우) : 회남 - 원술 정벌 [장면3] ----
   // 기령·교유·뇌박·진란은 실제 전투 대상(kind:'enemy')이고, 원술만 서사
@@ -695,10 +694,11 @@ const ROSTER = {
     stats:{atk:82, def:75, spd:80, int:70, cha:58, lead:74}, bio:'조위를 섬긴 장수로 둔전 경영에 참여했다.', intro:'한호라 하오. 이전 장군과 함께 종사했소.' },
   itong: { id:'itong', name:'이통', birth:172, deathReal:209, deathVirtual:262, kind:'flavor', affiliation:'위·진',
     stats:{atk:89, def:80, spd:89, int:65, cha:58, lead:74}, bio:'조위를 섬긴 장수로 여러 전투에 참여했다.', intro:'이통이라 하오. 이 한 몸 바쳐서라도 싸우겠소.' },
-  yunrye: { id:'yunrye', name:'윤례', birth:165, deathReal:225, deathVirtual:255, kind:'flavor', affiliation:'위·진',
-    stats:{atk:75, def:73, spd:71, int:50, cha:50, lead:73}, bio:'조위를 섬긴 장수다.', intro:'윤례라 하오.' },
-  changhui: { id:'changhui', name:'창희', birth:165, deathReal:225, deathVirtual:255, kind:'flavor', affiliation:'위·진',
-    stats:{atk:80, def:76, spd:80, int:40, cha:58, lead:73}, bio:'조위를 섬긴 장수다.', intro:'창희라 하오.' },
+  // 창희: 원래 태산군 일당(장패·오돈·윤례와 함께 산채를 이끌던 인물)이지만,
+  // 챕터2 소패성 편은 아직 지도/장면이 구현되지 않아(main.js goSopaeCamp는
+  // 스텁) 실제로 등장시킬 곳이 없다 - 데이터만 미리 준비해둔다.
+  changhui: { id:'changhui', name:'창희', birth:165, deathReal:225, deathVirtual:255, kind:'recruit', forced:null, affiliation:'소패', recruitTroop:460,
+    stats:{atk:80, def:76, spd:80, int:40, cha:58, lead:73}, bio:'장패·오돈·윤례와 함께 태산의 산채를 이끌던 장수로 전해진다.', intro:'태산의 창희라 하오. 소패 근방에서 형세를 살피고 있었소.' },
   daereung: { id:'daereung', name:'대릉', birth:165, deathReal:225, deathVirtual:255, kind:'flavor', affiliation:'위·진',
     stats:{atk:86, def:77, spd:75, int:50, cha:58, lead:73}, bio:'조위를 섬긴 장수다.', intro:'대릉이라 하오.' },
   sahwan: { id:'sahwan', name:'사환', birth:168, deathReal:228, deathVirtual:258, kind:'flavor', affiliation:'위·진',

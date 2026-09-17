@@ -445,8 +445,10 @@ const SEOJU_AREA_LABELS = [
         discoveryText:'성 밖 들판에서 덩치 큰 사내가 창을 손질하며 주변을 살피고 있다.',
         residence:{ x:6, y:16, label:'서성' } },
       { id:'songgwan', x:22, y:19, label:'손관', fixed:true, storyGate:'seojuFreeRoam' },
-      // 태산 출신 옛 동료 - 손관 근처에 함께 둔다.
-      { id:'jangpae', x:17, y:20, label:'장패', fixed:true, storyGate:'seojuFreeRoam' },
+      // 태산군 일당(장패·오돈·윤례) - 성 밖에 한데 뭉치지 않도록 서로 멀리 흩어 둔다.
+      { id:'jangpae', x:6, y:15, label:'장패', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'odon', x:31, y:21, label:'오돈', fixed:true, storyGate:'seojuFreeRoam' },
+      { id:'yunrye', x:14, y:23, label:'윤례', fixed:true, storyGate:'seojuFreeRoam' },
       // 손건 대각선(27,5)과 겹쳐 그 사이로 못 지나가던 문제 - 한 칸 왼쪽으로.
       { id:'sangin', x:25, y:6, label:'상인', fixed:true, storyGate:'seojuFreeRoam' },
     ],

@@ -4543,16 +4543,12 @@ function maybeRandomEvent() {
 
 // 서주 자유탐방 전용 돌발 이벤트 - 챕터1의 RANDOM_EVENT_BANDITS/checkScheduledSpawns는
 // 같은 지도를 챕터1과 공유하는 탓에 그대로 재사용하면 챕터1 인물들까지 되살아날
-// 위험이 있어, 오돈(장패 무리)만을 위한 경량 버전을 따로 둔다.
-function triggerOdonEvent() {
-  if (GameState.npcStatus['odon']) { triggerFlavorEvent(); return; }
-  startFreeBattle('odon', undefined, true);
-}
+// 위험이 있어 경량 버전을 따로 둔다. 오돈은 이제 지도에 직접 배치돼 있어
+// (태산군 일당) 이 돌발 이벤트 대상에서는 뺐다.
 function maybeSeojuRandomEvent() {
   if (Math.random() >= RANDOM_EVENT_CHANCE) return false;
-  const kind = ['odon', 'merchant', 'harvest', 'flavor'][Math.floor(Math.random() * 4)];
-  if (kind === 'odon') triggerOdonEvent();
-  else if (kind === 'merchant') triggerMerchantEvent();
+  const kind = ['merchant', 'harvest', 'flavor'][Math.floor(Math.random() * 3)];
+  if (kind === 'merchant') triggerMerchantEvent();
   else if (kind === 'harvest') triggerHarvestEvent();
   else triggerFlavorEvent();
   return true;
