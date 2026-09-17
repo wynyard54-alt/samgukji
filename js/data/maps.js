@@ -467,6 +467,78 @@ const SEOJU_AREA_LABELS = [
   };
 })();
 
+// ---------------- 챕터2 (관우) : 소패성 ----------------
+// 사용자가 제공한 배경 그림(sopae_map_v1.jpg, 1295x906 ≈ 40x28 비율)에 맞춘 배치.
+// 탁현과 같은 40x28 규모. 그림 속 성벽 담장 안에 4채의 건물(서북쪽 민가,
+// 중앙 북쪽의 관청, 동북쪽 민가+마구간, 서남쪽 주막)과 중앙 우물, 저잣거리가
+// 있고, 성문은 서북쪽 쪽문(작은 문)과 남쪽 정문(대로로 이어짐) 두 곳이다.
+// 성 밖은 숲/바위, 남서쪽에 농지, 남동쪽에 연못이 있다.
+(function () {
+  const w = 40, h = 28;
+  const grid = makeGrid(w, h, 0);
+
+  // 지도 바깥 테두리 - 숲/바위(이동 불가). 북쪽 쪽문으로 이어지는 오솔길과
+  // 남쪽 대로(다음 장면으로 이어지는 진입로)만 열어둔다.
+  rectFill(grid, 0, 0, w - 1, 0, 4);
+  rectFill(grid, 0, h - 1, w - 1, h - 1, 4);
+  rectFill(grid, 0, 0, 0, h - 1, 4);
+  rectFill(grid, w - 1, 0, w - 1, h - 1, 4);
+  rectFill(grid, 7, 0, 9, 0, 0);   // 북쪽 오솔길 입구(쪽문으로 이어짐)
+  rectFill(grid, 18, h - 1, 21, h - 1, 0); // 남쪽 대로 입구
+
+  // 성곽 담장(사각형) - 서북쪽 쪽문, 남쪽 정문 두 곳만 뚫는다.
+  rectFill(grid, 6, 4, 36, 4, 4);   // 북쪽 담장
+  rectFill(grid, 6, 17, 36, 17, 4); // 남쪽 담장
+  rectFill(grid, 6, 4, 6, 17, 4);   // 서쪽 담장
+  rectFill(grid, 36, 4, 36, 17, 4); // 동쪽 담장
+  rectFill(grid, 8, 4, 9, 4, 0);    // 서북쪽 쪽문
+  rectFill(grid, 18, 17, 21, 17, 0); // 남쪽 정문
+
+  // 성 안 건물 4채 - 담장에서 한 칸 띄워 배치(문루/앞마당을 가리지 않도록).
+  rectFill(grid, 9, 5, 15, 9, 2);   // 서북 민가(분홍 꽃나무 옆)
+  rectFill(grid, 16, 5, 24, 9, 2);  // 중앙 관청(가장 크다)
+  rectFill(grid, 25, 5, 30, 8, 2);  // 동북 민가
+  rectFill(grid, 7, 10, 14, 15, 2); // 서남 주막(홍등)
+
+  // 중앙 우물+나무, 저잣거리(동남쪽 천막들) - 작은 장애물로만 둔다.
+  rectFill(grid, 21, 11, 22, 12, 2); // 우물+나무
+  rectFill(grid, 25, 11, 31, 13, 2); // 저잣거리 천막
+
+  // 성 밖 자연 장애물(나무/바위) - 그림 속 클러스터 위치에 맞춰 듬성듬성.
+  for (const [x, y] of [
+    [2, 2], [3, 6], [2, 10], [4, 14], [2, 18], [3, 22],
+    [37, 2], [38, 7], [37, 11], [38, 15], [37, 22],
+    [12, 2], [28, 2], [15, 25], [30, 24],
+  ]) grid[y][x] = 4;
+
+  // 남서쪽 농지(밭) - 이동은 가능하되 그림 위치만 기억해둔다(decor 라벨용).
+  // 남동쪽 연못.
+  rectFill(grid, 31, 21, 38, 26, 3);
+
+  MAPS.sopae = {
+    name: '소패성',
+    width: w, height: h,
+    tiles: grid,
+    backgroundKey: 'sopae_overview',
+    playerStart: { x:19, y:16 },
+    camera: { viewportW:800, viewportH:480 },
+    decor: [
+      { type:'mapLabel', x:20.0, y:4.6, label:'소패 관청' },
+      { type:'mapLabel', x:10.5, y:15.8, label:'주막' },
+      { type:'mapLabel', x:27.5, y:8.6, label:'민가' },
+      { type:'mapLabel', x:28.0, y:13.6, label:'저잣거리' },
+      { type:'mapLabel', x:6.0, y:21.0, label:'농지' },
+      { type:'mapLabel', x:34.5, y:21.0, label:'연못' },
+      { type:'mapLabel', x:19.5, y:17.6, label:'소패 남문' },
+    ],
+    npcs: [
+      { id:'yubi', x:19, y:10, label:'유비', fixed:true },
+      { id:'jangbi', x:17, y:10, label:'장비', fixed:true },
+      { id:'michuk', x:21, y:10, label:'미축', fixed:true },
+    ],
+  };
+})();
+
 // ---------------- 반동탁연합 진영 ----------------
 (function () {
   const w = 24, h = 16;

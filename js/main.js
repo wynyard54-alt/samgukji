@@ -15,7 +15,7 @@
   // (특히 오늘 막사·호로관 배경이 추가된 뒤로) 시작이 눈에 띄게 느려진다.
   // 게임 초반에 바로 보이는 탁현만 미리 받고, 나머지는 실제로 그 지도에
   // 들어갈 때 FieldAssets가 알아서 그때 받아오게 둔다.
-  const deferredFieldKeys = ['pyeongwon_city_overview', 'camp_overview', 'warmap_overview', 'seoju_siege_overview', 'seoju_overview', 'habi_gwannae_overview', 'suchun_overview'];
+  const deferredFieldKeys = ['pyeongwon_city_overview', 'camp_overview', 'warmap_overview', 'seoju_siege_overview', 'seoju_overview', 'habi_gwannae_overview', 'suchun_overview', 'sopae_overview'];
   const fieldKeys = FieldAssets.keys().filter((k) => !deferredFieldKeys.includes(k));
   const total = fieldKeys.length + extraUrls.length;
   let done = 0;
@@ -554,11 +554,12 @@ function interactNPC(id, context) {
     if (id === 'jingyu') { const r = handleJingyuRecruit(); if (r) return; }
     if (id === 'jindeung' && !GameState.flags.habiJindeungMinigameDone) { startJindeungMinigame(); return; }
   }
+  if (stage === 'sopae_free' && id === 'michuk' && !GameState.flags.sopaeMichukDonated) { handleSopaeMichukDonation(); return; }
   // 등용된 지력형 장수의 모병 상호작용(interactRecruitedGeneral)은 챕터1
-  // 마을(탁현/평원)뿐 아니라 챕터2의 서주·하비 관청에서도 그대로 열려 있어야
-  // 한다 - 안 그러면 미축·미방·진규 같은 책사형 인물들이 등용된 뒤 그냥
-  // 인사만 나누는 장식으로만 남아버린다.
-  if (st === 'recruited' && (stage === 'takhyeon_free' || stage === 'pyeongwon_free' || stage === 'seoju_free' || stage === 'habi_camp')) { interactRecruitedGeneral(id); return; }
+  // 마을(탁현/평원)뿐 아니라 챕터2의 서주·하비·소패 관청에서도 그대로 열려
+  // 있어야 한다 - 안 그러면 미축·미방·진규 같은 책사형 인물들이 등용된 뒤
+  // 그냥 인사만 나누는 장식으로만 남아버린다.
+  if (st === 'recruited' && (stage === 'takhyeon_free' || stage === 'pyeongwon_free' || stage === 'seoju_free' || stage === 'habi_camp' || stage === 'sopae_free')) { interactRecruitedGeneral(id); return; }
   if (st === 'recruited' || st === 'resolved' || st === 'dead' || st === 'fled') return;
 
   // 유비군이 자기 차례로 실제 전투에 참여 중일 때 유비를 클릭하면(적을
@@ -3138,10 +3139,43 @@ function checkHoesuRetreat() {
   });
 }
 
-// 소패성 지도는 아직 만들어지지 않았다 - 지금은 이야기 전개상 여기서
-// 한 단락을 매듭짓고, 다음 단계에서 실제 지도를 붙일 예정이다.
+// ---------------- 챕터2 (관우) : 소패성 ----------------
+// 서주의 유력 가문이던 진규·진등 부자는 여포가 있는 서주에 남기로 하며
+// 유비 곁을 떠난다 - 등용 목록에서 제외한다(재등용/재등장 없음, 서주 지도로는
+// 다시 돌아가지 않으므로 상태값 자체는 크게 중요하지 않지만 'left'로 남겨둔다).
+function sopaeJinguJindeungDepart() {
+  ['jingyu', 'jindeung'].forEach((id) => {
+    GameState.recruited = GameState.recruited.filter((rid) => rid !== id);
+    GameState.npcStatus[id] = 'left';
+  });
+}
 function goSopaeCamp() {
-  toast('소패성 이야기는 다음 업데이트에서 이어집니다.');
+  stage = 'sopae_free';
+  // 회수평야에서 쓰고 남은 병력·군량이 그냥 증발하지 않도록, 관우군/유비군
+  // 두 군세를 모두 해산해 town 자원(GameState.resources)에 합쳐 넘긴다.
+  dissolveArmy('army');
+  dissolveArmy('allyArmy');
+  sopaeJinguJindeungDepart();
+  showScreen('screen-explore');
+  MapView.load('sopae', {
+    onInteract: interactNPC,
+    onApSpent: updateHUD,
+    onApBlocked,
+    onAmbientInteract: runAmbientEvent,
+    onStep: renderMinimap,
+  });
+  updateHUD();
+  Dialogue.show(STORY.sopae_arrival, () => updateHUD());
+}
+
+// ---- 미축: 소패에 몸을 의탁한 직후, 사재를 털어 군자금을 보태는 1회성 이벤트 ----
+function handleSopaeMichukDonation() {
+  GameState.flags.sopaeMichukDonated = true;
+  GameState.addResource({ troop: 2000, gold: 500 });
+  updateHUD();
+  Dialogue.show([{ speaker: '미축', text: '주공이 궁핍해지셨으니, 제 노객 2000명과 가진 재물들을 군자금으로 내어드리겠습니다.' }], () => {
+    toast(`병사 2000명, 금 500이 추가되었다. (병사 ${GameState.resources.troop}, 금 ${GameState.resources.gold})`);
+  });
 }
 
 // 회수평야에서 관우군/유비군 중 어느 쪽이든 전투에서 완전히 무너지면(resolveArmyBattle의
