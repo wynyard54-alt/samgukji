@@ -527,7 +527,6 @@ const SEOJU_AREA_LABELS = [
       { type:'mapLabel', x:27.5, y:8.6, label:'민가' },
       { type:'mapLabel', x:28.0, y:13.6, label:'저잣거리' },
       { type:'mapLabel', x:6.0, y:21.0, label:'농지' },
-      { type:'mapLabel', x:34.5, y:21.0, label:'연못' },
       { type:'mapLabel', x:19.5, y:17.6, label:'소패 남문' },
     ],
     npcs: [
