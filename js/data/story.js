@@ -402,7 +402,43 @@ const STORY = {
     { speaker: '유비', text: '그런 말 말거라. 그래도 소패에라도 머물 수 있어 다행이다. 여기서 다시 재개해보자꾸나.' },
   ],
 
-  // TODO(챕터2 다음 장면, 소패): 등용 미션(0/3) 완료 시 원술 5개 부대가
-  // 성 남쪽으로 처들어오고, 유비가 여포에게 구원을 청해 원문사극(방천화극을
-  // 활로 맞혀 화친시키는 장면)으로 이어진다 - CLAUDE.md 대본 초안 참고.
+  sopae_wonsul_report: [
+    { speaker: '관우', text: '형님, 원술이 대군을 이끌고 소패성 앞까지 왔다 합니다.' },
+    { speaker: '장비', text: '잘됐군! 이번에야말로 내가 싹 다 쓸어버리고 오겠수다.' },
+    { speaker: '손건', text: '소패의 병력으로는 무리입니다. 여포에게 구원을 청하시지요.' },
+    { speaker: '장비', text: '그 배신자에게 무슨 도움이야!' },
+    { speaker: '유비', text: '지금은 백성들을 지키는 게 먼저다. 여포에게 서신을 보내게.' },
+  ],
+
+  // 진궁·여포 삽화는 아직 제공되지 않아 검은 화면(placeholder)으로 대체 -
+  // 나중에 실제 삽화가 오면 이 세 대본(sopae_jingung_yeopo_debate,
+  // sopae_wonmunsageuk의 scene 필드들)만 경로를 바꿔주면 된다.
+  sopae_jingung_yeopo_debate: [
+    { speaker: '진궁', text: '원술은 장군께서 움직이지 않기를 바라고 양곡까지 보내왔습니다.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+    { speaker: '여포', text: '하지만 원술이 유비를 삼키면 다음은 나겠지.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+    { speaker: '진궁', text: '둘이 싸우게 두는 것도 방법입니다.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+    { speaker: '여포', text: '아니다. 어느 한쪽이 너무 커져선 안 돼. 내가 직접 가겠다.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+  ],
+
+  sopae_giryeong_jangbi_standoff: [
+    { speaker: '기령', text: '여포 장군, 원술님의 곡식을 받아놓고 어찌 유비를 돕는 것이오?' },
+    { speaker: '장비', text: '시끄럽다 기령, 싸우러 왔으면 덤벼라!' },
+    { speaker: '여포', text: '그만! 둘 다 멈춰보시게!' },
+  ],
+
+  // 원문사극(연의 16회) - 방천화극의 곁가지를 활로 맞혀 화친시키는 장면.
+  // 실제 삽화 3컷(원문사극 준비/화살/명중)이 오기 전까지 검은 화면으로 대체.
+  sopae_wonmunsageuk: [
+    { speaker: '여포', text: '저 원문 밖에 내 방천화극을 세워라! 기 장군, 내가 여기서 저 화극의 작은 구멍을 화살로 맞추겠소.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+    { speaker: '기령', text: '저 거리에서 말이오?', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+    { speaker: '여포', text: '맞히면 하늘이 오늘 싸우지 말라는 뜻이다. 자네는 군사를 물리시오!', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+    { speaker: '장비', text: '못 맞춘다면?', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+    { speaker: '여포', text: '그땐 싸우든 말든 알아서 하시오!', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+    { speaker: '내레이션', text: '쐐액—!', scene: 'assets/illust/sopae_wonmun_placeholder.jpg', holdMs: 1000 },
+    { speaker: '병사들', text: '오오오오!!!', scene: 'assets/illust/sopae_wonmun_placeholder.jpg', holdMs: 1000 },
+    { speaker: '여포', text: '하늘의 뜻이로군.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+    { speaker: '기령', text: '……할 말이 없으니, 오늘은 물러가겠소.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+    { speaker: '여포', text: '유현덕, 내가 아니었으면 오늘 위험했을 것이오.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+    { speaker: '유비', text: '장군, 큰 은혜를 입었습니다.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+  ],
 };

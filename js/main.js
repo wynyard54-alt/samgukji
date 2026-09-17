@@ -426,6 +426,11 @@ function renderPlayerPanel() {
 
 function updateHUD() {
   const gs = GameState;
+  // 소패 "장수 등용 (0/3)" 임무는 여러 갈래(일기토 등용/책사 친밀도 등용/
+  // 포로 설득/간옹 재회 등)에서 완료될 수 있어, 매 갈래마다 따로 확인하는
+  // 대신 등용 뒤 항상 불리는 updateHUD 한 곳에서만 확인한다(idempotent -
+  // checkSopaeInvasionTrigger 자체가 이미 시작됐으면 곧바로 반환한다).
+  if (stage === 'sopae_free') checkSopaeInvasionTrigger();
   document.getElementById('hud-date').textContent = gs.dateLabel();
   // 전쟁 지도의 속도순 전투에서 유비군 차례일 때는 관우군과 별개인 allyAp를 보여준다.
   const showAllyAp = warRoundActive && warOrder[warIndex] === 'yubi';
@@ -3263,6 +3268,96 @@ function checkJegalgeunEscort() {
     GameState.addFame(20);
     updateHUD();
     toast('제갈근 일행을 무사히 배웅했다. (명성 +20)');
+  });
+}
+
+// ---------------- 소패성 원술 침공 ~ 원문사극(연의 16회) ----------------
+// "장수 등용 (0/3)" 임무를 채우면 발동. 원술군 5개 부대가 남쪽 대로로
+// 처들어와 3칸 전진한 뒤 멈추고, 유비가 여포에게 구원을 청하면 여포·장료
+// 군세가 등장해 원문사극(방천화극을 활로 맞혀 화친시키는 장면)으로
+// 마무리된다. 실제 삽화(진궁·여포 대화, 원문사극 3컷)는 아직 없어 검은
+// 화면(assets/illust/sopae_wonmun_placeholder.jpg)으로 자리만 잡아둔다.
+const SOPAE_WONSUL_ARMIES = [
+  { id: 'giryeong', troop: 10000, x: 19, startY: 24 },
+  { id: 'gyoyu', troop: 8000, x: 15, startY: 25 },
+  { id: 'noebak', troop: 8000, x: 23, startY: 25 },
+  { id: 'jinran', troop: 8000, x: 12, startY: 23 },
+  { id: 'janghun', troop: 8000, x: 25, startY: 23 },
+];
+const SOPAE_YEOPO_ARMIES = [
+  { id: 'yeopo', troop: 10000, x: 18, y: 25 },
+  { id: 'jangryo', troop: 10000, x: 22, y: 25 },
+];
+function checkSopaeInvasionTrigger() {
+  if (GameState.flags.sopaeInvasionStarted) return;
+  const newRecruits = GameState.recruited.filter((id) => !(GameState.sopaeRecruitedAtArrival || []).includes(id)).length;
+  if (newRecruits < 3) return;
+  GameState.flags.sopaeInvasionStarted = true;
+  startSopaeWonsulInvasion();
+}
+function startSopaeWonsulInvasion() {
+  MapView.lockMovement(true);
+  SOPAE_WONSUL_ARMIES.forEach((a) => {
+    ROSTER[a.id].troop = a.troop;
+    delete GameState.npcStatus[a.id];
+    delete ROSTER[a.id].commanderCaptured;
+    MapView.addNpc(a.id);
+  });
+  MapView.panCameraTo(19, 23, 700);
+  setTimeout(() => {
+    let remaining = SOPAE_WONSUL_ARMIES.length;
+    SOPAE_WONSUL_ARMIES.forEach((a) => {
+      const path = [0, 1, 2, 3].map((i) => ({ x: a.x, y: a.startY - i }));
+      MapView.walkNpcPath(a.id, path, 260, () => {
+        remaining--;
+        if (remaining === 0) sopaeInvasionAfterApproach();
+      });
+    });
+  }, 1000);
+}
+function sopaeInvasionAfterApproach() {
+  centerAlert('원술군이 쳐들어온다. 유비를 찾아간다.', 3000);
+  setTimeout(() => {
+    MapView.setPlayerPos(19, 11);
+    MapView.panCameraTo(19, 11, 700);
+    Dialogue.show(STORY.sopae_wonsul_report, () => {
+      Dialogue.show(STORY.sopae_jingung_yeopo_debate, () => {
+        sopaeSummonYeopoArmies();
+      });
+    });
+  }, 1500);
+}
+function sopaeSummonYeopoArmies() {
+  SOPAE_YEOPO_ARMIES.forEach((a) => {
+    ROSTER[a.id].troop = a.troop;
+    delete GameState.npcStatus[a.id];
+    delete ROSTER[a.id].commanderCaptured;
+    MapView.addNpc(a.id);
+  });
+  MapView.panCameraTo(19, 22, 700);
+  setTimeout(() => {
+    Dialogue.show(STORY.sopae_giryeong_jangbi_standoff, () => {
+      Dialogue.show(STORY.sopae_wonmunsageuk, () => {
+        sopaeInvasionRetreat();
+      });
+    });
+  }, 900);
+}
+function sopaeInvasionRetreat() {
+  const allArmies = [...SOPAE_WONSUL_ARMIES, ...SOPAE_YEOPO_ARMIES];
+  let remaining = allArmies.length;
+  allArmies.forEach((a) => {
+    const fromY = a.startY != null ? a.startY - 3 : a.y;
+    const path = [0, 1, 2, 3].map((i) => ({ x: a.x, y: fromY + i }));
+    MapView.walkNpcPath(a.id, path, 200, () => {
+      MapView.removeNpc(a.id);
+      remaining--;
+      if (remaining === 0) {
+        MapView.lockMovement(false);
+        updateHUD();
+        toast('원술군과 여포군이 물러갔다. 당분간 소패에서 평화롭게 지낼 수 있게 되었다.');
+      }
+    });
   });
 }
 

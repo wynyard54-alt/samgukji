@@ -572,6 +572,17 @@ const SEOJU_AREA_LABELS = [
         discoveryText:'내 비록 지금은 가난한 농사꾼이나, 배움을 게을리 하지 않으며 군자의 삶을 살고자 하오.' },
       { id:'jingyo', x:10, y:16, label:'', discoverable:true, discoveryRange:2,
         discoveryText:'유비라는 자가 백성을 아낀다는 소문은 들었습니다.' },
+      // 원술군 5개 부대 + 여포군 2개 부대 - 등용 미션(0/3) 완료 시 벌어지는
+      // 원문사극 컷신 전용(main.js startSopaeWonsulInvasion). storyGate를
+      // 절대 참이 되지 않는 이름으로 걸어 평소엔 숨겨두고, MapView.addNpc로
+      // 그 시점에만 등장시킨다.
+      { id:'giryeong', x:19, y:24, label:'기령 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
+      { id:'gyoyu', x:15, y:25, label:'교유 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
+      { id:'noebak', x:23, y:25, label:'뇌박 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
+      { id:'jinran', x:12, y:23, label:'진란 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
+      { id:'janghun', x:25, y:23, label:'장훈 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
+      { id:'yeopo', x:18, y:25, label:'여포 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
+      { id:'jangryo', x:22, y:25, label:'장료 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
     ],
   };
 })();
