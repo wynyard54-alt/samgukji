@@ -640,7 +640,7 @@ function interactNPC(id, context) {
   }
 
   if (rd.kind === 'recruit') {
-    if (isScholarType(rd)) visitScholar(id, context); else challengeWarrior(id);
+    if (isScholarType(rd)) visitScholar(id, context); else challengeWarrior(id, context);
     return;
   }
 
@@ -807,12 +807,20 @@ function proposeScholar(id) {
 }
 
 // ---- 무력형: 등용 제안 → 거절 + 일기토 → 승리 시 등용확률 상승 ----
-function challengeWarrior(id) {
+// discoverable(이름없이 있다가 근처에 가면 발견되는) 무장은 context로 discoveryText가
+// 넘어온다 - 책사형(visitScholar)은 이미 이걸 보여주고 있었지만, 무장형은 그동안
+// context 자체를 받지 않아 discoveryText가 설정돼 있어도 화면에 뜨지 않던 사각지대였다.
+function challengeWarrior(id, context) {
   const rd = ROSTER[id];
   const firstTime = !GameState.npcStatus[id];
   if (!firstTime && !spend(3)) return;
   GameState.npcStatus[id] = 'met';
-  Dialogue.show([{ speaker: rd.name, text: '나는 실력없는 장수 밑으로 들어가고 싶지 않소. 그대의 실력, 이 자리에서 보여주시오!' }], () => {
+  const openingLines = [];
+  if (firstTime && context && context.discoveryText) {
+    openingLines.push({ speaker: '내레이션', text: context.discoveryText });
+  }
+  openingLines.push({ speaker: rd.name, text: '나는 실력없는 장수 밑으로 들어가고 싶지 않소. 그대의 실력, 이 자리에서 보여주시오!' });
+  Dialogue.show(openingLines, () => {
     Battle.start({
       player: GameState.heroData(),
       enemy: rd,

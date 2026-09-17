@@ -444,11 +444,18 @@ const SEOJU_AREA_LABELS = [
       { id:'seoseong', x:10, y:18, label:'', discoverable:true, discoveryRange:2, storyGate:'seojuFreeRoam',
         discoveryText:'성 밖 들판에서 덩치 큰 사내가 창을 손질하며 주변을 살피고 있다.',
         residence:{ x:6, y:16, label:'서성' } },
-      { id:'songgwan', x:22, y:19, label:'손관', fixed:true, storyGate:'seojuFreeRoam' },
-      // 태산군 일당(장패·오돈·윤례) - 성 밖에 한데 뭉치지 않도록 서로 멀리 흩어 둔다.
-      { id:'jangpae', x:6, y:15, label:'장패', fixed:true, storyGate:'seojuFreeRoam' },
-      { id:'odon', x:31, y:21, label:'오돈', fixed:true, storyGate:'seojuFreeRoam' },
-      { id:'yunrye', x:14, y:23, label:'윤례', fixed:true, storyGate:'seojuFreeRoam' },
+      // 태산군 일당(장패·오돈·손관·윤례) - 도겸이 죽고 유비가 서주목 자리를
+      // 이은 뒤에야 형세를 살피러 나타난다는 설정이라 storyGate를 dogyeomDied로
+      // 건다. 이름 없는 무리로 있다가 가까이 가면 발견되는 방식(서성과 같은
+      // 결)이고, 성 밖에 한데 뭉치지 않도록 서로 멀리 흩어 둔다.
+      { id:'jangpae', x:6, y:15, label:'', discoverable:true, discoveryRange:2, storyGate:'dogyeomDied',
+        discoveryText:'유비가 도겸을 이어 이곳을 차지했다고 해서 우리가 그의 부하는 아니오. 실력이 있다면 여포와의 연을 정리하고 그쪽으로 갈 수도 있지. 크하하, 거 댁의 주군, 돈은 좀 있으신가?' },
+      { id:'odon', x:31, y:21, label:'', discoverable:true, discoveryRange:2, storyGate:'dogyeomDied',
+        discoveryText:'장패 형님 밑에 있다고 우리가 여포 사람인 줄 아나 본데, 딱히 그런 것도 아니오. 실력이나 있다면 몰라도.' },
+      { id:'songgwan', x:22, y:19, label:'', discoverable:true, discoveryRange:2, storyGate:'dogyeomDied',
+        discoveryText:'…댁이 유비의 사람인가. 도겸이 죽고 자리가 어수선하다길래 형세나 살피러 왔소만, 마침 잘 만났군.' },
+      { id:'yunrye', x:14, y:23, label:'', discoverable:true, discoveryRange:2, storyGate:'dogyeomDied',
+        discoveryText:'장패 형님 소식을 듣고 여기까지 왔소. 아직 마음을 정하진 못했으니, 그럴 만한 실력인지부터 보여주시오.' },
       // 손건 대각선(27,5)과 겹쳐 그 사이로 못 지나가던 문제 - 한 칸 왼쪽으로.
       { id:'sangin', x:25, y:6, label:'상인', fixed:true, storyGate:'seojuFreeRoam' },
     ],
