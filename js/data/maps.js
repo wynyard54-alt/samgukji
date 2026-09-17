@@ -532,7 +532,11 @@ const SEOJU_AREA_LABELS = [
     npcs: [
       { id:'yubi', x:19, y:10, label:'유비', fixed:true },
       { id:'jangbi', x:17, y:10, label:'장비', fixed:true },
-      { id:'michuk', x:21, y:10, label:'미축', fixed:true },
+      // 미축 - 본래 부유한 상인 출신이라는 설정에 맞춰 관청 앞이 아니라
+      // 저잣거리 쪽에 자리한다.
+      { id:'michuk', x:28, y:15, label:'미축', fixed:true },
+      // 상인 - 저잣거리 천막 북쪽 개활지에 좌판을 벌였다.
+      { id:'sangin', x:30, y:12, label:'상인', fixed:true },
       // 창희 - 태산군 일당의 일원. 탐색 없이 처음부터 노출되어 있고,
       // 다른 넷(장패·오돈·손관·윤례)과 마찬가지로 성 밖 숲 쪽에서 시비조로
       // 말을 건다.
