@@ -179,10 +179,13 @@ const MapView = (function () {
         if (!GameState.npcVisible[n.id]) return false;
       }
       const status = GameState.npcStatus[n.id];
+      // 미축처럼 소패 도착 전에 이미 등용된 채로 들어오는(도겸 사망 시 자동 합류)
+      // 인물이 residence 없이도 지도에서 사라지지 않게 소패도 함께 넣어둔다.
       const fixedInTown =
         (id === 'takhyeon' && (n.id === 'yubi' || n.id === 'yuwongi')) ||
         (id === 'pyeongwon' && n.id === 'yubi') ||
-        id === 'habi'; // 관청 안의 인물들은 등용/처치 상태와 무관하게 늘 그 자리에 있다
+        id === 'habi' || // 관청 안의 인물들은 등용/처치 상태와 무관하게 늘 그 자리에 있다
+        id === 'sopae';
       if (status === 'dead' || status === 'fled') return false;
       if ((status === 'recruited' || status === 'resolved') && !fixedInTown && !n.residence) return false;
       if (n.randomSpawn && !GameState.npcSpawnPos[n.id]) return false; // 아직 등장 시점이 되지 않음
