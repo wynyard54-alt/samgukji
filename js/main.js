@@ -826,9 +826,14 @@ function challengeWarrior(id) {
           const roll = Math.random() * 100;
           if (roll < chance) {
             Dialogue.show([{ speaker: rd.name, text: '…드디어 눈을 떴습니다. 함께하죠.' }], () => {
-              GameState.recruit(id);
+              // 책사는 계책만 들고 오지만 무장은 그동안 거느리던 사병을
+              // 함께 데려온다 - 인물마다 recruitTroop(100~1000)을 따로
+              // 정해뒀고(roster.js), 안 정해둔 인물은 예전처럼 기본값(15)만.
+              const troopGain = rd.recruitTroop;
+              GameState.recruit(id, troopGain);
               stationRecruitOrRemove(id);
-              toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%, 명성 +10)`);
+              const troopMsg = troopGain ? `, 병사 ${troopGain}명 합류` : '';
+              toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%, 명성 +10${troopMsg})`);
               updateHUD();
             });
           } else {
