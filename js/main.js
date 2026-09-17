@@ -1053,6 +1053,10 @@ function openWarCommandMenu(id) {
   // "누가 다가갔는지"를 정확히 반영해야 한다.
   options.push({ label: '전투', cb: () => resolveArmyBattle(id, { initiator: engagementBudget != null ? 'enemy' : 'player' }) });
   options.push({ label: '책략', cb: () => attemptStrategy(id) });
+  // 플레이어가 직접 적에게 다가가 붙여 연 메뉴이므로(적이 자동으로 다가온
+  // 경우는 이 메뉴를 열지 않고 handleEnemyInitiatedEngagement로 처리된다),
+  // 잘못 눌렀거나 아직 싸울 준비가 안 됐을 때 그냥 닫고 나갈 수 있어야 한다.
+  options.push({ label: '그만두기', cb: () => {} });
   showChoice(`${rd.name} 군세와 마주쳤다. 어떻게 하시겠습니까?`, options);
 }
 
