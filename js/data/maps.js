@@ -308,7 +308,6 @@ if (false) (function () {
         discoveryText:'유비 세력 막사 근처를 서성이던 젊은 학자가, 삼형제를 유심히 바라보다 다가온다.' },
       { id:'yeomyu', x:36, y:16, label:'', randomSpawn:true, discoverable:true, discoveryRange:2, hideAfterJangsun:true,
         discoveryText:'성벽 밖에서 병사들이 수군거린다. "오환을 움직여 이 반란을 잠재우려면, 그 사람밖에 없다는데."' },
-      { id:'jangpae', x:11, y:12, label:'장패', randomSpawn:true },
       { id:'sangin', x:23, y:12, label:'상인', fixed:true },
       { id:'taesaja', x:36, y:5, label:'태사자', randomSpawn:true },
       { id:'choeyeom', x:34, y:12, label:'최염', randomSpawn:true, discoverable:true, discoveryRange:2,
@@ -446,6 +445,8 @@ const SEOJU_AREA_LABELS = [
         discoveryText:'성 밖 들판에서 덩치 큰 사내가 창을 손질하며 주변을 살피고 있다.',
         residence:{ x:6, y:16, label:'서성' } },
       { id:'songgwan', x:22, y:19, label:'손관', fixed:true, storyGate:'seojuFreeRoam' },
+      // 태산 출신 옛 동료 - 손관 근처에 함께 둔다.
+      { id:'jangpae', x:17, y:20, label:'장패', fixed:true, storyGate:'seojuFreeRoam' },
       // 손건 대각선(27,5)과 겹쳐 그 사이로 못 지나가던 문제 - 한 칸 왼쪽으로.
       { id:'sangin', x:25, y:6, label:'상인', fixed:true, storyGate:'seojuFreeRoam' },
     ],

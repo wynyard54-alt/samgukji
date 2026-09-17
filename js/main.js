@@ -853,9 +853,14 @@ function attemptPersuadeCaptured(id) {
   const chance = clamp(55 + (hero.stats.cha - rd.stats.cha) * 0.6, 15, 95);
   const roll = Math.random() * 100;
   if (roll < chance) {
-    GameState.recruit(id);
+    // 무장 유형 재야 인물도 challengeWarrior와 같은 규칙으로 사병을 데려온다.
+    // 전장에서 사로잡은 실제 포로(기령/고순 등)는 recruitTroop이 없어
+    // 예전처럼 기본값(15)만 - "포로는 그냥 둔다"는 결정을 그대로 보존한다.
+    const troopGain = rd.recruitTroop;
+    GameState.recruit(id, troopGain);
     stationRecruitOrRemove(id);
-    toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%, 명성 +10)`);
+    const troopMsg = troopGain ? `, 병사 ${troopGain}명 합류` : '';
+    toast(`${rd.name}이(가) 등용되었습니다! (성공률 ${Math.round(chance)}%, 명성 +10${troopMsg})`);
   } else {
     GameState.npcStatus[id] = 'resolved';
     MapView.removeNpc(id);

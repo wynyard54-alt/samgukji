@@ -46,7 +46,7 @@ const ROSTER = {
     battleArt:{ glyph:'張', weapon:'丈八蛇矛', className:'hero-green', src:'assets/battle/duel_jangbi_v2.png' } },
 
   // 탁현
-  chujeong: { id:'chujeong', name:'추정', birth:162, deathReal:230, deathVirtual:252, kind:'recruit', forced:null, affiliation:'무소속', recruitTroop:100,
+  chujeong: { id:'chujeong', name:'추정', birth:162, deathReal:230, deathVirtual:252, kind:'recruit', forced:null, affiliation:'무소속', recruitTroop:95,
     stats:{atk:61, def:65, spd:51, int:51, cha:46, lead:42}, bio:'황건적 토벌 당시 유비를 이끌고 종군하게 한 유주의 도위였다.', intro:'황건적 토벌에 자원했다고? 마침 손이 부족했는데 잘 왔소.' },
   noshik: { id:'noshik', name:'노식', birth:140, deathReal:192, deathVirtual:230, kind:'recruit', forced:null, affiliation:'무소속',
     stats:{atk:28, def:37, spd:31, int:88, cha:79, lead:68}, bio:'유비의 스승 격 인물로 황건적 토벌에서 공을 세운 명장이다.', intro:'그대가 유비의 아우들인가. 세상이 이리 어지러우니, 붓을 놓고 검을 들어야 할 때인가 싶군.',
@@ -66,17 +66,17 @@ const ROSTER = {
     stats:{atk:24, def:21, spd:26, int:70, cha:69, lead:20}, bio:'유비의 오랜 벗이자 신하로, 재치 있는 언변으로 여러 차례 곤경을 풀어냈다.', intro:'이 몸은 말주변이 좀 있소이다. 협상이 필요하면 불러주시오.' },
 
   // 탁군 인근 소읍 (적 -> 포로 후 등용)
-  gwakseung: { id:'gwakseung', name:'곽승', birth:153, deathReal:215, deathVirtual:243, kind:'enemy', forced:null, affiliation:'재야',
+  gwakseung: { id:'gwakseung', name:'곽승', birth:153, deathReal:215, deathVirtual:243, kind:'enemy', forced:null, affiliation:'재야', recruitTroop:105,
     stats:{atk:52, def:48, spd:45, int:34, cha:40, lead:40}, bio:'황건적 잔당과 얽혀 지방을 어지럽힌 도적 무리의 우두머리였다.', intro:'…졌소. 그대들 밑에서 다시 검을 잡을 기회를 주겠소?' },
-  yeosang: { id:'yeosang', name:'여상', birth:150, deathReal:210, deathVirtual:240, kind:'enemy', forced:null, affiliation:'재야',
+  yeosang: { id:'yeosang', name:'여상', birth:150, deathReal:210, deathVirtual:240, kind:'enemy', forced:null, affiliation:'재야', recruitTroop:140,
     stats:{atk:70, def:51, spd:42, int:32, cha:40, lead:38}, bio:'떠돌이 무리를 이끌며 각지에서 노략질을 일삼던 인물이다.', intro:'이 마을을 지키려 했을 뿐이오. 당신들이라면 믿어도 되겠소?' },
-  jeongwonji: { id:'jeongwonji', name:'정원지', birth:163, deathReal:205, deathVirtual:253, kind:'enemy', forced:null, affiliation:'황건적',
+  jeongwonji: { id:'jeongwonji', name:'정원지', birth:163, deathReal:205, deathVirtual:253, kind:'enemy', forced:null, affiliation:'황건적', recruitTroop:175,
     stats:{atk:80, def:75, spd:64, int:36, cha:44, lead:44}, bio:'황건적의 장수로 관군에 맞서 싸웠다.', intro:'크윽… 살려만 준다면 뭐든 하겠소!', sprite:SPRITE_YELLOWTURBAN },
-  deungmu: { id:'deungmu', name:'등무', birth:160, deathReal:205, deathVirtual:250, kind:'enemy', forced:null, affiliation:'황건적',
+  deungmu: { id:'deungmu', name:'등무', birth:160, deathReal:205, deathVirtual:250, kind:'enemy', forced:null, affiliation:'황건적', recruitTroop:165,
     stats:{atk:70, def:80, spd:60, int:36, cha:44, lead:44}, bio:'황건적의 장수로 여러 고을을 어지럽혔다.', intro:'형님이 항복한다면 나도 따르겠소…', sprite:SPRITE_YELLOWTURBAN },
-  gwanhae: { id:'gwanhae', name:'관해', birth:150, deathReal:208, deathVirtual:240, kind:'enemy', forced:null, affiliation:'황건적',
+  gwanhae: { id:'gwanhae', name:'관해', birth:150, deathReal:208, deathVirtual:240, kind:'enemy', forced:null, affiliation:'황건적', recruitTroop:320,
     stats:{atk:90, def:75, spd:85, int:30, cha:58, lead:64}, bio:'황건적의 장수로 북해를 포위했다가 태사자의 활약에 밀려 물러났다.', intro:'크윽… 북해를 넘본 것이 실수였군. 그대들 밑에서 다시 시작해보겠소.', sprite:SPRITE_YELLOWTURBAN },
-  goseung: { id:'goseung', name:'고승', birth:162, deathReal:205, deathVirtual:252, kind:'enemy', forced:null, affiliation:'황건적',
+  goseung: { id:'goseung', name:'고승', birth:162, deathReal:205, deathVirtual:252, kind:'enemy', forced:null, affiliation:'황건적', recruitTroop:65,
     stats:{atk:41, def:32, spd:38, int:32, cha:40, lead:32}, bio:'황건적의 장수로 관군과 맞서 싸웠다.', intro:'크윽… 살려만 준다면 뭐든 하겠소!', sprite:SPRITE_YELLOWTURBAN },
   // 챕터2 하비성 관청 - 장비가 발견해 관우에게 넘기는 잔당 두목 3인.
   // 정사/연의에 없는 필러 인물이라 이름은 임의로 지었다.
@@ -86,15 +86,15 @@ const ROSTER = {
     stats:{atk:73, def:66, spd:62, int:20, cha:32, lead:32}, bio:'황건적 잔당의 두목으로, 서주 인근에서 약탈을 일삼았다.', intro:'감히… 좋다, 승부를 겨뤄보자!', sprite:SPRITE_YELLOWTURBAN },
   hwangeonjan3: { id:'hwangeonjan3', name:'손조', birth:154, deathReal:194, deathVirtual:244, kind:'enemy', forced:null, affiliation:'황건적',
     stats:{atk:80, def:74, spd:68, int:22, cha:34, lead:34}, bio:'황건적 잔당의 마지막 두목으로, 앞선 두 두목의 원수를 갚으려 나섰다.', intro:'내 동료들의 원수, 내가 갚아주마!', sprite:SPRITE_YELLOWTURBAN },
-  muangug: { id:'muangug', name:'무안국', birth:155, deathReal:192, deathVirtual:245, kind:'enemy', forced:null, affiliation:'재야',
+  muangug: { id:'muangug', name:'무안국', birth:155, deathReal:192, deathVirtual:245, kind:'enemy', forced:null, affiliation:'재야', recruitTroop:245,
     stats:{atk:81, def:70, spd:47, int:36, cha:44, lead:48}, bio:'본래 공손찬의 장수로, 반동탁연합 시절 여포와 맞서 싸우다 크게 다쳤다.', intro:'…이 몸싸움, 내가 졌소. 그대들을 따르겠소.' },
 
   // 평원현
-  jeonhae: { id:'jeonhae', name:'전해', birth:145, deathReal:210, deathVirtual:235, kind:'recruit', forced:null, affiliation:'공손찬군', recruitTroop:250,
+  jeonhae: { id:'jeonhae', name:'전해', birth:145, deathReal:210, deathVirtual:235, kind:'recruit', forced:null, affiliation:'공손찬군', recruitTroop:235,
     stats:{atk:66, def:64, spd:62, int:51, cha:53, lead:64}, bio:'공손찬의 부장으로 청주자사를 지냈다.', intro:'공손찬 어른 밑에서 청주를 맡고 있는 전해요. 소문은 익히 들었소.' },
   gwanjeong: { id:'gwanjeong', name:'관정', birth:165, deathReal:215, deathVirtual:255, kind:'recruit', forced:null, affiliation:'공손찬군',
     stats:{atk:24, def:21, spd:26, int:78, cha:61, lead:22}, bio:'공손찬을 섬긴 문신으로 내정을 도왔다.', intro:'공손찬 어른의 명을 전하러 왔소. 격문을 받으시오.' },
-  eomgang: { id:'eomgang', name:'엄강', birth:162, deathReal:205, deathVirtual:252, kind:'recruit', forced:null, affiliation:'공손찬군', recruitTroop:150,
+  eomgang: { id:'eomgang', name:'엄강', birth:162, deathReal:205, deathVirtual:252, kind:'recruit', forced:null, affiliation:'공손찬군', recruitTroop:145,
     stats:{atk:75, def:64, spd:74, int:38, cha:44, lead:44}, bio:'공손찬의 장수로, 계교 전투에서 문추와 싸우다 전사했다.', intro:'나도 이번 싸움에 나선다네. 잘 부탁하네.' },
   jowoon: { id:'jowoon', name:'조운', birth:168, deathReal:229, deathVirtual:258, kind:'recruit', forced:null, affiliation:'무소속', chance:0.15, recruitTroop:1000,
     stats:{atk:93, def:95, spd:96, int:75, cha:82, lead:96}, bio:'상산 출신의 명장으로, 처음엔 공손찬 밑에 있다가 훗날 유비를 만나 평생을 촉한에 헌신했다.', intro:'…떠도는 무사요. 정해진 주인은 없소만, 그쪽 형제들 싸우는 모습이 마음에 드는군.' },
@@ -104,12 +104,10 @@ const ROSTER = {
   // 주석 참조) - 미축·미방과 마찬가지로 유비 개인에게 의리를 지켜 끝까지 함께한다.
   songgeon: { id:'songgeon', name:'손건', birth:158, deathReal:215, deathVirtual:248, kind:'recruit', forced:null, affiliation:'무소속', chance:0.2,
     stats:{atk:21, def:19, spd:24, int:68, cha:61, lead:20}, bio:'유비를 오래 섬긴 신하로, 여러 세력 사이를 오가며 사신의 소임을 다했다.', intro:'글재주밖에 없는 손건이오만, 필요하다면 붓이라도 들겠소.' },
-  jeonye: { id:'jeonye', name:'전예', birth:189, deathReal:256, deathVirtual:279, kind:'recruit', forced:null, affiliation:'유주', recruitTroop:400,
+  jeonye: { id:'jeonye', name:'전예', birth:189, deathReal:256, deathVirtual:279, kind:'recruit', forced:null, affiliation:'유주', recruitTroop:385,
     stats:{atk:76, def:74, spd:72, int:70, cha:60, lead:84}, bio:'원래 유비를 따랐으나 이후 조위를 섬기며 북방 변경을 든든히 지킨 명장이다.', intro:'우북평의 전예라 하오. 그대들의 그릇이 예사롭지 않아 보여, 염치 불고하고 스스로 찾아왔소.' },
-  yeomyu: { id:'yeomyu', name:'염유', birth:160, deathReal:230, deathVirtual:250, kind:'recruit', forced:null, affiliation:'유주', recruitTroop:300,
+  yeomyu: { id:'yeomyu', name:'염유', birth:160, deathReal:230, deathVirtual:250, kind:'recruit', forced:null, affiliation:'유주', recruitTroop:275,
     stats:{atk:76, def:74, spd:72, int:68, cha:64, lead:74}, bio:'유주 일대에서 활동하며 북방 이민족과의 관계를 조율한 인물이다.', intro:'오환·선비와 함께 자라 그들의 말을 아는 염유라 하오. 이 반란, 그들의 힘을 빌리면 어렵지 않게 잠재울 수 있소.' },
-  jangpae: { id:'jangpae', name:'장패', birth:155, deathReal:239, deathVirtual:245, kind:'recruit', forced:null, affiliation:'무소속', chance:0.2, recruitTroop:800,
-    stats:{atk:88, def:75, spd:85, int:44, cha:58, lead:94}, bio:'본래 여포를 섬겼으나 훗날 조조에게 귀순해 서주 일대를 지킨 명장이다.', intro:'태산의 장패라 하오. 힘 쓸 곳을 찾고 있었는데, 마침 잘 만났소.' },
   taesaja: { id:'taesaja', name:'태사자', birth:166, deathReal:206, deathVirtual:256, kind:'recruit', forced:null, affiliation:'무소속', chance:0.08, recruitTroop:700,
     stats:{atk:97, def:86, spd:95, int:60, cha:66, lead:85}, bio:'동래 출신의 용맹한 장수로, 북해에서 공융을 구하고 훗날 손책과 겨루다 그 인품에 감복해 오를 섬기게 되었다.', intro:'동래의 태사자요. 떠돌던 차에, 그대들의 그릇을 한번 보고 싶었소.' },
   yuyo: { id:'yuyo', name:'유요', birth:156, deathReal:198, deathVirtual:246, kind:'recruit', forced:null, affiliation:'무소속', chance:0.08,
@@ -239,14 +237,20 @@ const ROSTER = {
     stats:{atk:22, def:26, spd:24, int:81, cha:95, lead:22}, bio:'조위의 대신으로, 훗날 구품관인법을 입안한 인물이다.', intro:'예주 출신 진군이라 하오. 어지러운 세상, 그대라면 믿고 몸을 맡길 만하다 여겨 찾아왔소.' },
   seoseong: { id:'seoseong', name:'서성', birth:165, deathReal:228, deathVirtual:255, kind:'recruit', forced:null, affiliation:'서주', chance:0.2, recruitTroop:500,
     stats:{atk:90, def:90, spd:80, int:78, cha:58, lead:85}, bio:'서주 출신으로 훗날 손권을 섬기며 위나라의 침공을 막아낸 명장이다.', intro:'서성이라 하오. 힘 쓰는 일이라면 자신 있으니, 부디 써주시오.' },
-  songgwan: { id:'songgwan', name:'손관', birth:160, deathReal:215, deathVirtual:250, kind:'recruit', forced:null, affiliation:'서주', recruitTroop:300,
+  songgwan: { id:'songgwan', name:'손관', birth:160, deathReal:215, deathVirtual:250, kind:'recruit', forced:null, affiliation:'서주', recruitTroop:550,
     stats:{atk:80, def:77, spd:80, int:50, cha:58, lead:74}, bio:'미축·손건과 함께 서주에서 유비를 도운 인물로 전해진다.', intro:'낭야의 손관이라 하오. 같은 고향의 장패가 그대들 밑에 있다기에 찾아왔소.' },
+  // 태산군 일당 - 장패(두목)와 오돈은 원래 산적 무리를 거느렸던 만큼
+  // 등용 시 사병을 크게 데려온다. 장패는 챕터1(평원/어양)에 임시로
+  // 배치해뒀던 것을 챕터2 서주로 옮겨왔다 - 손관과 같은 낭야/태산
+  // 출신이라는 설정으로 이 자리에 함께 둔다.
+  jangpae: { id:'jangpae', name:'장패', birth:155, deathReal:239, deathVirtual:245, kind:'recruit', forced:null, affiliation:'서주', recruitTroop:920,
+    stats:{atk:88, def:75, spd:85, int:44, cha:58, lead:94}, bio:'본래 여포를 섬겼으나 훗날 조조에게 귀순해 서주 일대를 지킨 명장이다.', intro:'태산의 장패라 하오. 힘 쓸 곳을 찾고 있었는데, 마침 잘 만났소.' },
   jopyo: { id:'jopyo', name:'조표', birth:150, deathReal:196, deathVirtual:240, kind:'flavor', affiliation:'서주',
     bio:'서주의 장수로, 장비와의 다툼 끝에 목숨을 잃었다.', intro:'서주의 관원 조표요. …흥, 굴러온 돌이 사는 게 참 편해 보이는구려.', sprite:SPRITE_ELDER },
   // 장패 무리의 일원 - 지도에 고정 배치하지 않고, 챕터1의 여상과 같은 방식으로
   // 서주 자유탐방 중 휴식(다음달)할 때 확률적으로 마주치는 돌발 전투로 등장한다
   // (main.js의 triggerOdonEvent/maybeSeojuRandomEvent 참고).
-  odon: { id:'odon', name:'오돈', birth:158, deathReal:212, deathVirtual:248, kind:'enemy', forced:null, affiliation:'무소속',
+  odon: { id:'odon', name:'오돈', birth:158, deathReal:212, deathVirtual:248, kind:'enemy', forced:null, affiliation:'무소속', recruitTroop:650,
     stats:{atk:75, def:74, spd:72, int:42, cha:50, lead:74}, bio:'떠돌이 무리를 이끌던 장수로 전해진다.', intro:'…소문으로만 듣던 그대들이군. 이 몸이 상대해주겠소.' },
 
   // ---- 챕터2 (관우) : 회남 - 원술 정벌 [장면3] ----
