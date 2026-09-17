@@ -3166,6 +3166,10 @@ function sopaeJinguJindeungDepart() {
 }
 function goSopaeCamp() {
   stage = 'sopae_free';
+  // 회수평야 탈출 컷신(checkHoesuRetreat)이 "[소패성으로 이동] 버튼을 누를
+  // 때까지" MapView.lockMovement(true)를 걸어둔 채 끝나서, 그 잠금을 풀지
+  // 않으면 새 지도(소패)에 들어와도 관우가 움직이지 않는다.
+  MapView.lockMovement(false);
   // 회수평야에서 쓰고 남은 병력·군량이 그냥 증발하지 않도록, 관우군/유비군
   // 두 군세를 모두 해산해 town 자원(GameState.resources)에 합쳐 넘긴다.
   dissolveArmy('army');
