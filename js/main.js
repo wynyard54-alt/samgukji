@@ -3288,12 +3288,14 @@ function checkJegalgeunEscort() {
 // 군세가 등장해 원문사극(방천화극을 활로 맞혀 화친시키는 장면)으로
 // 마무리된다. 실제 삽화(진궁·여포 대화, 원문사극 3컷)는 아직 없어 검은
 // 화면(assets/illust/sopae_wonmun_placeholder.jpg)으로 자리만 잡아둔다.
+// 사용자 확인: 다섯 부대를 넓게 흩어두지 말고 1칸 간격의 지그재그(W자
+// 모양)로 붙여 세운다.
 const SOPAE_WONSUL_ARMIES = [
+  { id: 'gyoyu', troop: 8000, x: 17, startY: 24 },
+  { id: 'jinran', troop: 8000, x: 18, startY: 26 },
   { id: 'giryeong', troop: 10000, x: 19, startY: 24 },
-  { id: 'gyoyu', troop: 8000, x: 15, startY: 25 },
-  { id: 'noebak', troop: 8000, x: 23, startY: 25 },
-  { id: 'jinran', troop: 8000, x: 12, startY: 23 },
-  { id: 'janghun', troop: 8000, x: 25, startY: 23 },
+  { id: 'noebak', troop: 8000, x: 20, startY: 26 },
+  { id: 'janghun', troop: 8000, x: 21, startY: 24 },
 ];
 const SOPAE_YEOPO_ARMIES = [
   { id: 'yeopo', troop: 10000, x: 18, y: 25 },
@@ -3314,7 +3316,7 @@ function startSopaeWonsulInvasion() {
     delete ROSTER[a.id].commanderCaptured;
     MapView.addNpc(a.id);
   });
-  MapView.panCameraTo(19, 23, 700);
+  MapView.panCameraTo(19, 23, 1800);
   setTimeout(() => {
     let remaining = SOPAE_WONSUL_ARMIES.length;
     SOPAE_WONSUL_ARMIES.forEach((a) => {
@@ -3324,13 +3326,13 @@ function startSopaeWonsulInvasion() {
         if (remaining === 0) sopaeInvasionAfterApproach();
       });
     });
-  }, 1000);
+  }, 2200);
 }
 function sopaeInvasionAfterApproach() {
   centerAlert('원술군이 쳐들어온다. 유비를 찾아간다.', 3000);
   setTimeout(() => {
     MapView.setPlayerPos(19, 11);
-    MapView.panCameraTo(19, 11, 700);
+    MapView.panCameraTo(19, 11, 1500);
     Dialogue.show(STORY.sopae_wonsul_report, () => {
       Dialogue.show(STORY.sopae_jingung_yeopo_debate, () => {
         sopaeSummonYeopoArmies();
@@ -3345,14 +3347,14 @@ function sopaeSummonYeopoArmies() {
     delete ROSTER[a.id].commanderCaptured;
     MapView.addNpc(a.id);
   });
-  MapView.panCameraTo(19, 22, 700);
+  MapView.panCameraTo(19, 22, 1500);
   setTimeout(() => {
     Dialogue.show(STORY.sopae_giryeong_jangbi_standoff, () => {
       Dialogue.show(STORY.sopae_wonmunsageuk, () => {
         sopaeInvasionRetreat();
       });
     });
-  }, 900);
+  }, 1700);
 }
 function sopaeInvasionRetreat() {
   const allArmies = [...SOPAE_WONSUL_ARMIES, ...SOPAE_YEOPO_ARMIES];
@@ -3365,6 +3367,10 @@ function sopaeInvasionRetreat() {
       remaining--;
       if (remaining === 0) {
         MapView.lockMovement(false);
+        // panCameraTo로 고정해뒀던 카메라 초점을 풀어, 평소처럼 다시 관우(조작
+        // 캐릭터)를 따라가도록 되돌린다 - 안 그러면 컷신 마지막 장면 위치에
+        // 카메라가 그대로 멈춰있는다.
+        MapView.clearCameraFocus();
         updateHUD();
         toast('원술군과 여포군이 물러갔다. 당분간 소패에서 평화롭게 지낼 수 있게 되었다.');
       }

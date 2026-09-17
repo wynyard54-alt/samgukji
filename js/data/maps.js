@@ -581,11 +581,14 @@ const SEOJU_AREA_LABELS = [
       // 원문사극 컷신 전용(main.js startSopaeWonsulInvasion). storyGate를
       // 절대 참이 되지 않는 이름으로 걸어 평소엔 숨겨두고, MapView.addNpc로
       // 그 시점에만 등장시킨다.
+      // 사용자 확인: main.js SOPAE_WONSUL_ARMIES의 시작 좌표(1칸 간격 W자
+      // 대형)와 반드시 일치해야 한다 - addNpc가 여기 x/y로 처음 등장시키고,
+      // 그 다음 walkNpcPath가 SOPAE_WONSUL_ARMIES 기준 경로로 이동시킨다.
+      { id:'gyoyu', x:17, y:24, label:'교유 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
+      { id:'jinran', x:18, y:26, label:'진란 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
       { id:'giryeong', x:19, y:24, label:'기령 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
-      { id:'gyoyu', x:15, y:25, label:'교유 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
-      { id:'noebak', x:23, y:25, label:'뇌박 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
-      { id:'jinran', x:12, y:23, label:'진란 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
-      { id:'janghun', x:25, y:23, label:'장훈 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
+      { id:'noebak', x:20, y:26, label:'뇌박 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
+      { id:'janghun', x:21, y:24, label:'장훈 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
       { id:'yeopo', x:18, y:25, label:'여포 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
       { id:'jangryo', x:22, y:25, label:'장료 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
     ],
