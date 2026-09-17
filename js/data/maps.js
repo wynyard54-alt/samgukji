@@ -532,9 +532,9 @@ const SEOJU_AREA_LABELS = [
       { id:'jangbi', x:17, y:10, label:'장비', fixed:true },
       { id:'michuk', x:21, y:10, label:'미축', fixed:true },
       // 창희 - 태산군 일당의 일원. 탐색 없이 처음부터 노출되어 있고,
-      // 다른 세 명(장패·오돈·손관·윤례)과 달리 저잣거리 근처에서 시비조로
+      // 다른 넷(장패·오돈·손관·윤례)과 마찬가지로 성 밖 숲 쪽에서 시비조로
       // 말을 건다.
-      { id:'changhui', x:27, y:15, label:'창희', fixed:true,
+      { id:'changhui', x:3, y:6, label:'창희', fixed:true,
         discoveryText:'장패 그 왈패녀석과 아는 사이오? 이 지역에서는 나랑 다시 이야기해야 할 거요.' },
       // 간옹 - 챕터1에서 못 만났다면(랜덤 등장 확률을 못 뚫었다면) 여기서는
       // 반드시 발견되도록 main.js goSopaeCamp에서 GameState.npcVisible을
@@ -553,14 +553,16 @@ const SEOJU_AREA_LABELS = [
         discoveryText:'격랑의 난세라 고향을 떠날 생각이오.',
         residence:{ x:26, y:20, label:'서성' } },
       // 태산군 일당(장패·오돈·손관·윤례) - 서주에서 등용하지 못했다면 여기서
-      // 다시 마주친다. 성 밖에 한데 뭉치지 않도록 흩어 배치.
-      { id:'jangpae', x:13, y:20, label:'', discoverable:true, discoveryRange:2,
+      // 다시 마주친다. 남쪽 대로는 원술군 침공 컷신(main.js
+      // startSopaeWonsulInvasion) 전용 공간이라 겹치지 않도록, 성 좌우
+      // 여백의 숲 쪽에 한데 뭉치지 않게 흩어 배치한다.
+      { id:'jangpae', x:37, y:8, label:'', discoverable:true, discoveryRange:2,
         discoveryText:'유비가 서주목이었다고 해서 우리가 그의 부하는 아니오. 실력이 있다면 여포와의 연을 정리하고 그쪽으로 갈 수도 있지.' },
-      { id:'odon', x:27, y:21, label:'', discoverable:true, discoveryRange:2,
+      { id:'odon', x:3, y:13, label:'', discoverable:true, discoveryRange:2,
         discoveryText:'장패 형님 뜻이 그렇다면야 - 우리도 딱히 여포에 매인 몸은 아니오.' },
-      { id:'songgwan', x:33, y:20, label:'', discoverable:true, discoveryRange:2,
+      { id:'songgwan', x:37, y:18, label:'', discoverable:true, discoveryRange:2,
         discoveryText:'…댁들도 여기까지 흘러왔군. 아직은 어느 쪽에도 마음을 정하지 못했소.' },
-      { id:'yunrye', x:16, y:23, label:'', discoverable:true, discoveryRange:2,
+      { id:'yunrye', x:3, y:20, label:'', discoverable:true, discoveryRange:2,
         discoveryText:'장패 형님을 따라 여기까지 왔소만, 실력이 있어야 따를 마음도 생기지 않겠소.' },
       // 제갈근 - main.js triggerJegalgeunEscort가 발견 즉시 대화/호위 장면을
       // 전부 진행하므로, 여기서는 discoveryText를 별도로 두지 않는다.

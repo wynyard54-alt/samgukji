@@ -3180,11 +3180,13 @@ function goSopaeCamp() {
   dissolveArmy('army');
   dissolveArmy('allyArmy');
   sopaeJinguJindeungDepart();
-  // 간옹은 반드시 재등장해야 하므로(챕터1 탁현/평원에서 확률에 걸려 못
+  // 간옹·손건은 반드시 재등장해야 하므로(둘 다 ROSTER에 chance가 걸려있어 -
+  // 손건은 서주 자유탐방용, 간옹은 챕터1 탁현/평원용 - 그 확률에 걸려 못
   // 만났을 수 있다) 캐시된 등장 여부를 강제로 덮어쓴다. 서성·진군은
   // "여전히 낮은 확률"로 다시 판정받아야 하므로, 서주에서 이미 실패로
   // 굳어버린 캐시가 있다면 지워서 소패에서 새로 굴리게 한다.
   if (!GameState.recruited.includes('ganong')) GameState.npcVisible.ganong = true;
+  if (!GameState.recruited.includes('songgeon')) GameState.npcVisible.songgeon = true;
   if (!GameState.recruited.includes('seoseong')) delete GameState.npcVisible.seoseong;
   if (!GameState.recruited.includes('jingun')) delete GameState.npcVisible.jingun;
   // "소패를 탐색하여 장수 등용 (0/3)" 임무 - 도착 시점 이후 새로 등용한
@@ -3777,7 +3779,7 @@ function interactRecruitedGeneral(id) {
 
 // 등용 완료 시 호출 - 마을(탁현/평원/서주)에서는 그 자리에 남아 훈련/모병역을 맡고, 그 외(전장 등)에서는 기존처럼 퇴장한다.
 function stationRecruitOrRemove(id) {
-  if (stage === 'takhyeon_free' || stage === 'pyeongwon_free' || stage === 'seoju_free') { MapView.render(); return; }
+  if (stage === 'takhyeon_free' || stage === 'pyeongwon_free' || stage === 'seoju_free' || stage === 'sopae_free') { MapView.render(); return; }
   MapView.removeNpc(id);
 }
 
