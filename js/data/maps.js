@@ -586,6 +586,14 @@ const SEOJU_AREA_LABELS = [
       { id:'yeopo', x:18, y:25, label:'여포 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
       { id:'jangryo', x:22, y:25, label:'장료 군세', fixed:true, storyGate:'sopaeWonsulInvasion' },
     ],
+    // 소패 지도는 길(타일값 1)을 따로 구분해두지 않고 전부 0(흙바닥)으로만
+    // 되어있어, roadOnly:true를 주면 이동 가능한 타일이 하나도 없어 제자리에
+    // 얼어붙는다 - false로 둬서 이동 가능한 타일이면 어디든 돌아다니게 한다.
+    ambient:[
+      ['merchant',23,11,'ash',2],['woman',14,12,'dust',2],['farmer',10,20,'earth',2],
+      ['elder',33,15,'earth',1],['porter',26,16,'ash',2],['child',18,13,'dust',2],
+      ['guard',28,16,'iron',1],['merchant',20,20,'earth',2],
+    ].map(([archetype,x,y,palette,wander]) => ({ archetype,x,y,palette,wander,roadOnly:false })),
   };
 })();
 

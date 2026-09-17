@@ -586,6 +586,12 @@ function interactNPC(id, context) {
   }
   if (id === 'yubi' && stage === 'habi_camp') { handleHabiYubi(); return; }
   if (id === 'yubi') { handleYubi(); return; }
+  // 소패는 유비뿐 아니라 장비도 훈련 상대가 되어준다(작은 성이라 다들 직접
+  // 몸을 부딪쳐 실력을 키우는 편이 자연스럽다는 설정).
+  if (id === 'jangbi' && stage === 'sopae_free') {
+    offerBarracksTraining('나도 몸이 근질근질하던 참인데, 나랑 같이 몸 좀 풀어볼텐가?', '장비');
+    return;
+  }
 
   if (id === 'songyeon' && stage === 'camp') {
     GameState.npcStatus['songyeon'] = 'resolved';
@@ -683,8 +689,9 @@ function interactNPC(id, context) {
 }
 
 // 유비는 세력 막사에 고정 배치되어 개인훈련(막사)의 창구 역할도 겸한다 - 필살공격은 이 경로로만 습득 가능.
-function offerBarracksTraining(greetingText) {
-  showChoice(`유비: "${greetingText}"`, [
+// 소패에서는 장비도 같은 창구 역할을 겸하므로(speaker 인자로 이름만 바꿔) 재사용한다.
+function offerBarracksTraining(greetingText, speaker) {
+  showChoice(`${speaker || '유비'}: "${greetingText}"`, [
     { label: '훈련하기 (AP2)', cb: () => trainWithHero() },
     { label: '그냥 안부만 묻는다', cb: () => {} },
   ]);
@@ -739,6 +746,8 @@ function handleYubi() {
     }
   } else if (MapView.currentMapId === 'hoenam') {
     Dialogue.show([{ speaker: '유비', text: '교유는 내가 맡겠네. 아우는 기령에게 집중하게.' }]);
+  } else if (stage === 'sopae_free') {
+    offerBarracksTraining('아우, 이 소패에서나마 힘을 길러야지.');
   }
 }
 
