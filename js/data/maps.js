@@ -487,10 +487,11 @@ const SEOJU_AREA_LABELS = [
   rectFill(grid, 18, h - 1, 21, h - 1, 0); // 남쪽 대로 입구
 
   // 성곽 담장(사각형) - 서북쪽 쪽문, 남쪽 정문 두 곳만 뚫는다.
-  rectFill(grid, 6, 4, 36, 4, 4);   // 북쪽 담장
-  rectFill(grid, 6, 17, 36, 17, 4); // 남쪽 담장
+  // 동쪽 담장 사용자 확인: x=36이 아니라 x=33이 실제 그림 속 성벽 위치.
+  rectFill(grid, 6, 4, 33, 4, 4);   // 북쪽 담장
+  rectFill(grid, 6, 17, 33, 17, 4); // 남쪽 담장
   rectFill(grid, 6, 4, 6, 17, 4);   // 서쪽 담장
-  rectFill(grid, 36, 4, 36, 17, 4); // 동쪽 담장
+  rectFill(grid, 33, 4, 33, 17, 4); // 동쪽 담장
   rectFill(grid, 8, 4, 9, 4, 0);    // 서북쪽 쪽문
   rectFill(grid, 18, 17, 21, 17, 0); // 남쪽 정문
 
@@ -504,6 +505,8 @@ const SEOJU_AREA_LABELS = [
   // 중앙 우물+나무, 저잣거리(동남쪽 천막들) - 작은 장애물로만 둔다.
   grid[13][22] = 2; grid[13][23] = 2; // 우물+나무
   rectFill(grid, 25, 13, 31, 14, 2); // 저잣거리 천막
+  // 저잣거리 동쪽(성벽에 가까운) 끝 4칸은 사용자 확인상 통행 가능해야 함.
+  grid[13][30] = 0; grid[13][31] = 0; grid[14][30] = 0; grid[14][31] = 0;
 
   // 남서쪽 농지(밭) - 이동은 가능하되 그림 위치만 기억해둔다(decor 라벨용).
   // 남동쪽 연못 - 그림 속 실제 연못 모양(아래로 갈수록 넓어지는 물가)에 맞춰 계단식으로.
@@ -591,7 +594,7 @@ const SEOJU_AREA_LABELS = [
     // 얼어붙는다 - false로 둬서 이동 가능한 타일이면 어디든 돌아다니게 한다.
     ambient:[
       ['merchant',23,11,'ash',2],['woman',14,12,'dust',2],['farmer',10,20,'earth',2],
-      ['elder',33,15,'earth',1],['porter',26,16,'ash',2],['child',18,13,'dust',2],
+      ['elder',32,15,'earth',1],['porter',26,16,'ash',2],['child',18,13,'dust',2],
       ['guard',28,16,'iron',1],['merchant',20,20,'earth',2],
     ].map(([archetype,x,y,palette,wander]) => ({ archetype,x,y,palette,wander,roadOnly:false })),
   };
