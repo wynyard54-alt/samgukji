@@ -174,11 +174,16 @@ const MapView = (function () {
 
     liveNpcs = map.npcs.filter((n) => {
       const rd = ROSTER[n.id];
-      if (rd && rd.chance != null) {
+      const status = GameState.npcStatus[n.id];
+      // 이미 한 번이라도 만났거나(met) 등용/처치 등으로 상태가 확정된 인물은
+      // 최초 확률 판정과 무관하게 항상 등장해야 한다 - 손건처럼 별도 이벤트
+      // (main.js의 MapView.addNpc 직접 호출)로 확률판정을 우회해 먼저 만났는데,
+      // 그 전에 다른 지도 로드에서 확률판정이 이미 "숨김"으로 캐시돼 있으면
+      // 등용 이후에도 계속 사라져버리는 버그가 있었다.
+      if (rd && rd.chance != null && !status) {
         if (!(n.id in GameState.npcVisible)) GameState.npcVisible[n.id] = Math.random() < rd.chance;
         if (!GameState.npcVisible[n.id]) return false;
       }
-      const status = GameState.npcStatus[n.id];
       // 미축처럼 소패 도착 전에 이미 등용된 채로 들어오는(도겸 사망 시 자동 합류)
       // 인물이 residence 없이도 지도에서 사라지지 않게 소패도 함께 넣어둔다.
       const fixedInTown =
