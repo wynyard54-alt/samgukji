@@ -3290,8 +3290,8 @@ function checkJegalgeunEscort() {
 // "장수 등용 (0/3)" 임무를 채우면 발동. 원술군 5개 부대가 남쪽 대로로
 // 처들어와 3칸 전진한 뒤 멈추고, 유비가 여포에게 구원을 청하면 여포·장료
 // 군세가 등장해 원문사극(방천화극을 활로 맞혀 화친시키는 장면)으로
-// 마무리된다. 실제 삽화(진궁·여포 대화, 원문사극 3컷)는 아직 없어 검은
-// 화면(assets/illust/sopae_wonmun_placeholder.jpg)으로 자리만 잡아둔다.
+// 마무리된다. 실제 삽화 4컷(진궁·여포 대화, 원문사극 준비/화살/명중)은
+// assets/illust/sopae_wonmun_{debate,ready,arrow,hit}.jpg.
 // 사용자 확인: 다섯 부대를 넓게 흩어두지 말고 1칸 간격의 지그재그(W자
 // 모양)로 붙여 세운다.
 const SOPAE_WONSUL_ARMIES = [

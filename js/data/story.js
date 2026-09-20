@@ -410,14 +410,11 @@ const STORY = {
     { speaker: '유비', text: '지금은 백성들을 지키는 게 먼저다. 여포에게 서신을 보내게.' },
   ],
 
-  // 진궁·여포 삽화는 아직 제공되지 않아 검은 화면(placeholder)으로 대체 -
-  // 나중에 실제 삽화가 오면 이 세 대본(sopae_jingung_yeopo_debate,
-  // sopae_wonmunsageuk의 scene 필드들)만 경로를 바꿔주면 된다.
   sopae_jingung_yeopo_debate: [
-    { speaker: '진궁', text: '원술은 장군께서 움직이지 않기를 바라고 양곡까지 보내왔습니다.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
-    { speaker: '여포', text: '하지만 원술이 유비를 삼키면 다음은 나겠지.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
-    { speaker: '진궁', text: '둘이 싸우게 두는 것도 방법입니다.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
-    { speaker: '여포', text: '아니다. 어느 한쪽이 너무 커져선 안 돼. 내가 직접 가겠다.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+    { speaker: '진궁', text: '원술은 장군께서 움직이지 않기를 바라고 양곡까지 보내왔습니다.', scene: 'assets/illust/sopae_wonmun_debate.jpg' },
+    { speaker: '여포', text: '하지만 원술이 유비를 삼키면 다음은 나겠지.', scene: 'assets/illust/sopae_wonmun_debate.jpg' },
+    { speaker: '진궁', text: '둘이 싸우게 두는 것도 방법입니다.', scene: 'assets/illust/sopae_wonmun_debate.jpg' },
+    { speaker: '여포', text: '아니다. 어느 한쪽이 너무 커져선 안 돼. 내가 직접 가겠다.', scene: 'assets/illust/sopae_wonmun_debate.jpg' },
   ],
 
   sopae_giryeong_jangbi_standoff: [
@@ -427,18 +424,17 @@ const STORY = {
   ],
 
   // 원문사극(연의 16회) - 방천화극의 곁가지를 활로 맞혀 화친시키는 장면.
-  // 실제 삽화 3컷(원문사극 준비/화살/명중)이 오기 전까지 검은 화면으로 대체.
   sopae_wonmunsageuk: [
-    { speaker: '여포', text: '저 원문 밖에 내 방천화극을 세워라! 기 장군, 내가 여기서 저 화극의 작은 구멍을 화살로 맞추겠소.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
-    { speaker: '기령', text: '저 거리에서 말이오?', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
-    { speaker: '여포', text: '맞히면 하늘이 오늘 싸우지 말라는 뜻이다. 자네는 군사를 물리시오!', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
-    { speaker: '장비', text: '못 맞춘다면?', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
-    { speaker: '여포', text: '그땐 싸우든 말든 알아서 하시오!', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
-    { speaker: '내레이션', text: '쐐액—!', scene: 'assets/illust/sopae_wonmun_placeholder.jpg', holdMs: 1000 },
-    { speaker: '병사들', text: '오오오오!!!', scene: 'assets/illust/sopae_wonmun_placeholder.jpg', holdMs: 1000 },
-    { speaker: '여포', text: '하늘의 뜻이로군.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
-    { speaker: '기령', text: '……할 말이 없으니, 오늘은 물러가겠소.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
-    { speaker: '여포', text: '유현덕, 내가 아니었으면 오늘 위험했을 것이오.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
-    { speaker: '유비', text: '장군, 큰 은혜를 입었습니다.', scene: 'assets/illust/sopae_wonmun_placeholder.jpg' },
+    { speaker: '여포', text: '저 원문 밖에 내 방천화극을 세워라! 기 장군, 내가 여기서 저 화극의 작은 구멍을 화살로 맞추겠소.', scene: 'assets/illust/sopae_wonmun_ready.jpg' },
+    { speaker: '기령', text: '저 거리에서 말이오?', scene: 'assets/illust/sopae_wonmun_ready.jpg' },
+    { speaker: '여포', text: '맞히면 하늘이 오늘 싸우지 말라는 뜻이다. 자네는 군사를 물리시오!', scene: 'assets/illust/sopae_wonmun_ready.jpg' },
+    { speaker: '장비', text: '못 맞춘다면?', scene: 'assets/illust/sopae_wonmun_ready.jpg' },
+    { speaker: '여포', text: '그땐 싸우든 말든 알아서 하시오!', scene: 'assets/illust/sopae_wonmun_ready.jpg' },
+    { speaker: '내레이션', text: '쐐액—!', scene: 'assets/illust/sopae_wonmun_arrow.jpg', holdMs: 1000 },
+    { speaker: '병사들', text: '오오오오!!!', scene: 'assets/illust/sopae_wonmun_hit.jpg', holdMs: 1000 },
+    { speaker: '여포', text: '하늘의 뜻이로군.', scene: 'assets/illust/sopae_wonmun_hit.jpg' },
+    { speaker: '기령', text: '……할 말이 없으니, 오늘은 물러가겠소.', scene: 'assets/illust/sopae_wonmun_hit.jpg' },
+    { speaker: '여포', text: '유현덕, 내가 아니었으면 오늘 위험했을 것이오.', scene: 'assets/illust/sopae_wonmun_hit.jpg' },
+    { speaker: '유비', text: '장군, 큰 은혜를 입었습니다.', scene: 'assets/illust/sopae_wonmun_hit.jpg' },
   ],
 };
