@@ -52,6 +52,21 @@ const Dialogue = (function () {
     }
   }
 
+  // holdMs 대사가 페이드아웃(opacity:0)까지 끝낸 뒤 다음 줄로 넘어갈 때, 그냥
+  // classList.remove('fading')만 하면 opacity:0 -> 1로 값이 바뀌는 것 자체가
+  // 같은 transition:opacity 규칙을 다시 타서 새 삽화가 순간적으로 나타나지
+  // 않고 또 500ms에 걸쳐 서서히 나타나 버린다(의도한 holdMs보다 훨씬 길게
+  // 화면이 어두운 상태로 남는 "이중 페이드" 버그). transition을 잠깐 꺼서
+  // 다음 줄은 항상 즉시 100% 불투명하게 나타나게 하고, 그 다음 이 줄
+  // 자신이 holdMs로 다시 페이드아웃할 때만 transition이 정상 작동하게 한다.
+  function snapVisible(el) {
+    if (!el) return;
+    el.classList.add('no-transition');
+    el.classList.remove('fading');
+    void el.offsetWidth; // 강제 리플로우로 transition:none을 실제로 적용시킨 뒤에 클래스를 뗀다.
+    el.classList.remove('no-transition');
+  }
+
   function render() {
     const line = queue[idx];
     nameEl.textContent = line.speaker;
@@ -60,8 +75,8 @@ const Dialogue = (function () {
     recordHistory(line);
     setScene(line.scene);
     clearAutoTimer();
-    box.classList.remove('fading');
-    if (sceneEl) sceneEl.classList.remove('fading');
+    snapVisible(box);
+    snapVisible(sceneEl);
     if (line.holdMs) {
       // 클릭/Enter로 넘기지 못하고, 지정된 시간만큼 그대로 보여준 뒤 페이드아웃하며 자동으로 넘어간다.
       autoLocked = true;
