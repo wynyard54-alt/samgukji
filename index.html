@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>어린이 삼국지 — 챕터1: 도원결의</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="css/style.css?v=20260917-203">
+<link rel="stylesheet" href="css/style.css?v=20260917-204">
 </head>
 <body>
 
@@ -420,18 +420,16 @@
   </div>
   <div class="army-field">
     <label>병사 수 (보유 <span id="army-troop-max"></span>명, 최소 500)</label>
-    <div class="stepper">
-      <button type="button" class="stepper-btn" data-target="army-troop" data-dir="-1">◀</button>
-      <div class="stepper-value" id="army-troop-value">0</div>
-      <button type="button" class="stepper-btn" data-target="army-troop" data-dir="1">▶</button>
+    <div class="qty-slider-row">
+      <input type="range" class="qty-slider" id="army-troop-slider" min="0" max="0" step="1" value="0">
+      <div class="qty-slider-value" id="army-troop-value">0</div>
     </div>
   </div>
   <div class="army-field">
     <label>군량 · 쌀 (보유 <span id="army-rice-max"></span>가마)</label>
-    <div class="stepper">
-      <button type="button" class="stepper-btn" data-target="army-rice" data-dir="-1">◀</button>
-      <div class="stepper-value" id="army-rice-value">0</div>
-      <button type="button" class="stepper-btn" data-target="army-rice" data-dir="1">▶</button>
+    <div class="qty-slider-row">
+      <input type="range" class="qty-slider" id="army-rice-slider" min="0" max="0" step="1" value="0">
+      <div class="qty-slider-value" id="army-rice-value">0</div>
     </div>
     <div class="army-field-hint" id="army-rice-hint"></div>
   </div>
@@ -447,10 +445,9 @@
   <p id="merchant-desc">보유 금 <span id="merchant-gold"></span> · 매달 한도가 새로 채워집니다</p>
   <div class="army-field merchant-row" data-key="rice">
     <label>군량 · 쌀 (이번 달 남은 한도 <span class="merchant-left"></span>/<span class="merchant-cap"></span>)</label>
-    <div class="stepper">
-      <button type="button" class="stepper-btn" data-target="merchant-rice" data-dir="-1">◀</button>
-      <div class="stepper-value" id="merchant-rice-value">0</div>
-      <button type="button" class="stepper-btn" data-target="merchant-rice" data-dir="1">▶</button>
+    <div class="qty-slider-row">
+      <input type="range" class="qty-slider" id="merchant-rice-slider" min="0" max="0" step="1" value="0">
+      <div class="qty-slider-value" id="merchant-rice-value">0</div>
     </div>
     <div class="merchant-row-footer">
       <span class="merchant-cost"></span>
@@ -462,10 +459,9 @@
   </div>
   <div class="army-field merchant-row" data-key="bow">
     <label>활 (이번 달 남은 한도 <span class="merchant-left"></span>/<span class="merchant-cap"></span>)</label>
-    <div class="stepper">
-      <button type="button" class="stepper-btn" data-target="merchant-bow" data-dir="-1">◀</button>
-      <div class="stepper-value" id="merchant-bow-value">0</div>
-      <button type="button" class="stepper-btn" data-target="merchant-bow" data-dir="1">▶</button>
+    <div class="qty-slider-row">
+      <input type="range" class="qty-slider" id="merchant-bow-slider" min="0" max="0" step="1" value="0">
+      <div class="qty-slider-value" id="merchant-bow-value">0</div>
     </div>
     <div class="merchant-row-footer">
       <span class="merchant-cost"></span>
@@ -477,10 +473,9 @@
   </div>
   <div class="army-field merchant-row" data-key="horse">
     <label>군마 (이번 달 남은 한도 <span class="merchant-left"></span>/<span class="merchant-cap"></span>)</label>
-    <div class="stepper">
-      <button type="button" class="stepper-btn" data-target="merchant-horse" data-dir="-1">◀</button>
-      <div class="stepper-value" id="merchant-horse-value">0</div>
-      <button type="button" class="stepper-btn" data-target="merchant-horse" data-dir="1">▶</button>
+    <div class="qty-slider-row">
+      <input type="range" class="qty-slider" id="merchant-horse-slider" min="0" max="0" step="1" value="0">
+      <div class="qty-slider-value" id="merchant-horse-value">0</div>
     </div>
     <div class="merchant-row-footer">
       <span class="merchant-cost"></span>
@@ -585,21 +580,21 @@
 <div id="center-alert" class="hidden"></div>
 <div id="build-version" aria-hidden="true"></div>
 
-<script src="js/data/roster.js?v=20260917-203"></script>
-<script src="js/data/skills.js?v=20260917-203"></script>
-<script src="js/data/strategies.js?v=20260917-203"></script>
-<script src="js/data/maps.js?v=20260917-203"></script>
-<script src="js/data/worldmap.js?v=20260917-203"></script>
-<script src="js/data/story.js?v=20260917-203"></script>
-<script src="js/engine/state.js?v=20260917-203"></script>
-<script src="js/engine/status-effects.js?v=20260917-203"></script>
-<script src="js/engine/battle-events.js?v=20260917-203"></script>
-<script src="js/engine/dialogue.js?v=20260917-203"></script>
-<script src="js/engine/battle.js?v=20260917-203"></script>
-<script src="js/engine/battle-vfx.js?v=20260917-203"></script>
-<script src="js/engine/field-assets.js?v=20260917-203"></script>
-<script src="js/engine/mapview.js?v=20260917-203"></script>
-<script src="js/main.js?v=20260917-203"></script>
+<script src="js/data/roster.js?v=20260917-204"></script>
+<script src="js/data/skills.js?v=20260917-204"></script>
+<script src="js/data/strategies.js?v=20260917-204"></script>
+<script src="js/data/maps.js?v=20260917-204"></script>
+<script src="js/data/worldmap.js?v=20260917-204"></script>
+<script src="js/data/story.js?v=20260917-204"></script>
+<script src="js/engine/state.js?v=20260917-204"></script>
+<script src="js/engine/status-effects.js?v=20260917-204"></script>
+<script src="js/engine/battle-events.js?v=20260917-204"></script>
+<script src="js/engine/dialogue.js?v=20260917-204"></script>
+<script src="js/engine/battle.js?v=20260917-204"></script>
+<script src="js/engine/battle-vfx.js?v=20260917-204"></script>
+<script src="js/engine/field-assets.js?v=20260917-204"></script>
+<script src="js/engine/mapview.js?v=20260917-204"></script>
+<script src="js/main.js?v=20260917-204"></script>
 <!-- 지금 브라우저가 실제로 어느 버전을 불러왔는지 눈으로 바로 확인하기
      위한 배지 - 캐시나 인앱 브라우저가 옛날 파일을 물고 있는지를 "아마
      그럴 것"이라고 추측하는 대신 직접 확인할 수 있게 한다. 이 시점에는

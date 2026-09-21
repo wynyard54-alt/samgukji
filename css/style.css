@@ -500,15 +500,27 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 .army-general-chip.selected{ background:var(--accent); border-color:var(--accent-strong); color:#fff8ea; }
 .army-empty-hint{ font-size:12px; color:var(--ink-soft); }
-.stepper{ display:flex; align-items:center; gap:10px; }
-.stepper-btn{
-  font-family:inherit; font-size:16px; font-weight:700; width:42px; height:38px; flex:none;
-  border-radius:8px; border:1px solid var(--panel-border); background:#fff8ea; color:var(--ink);
-  cursor:pointer; touch-action:manipulation; user-select:none;
+/* 수량 선택 드래그 슬라이더 (군세 편성의 병사/군량, 상인 상점의 군량/활/군마
+   등에서 공통으로 쓴다) - 예전에는 실기기 웹뷰에서 슬라이더를 드래그하면
+   당겨서 새로고침 제스처로 새는 문제 때문에 ◀▶ 버튼(스테퍼)으로 바꿨었는데,
+   앱 빌더(webintoapp) 쪽 "당겨서 새로고침" 옵션을 꺼서 원인이 해소됐다고
+   확인해 슬라이더로 되돌렸다. */
+.qty-slider-row{ display:flex; align-items:center; gap:12px; }
+.qty-slider{
+  flex:1; -webkit-appearance:none; appearance:none; height:6px; border-radius:4px;
+  background:var(--panel-border); outline:none; touch-action:pan-y;
 }
-.stepper-btn:active{ background:var(--accent); color:#fff8ea; }
-.stepper-value{
-  flex:1; text-align:center; font-size:15px; font-weight:600; font-variant-numeric:tabular-nums;
+.qty-slider::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none; width:26px; height:26px; border-radius:50%;
+  background:var(--accent); border:2px solid #fff8ea; box-shadow:0 2px 6px rgba(43,38,32,0.35); cursor:pointer;
+}
+.qty-slider::-moz-range-thumb{
+  width:26px; height:26px; border-radius:50%; background:var(--accent);
+  border:2px solid #fff8ea; box-shadow:0 2px 6px rgba(43,38,32,0.35); cursor:pointer;
+}
+.qty-slider:active::-webkit-slider-thumb{ background:var(--accent-strong); }
+.qty-slider-value{
+  min-width:64px; text-align:center; font-size:15px; font-weight:600; font-variant-numeric:tabular-nums;
   padding:8px 10px; border-radius:8px; background:#fff8ea; border:1px solid var(--panel-border);
 }
 .army-field-hint{ font-size:12px; color:var(--ink-soft); margin-top:6px; }
