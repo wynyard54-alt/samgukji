@@ -822,7 +822,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
    파일을 계속 물고 있는 건지를 추측 대신 확인하려고 둔다. 다른 UI를
    가리거나 클릭을 막지 않도록 아주 작고 옅게, 화면 구석에만 둔다. */
 #build-version{
-  position:fixed; right:4px; bottom:2px; z-index:999;
+  position:fixed; right:12px; bottom:2px; z-index:999;
   font-size:9px; color:rgba(0,0,0,0.35); pointer-events:none;
   font-family:"Noto Sans KR",sans-serif;
 }
