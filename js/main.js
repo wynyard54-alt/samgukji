@@ -225,6 +225,7 @@ const LOCATION_NAMES = {
   habi: '하비성 관청',
   hoenam: '회남 벌판',
   hoesu: '회수평야',
+  sopae: '소패성',
 };
 
 function getObjectives() {
@@ -1727,6 +1728,7 @@ function attemptStrategy(id) {
     cb: () => castNamedStrategy(sid, id, deputyId, ctx.commanderId),
   }));
   options.push({ label: '기본 계책 (적 공격력 약화)', cb: () => castGenericStrategy(id, ctx, deputy) });
+  options.push({ label: '그만두기', cb: () => {} });
   showChoice(`${deputy.name}의 책략 - 무엇을 쓰시겠습니까?`, options);
 }
 
@@ -1791,6 +1793,7 @@ function attemptStrategySelf(commanderId) {
       castGenericStrategy(target, { army, commanderId }, deputy);
     }),
   });
+  options.push({ label: '그만두기', cb: () => {} });
   showChoice(`${deputy.name}의 책략 - 무엇을 쓰시겠습니까?`, options);
 }
 
@@ -4187,7 +4190,7 @@ window.addEventListener('keydown', (ev) => {
 // 대사, 장순의 난 행군(군세 이동모드) 중에는 되돌릴 상태가 애매해 제외한다.
 const SAVE_KEY = 'samgukji_saves_v1';
 const SAVE_SLOT_COUNT = 10;
-const SAVE_RESUMABLE_STAGES = ['takhyeon_free', 'pyeongwon_free', 'camp', 'warmap', 'seoju_free', 'habi_camp'];
+const SAVE_RESUMABLE_STAGES = ['takhyeon_free', 'pyeongwon_free', 'camp', 'warmap', 'seoju_free', 'habi_camp', 'sopae_free'];
 // seoju_free는 도겸이 소환한 서주 대치(seoju_siege) 또는 그 뒤의 서주 자유탐방(seoju)
 // 둘 중 하나라 고정 매핑이 안 된다 - buildSaveSnapshot에서 MapView.currentMapId로 대신 구한다.
 const STAGE_MAP_ID = { takhyeon_free: 'takhyeon', pyeongwon_free: 'pyeongwon', camp: 'camp', warmap: 'warmap', habi_camp: 'habi' };
@@ -4269,6 +4272,8 @@ function resumeExploreStage(targetStage, playerPos, mapId) {
     MapView.load('habi', { ...opts, onAmbientInteract: runAmbientEvent });
   } else if (targetStage === 'seoju_free') {
     MapView.load(mapId === 'seoju' ? 'seoju' : 'seoju_siege', { ...opts, onAmbientInteract: runAmbientEvent });
+  } else if (targetStage === 'sopae_free') {
+    MapView.load('sopae', { ...opts, onAmbientInteract: runAmbientEvent, onStep: () => { renderMinimap(); checkJegalgeunEscort(); } });
   }
   if (playerPos) MapView.setPlayerPos(playerPos.x, playerPos.y);
   updateHUD();
