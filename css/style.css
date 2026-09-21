@@ -504,11 +504,17 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
    등에서 공통으로 쓴다) - 예전에는 실기기 웹뷰에서 슬라이더를 드래그하면
    당겨서 새로고침 제스처로 새는 문제 때문에 ◀▶ 버튼(스테퍼)으로 바꿨었는데,
    앱 빌더(webintoapp) 쪽 "당겨서 새로고침" 옵션을 꺼서 원인이 해소됐다고
-   확인해 슬라이더로 되돌렸다. */
+   확인해 슬라이더로 되돌렸다.
+   touch-action은 pan-y가 아니라 반드시 none이어야 한다 - 이 화면 전체가
+   세로 모바일에서 90도 회전 트랜스폼(위쪽 body 회전 규칙 참고)으로
+   표시되는데, pan-y는 그 회전된 좌표계 때문에 실제로는 좌우 드래그를
+   웹뷰의 세로 팬 제스처로 취급해버려 슬라이더가 손가락을 따라오지 않고
+   그대로 먹혀버린다(예전에 한 번 이 문제로 none으로 고쳤었는데, 슬라이더를
+   되돌리면서 실수로 옛 pan-y 버전을 다시 가져왔었다). */
 .qty-slider-row{ display:flex; align-items:center; gap:12px; }
 .qty-slider{
   flex:1; -webkit-appearance:none; appearance:none; height:6px; border-radius:4px;
-  background:var(--panel-border); outline:none; touch-action:pan-y;
+  background:var(--panel-border); outline:none; touch-action:none;
 }
 .qty-slider::-webkit-slider-thumb{
   -webkit-appearance:none; appearance:none; width:26px; height:26px; border-radius:50%;
