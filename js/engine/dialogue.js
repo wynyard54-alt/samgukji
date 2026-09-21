@@ -40,12 +40,24 @@ const Dialogue = (function () {
   }
 
   // 특정 대사 구간 동안에는 지도 대신 컷신 삽화를 보여준다 (line.scene에 이미지 경로가 있을 때만).
+  // <img>는 src를 새로 지정해도 새 그림이 디코딩되기 전까지는 화면에 이전
+  // 그림을 그대로 띄우고 있는다 - 그래서 여기서 컨테이너를 먼저 열어버리면
+  // 새 그림이 뜨기 전 짧은 순간 "그 전 장면(심지어 훨씬 이전 장면)"이
+  // 잘못 보이는 문제가 있었다(예: 도원결의 삽화 뒤 독우매질 삽화로 넘어갈 때
+  // 도원결의 그림이 한 프레임 남아 있다가 바뀜). 새 그림이 실제로 준비된
+  // 뒤(onload)에만 컨테이너를 열어 이 틈을 없앤다. 같은 그림을 재사용하는
+  // 연속된 줄(예: 원문사극 준비 컷 5줄)은 다시 불러올 필요가 없으니 그대로 둔다.
   function setScene(src) {
     if (!sceneEl) return;
     if (src) {
-      sceneImg.src = src;
-      sceneEl.classList.remove('hidden');
       if (viewport) viewport.classList.add('scene-active');
+      if (sceneImg.getAttribute('src') === src) {
+        sceneEl.classList.remove('hidden');
+        return;
+      }
+      sceneEl.classList.add('hidden');
+      sceneImg.onload = sceneImg.onerror = () => { sceneEl.classList.remove('hidden'); };
+      sceneImg.src = src;
     } else {
       sceneEl.classList.add('hidden');
       if (viewport) viewport.classList.remove('scene-active');
