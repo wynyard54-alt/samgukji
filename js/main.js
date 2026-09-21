@@ -3928,7 +3928,11 @@ let armyComposingCtx = { commanderId: null, excludeIds: [] };
 function makeArmySlider(key, maxGetter, step) {
   const input = document.getElementById(`${key}-slider`);
   const valueEl = document.getElementById(`${key}-value`);
-  input.step = step;
+  // <input>의 실제 step은 항상 1로 둔다 - step을 100/1000처럼 크게 주면
+  // 슬라이더가 그 칸 단위로만 뚝뚝 끊어져 손가락을 매끄럽게 못 따라온다.
+  // 인자로 받는 step은 set()으로 기본값을 계산할 때만(예: 병사 수를
+  // 100 단위 딱 떨어지는 값으로) 쓴다.
+  input.step = 1;
   // openArmyBox는 열릴 때마다 이 함수를 새로 호출하지만(회남 벌판처럼 관우군/
   // 유비군을 연달아 편성할 때 등), <input> 엘리먼트 자체는 매번 같은 DOM
   // 노드라 리스너를 매번 추가하면 열 때마다 중복으로 쌓인다 - 한 번만 붙인다.
@@ -4661,13 +4665,17 @@ function merchantCostFor(deal, qty) {
 function makeMerchantSlider(deal) {
   const input = document.getElementById(`merchant-${deal.key}-slider`);
   const valueEl = document.getElementById(`merchant-${deal.key}-value`);
-  input.step = deal.unit;
+  // step을 deal.unit(300/100/50)으로 두면 슬라이더가 그 칸 단위로만 뚝뚝
+  // 끊어져 움직여 "밀듯이" 자연스럽게 안 끌린다 - step은 1로 둬서 손가락을
+  // 그대로 따라오는 매끄러운 드래그가 되게 하고, 수량 단위(unit)는 비용
+  // 계산(merchantCostFor)에서 비례로만 반영한다.
+  input.step = 1;
   input.addEventListener('input', () => updateMerchantRow(deal));
   return {
     get() { return Number(input.value); },
     set(v) {
       input.max = merchantMaxUnits(deal);
-      input.value = clamp(Math.round(v / deal.unit) * deal.unit, 0, Number(input.max));
+      input.value = clamp(Math.round(v), 0, Number(input.max));
       valueEl.textContent = Number(input.value).toLocaleString();
       updateMerchantRow(deal);
     },
