@@ -273,7 +273,7 @@ if (false) (function () {
     camera:{ viewportW:800, viewportH:480 },
     foregroundCrops:[{ x:.39, y:.425, w:.13, h:.12 }],
     decor:[
-      { type:'mapLabel', x:21.0, y:3.55, label:'민가', residenceIds:['jeonju'], revealedLabel:'전주의 집' },
+      { type:'mapLabel', x:8.0, y:3.55, label:'민가', residenceIds:['jeonju'], revealedLabel:'전주의 집' },
       { type:'mapLabel', x:33.0, y:3.55, label:'민가', residenceIds:['choeyeom'], revealedLabel:'최염의 집' },
       { type:'mapLabel', x:18.8, y:8.75, label:'어양 주막' },
       { type:'mapLabel', x:29.5, y:11.3, label:'어양 관청' },
@@ -301,9 +301,13 @@ if (false) (function () {
       // 한다 - discoverable/discoveryText는 그대로 둬서, 가까이 다가가면
       // 나오는 발견 대사("선생님, 이제 세상에 나가셔야죠"...)는 이전과
       // 똑같이 재생된다. 발견 전까지는 이름 없이 군중에 섞여 보인다.
-      { id:'jeonju', x:20, y:12, label:'', discoverable:true, discoveryRange:2,
+      // 유우가 "성안 왼쪽 민가"라고 알려주는 대사(jangsun_call)와 맞도록,
+      // 성문(18,14~15)에서 유우(25,13)로 가는 길목이 아니라 반대편(서쪽)
+      // 민가 앞에 세워둔다 - 원래 자리(20,12)는 성문-유우 직선 경로 위라
+      // 유우를 만나기도 전에 무조건 먼저 발견돼버려 대사가 의미 없었다.
+      { id:'jeonju', x:7, y:11, label:'', discoverable:true, discoveryRange:2,
         discoveryText:'마을에서 떠들썩한 소리가 들린다. "선생님, 이제 세상에 나가셔야죠." "자네만한 인재가 없는데 왜 이곳에서 서책만 읽는가?"',
-        residence:{ x:20, y:5, label:'전주' } },
+        residence:{ x:8, y:5, label:'전주' } },
       { id:'jeonye', x:27, y:21, label:'', randomSpawn:true, discoverable:true, discoveryRange:2,
         discoveryText:'유비 세력 막사 근처를 서성이던 젊은 학자가, 삼형제를 유심히 바라보다 다가온다.' },
       { id:'yeomyu', x:36, y:16, label:'', randomSpawn:true, discoverable:true, discoveryRange:2, hideAfterJangsun:true,
