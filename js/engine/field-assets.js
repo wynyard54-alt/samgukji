@@ -13,6 +13,7 @@ const FieldAssets = (function () {
     enemy_jangsun:'enemy_jangsun_hd.png',
     officer_coalition:'officer_coalition_hd.png',
     officer_dongtak:'officer_dongtak_hd.png',
+    officer_jangryo:'officer_jangryo_hd.png',
     npc_farmer:'npc_farmer_hd.png',
     npc_woman:'npc_woman_hd.png',
     npc_merchant:'npc_merchant_hd.png',

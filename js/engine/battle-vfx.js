@@ -173,7 +173,10 @@ const BattleVFX = (function () {
       } else if (lost) {
         banner.innerHTML = `<span class="duel-result-main">패배</span><small>다시 힘을 길러 도전하자</small>`;
       } else if (scripted) {
-        banner.innerHTML = `<span class="duel-result-main">승부 종료</span>`;
+        const label = document.createElement('span');
+        label.className = 'duel-result-main';
+        label.textContent = ev.resultLabel || '승부 종료';
+        banner.replaceChildren(label);
       }
       banner.classList.add('duel-result');
     }, 520);

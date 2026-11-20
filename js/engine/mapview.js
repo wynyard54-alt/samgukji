@@ -31,9 +31,12 @@ const MapView = (function () {
   // null이면 지금까지처럼 player가 조작 대상이다.
   let controlledId = null;
   let liveNpcs = [];
+  let sceneExtras = [];
+  const closedSceneGates = new Set();
   let crowd = [];
   let crowdTimer = null;
   let animFrame = 0;
+  const walkTimers = new WeakMap();
   let ambientEvents = []; // [{ index, kind }] - 지나가던 백성 중 최대 2명에게 지금 걸린 말풍선 이벤트
   const AMBIENT_EVENT_CHANCE = 0.8;
   const AMBIENT_EVENT_MAX = 2;
@@ -171,6 +174,8 @@ const MapView = (function () {
     onAllyEngage = (opts && opts.onAllyEngage) || null;
     spawnDeadlineAbs = (opts && opts.spawnDeadlineAbsMonth) || null;
     ambientEvents = [];
+    sceneExtras = [];
+    closedSceneGates.clear();
 
     liveNpcs = map.npcs.filter((n) => {
       const rd = ROSTER[n.id];
@@ -326,7 +331,7 @@ const MapView = (function () {
         if (Math.abs(nx-home.x) > radius || Math.abs(ny-home.y) > radius) continue;
         if (!isWalkable(nx,ny)) continue;
         if (nx === player.x && ny === player.y) continue;
-        n.x = nx; n.y = ny;
+        moveFieldActor(n, n.id, nx, ny);
       }
       render();
     }, intervalMs);
@@ -361,7 +366,12 @@ const MapView = (function () {
   function isWalkable(x, y) {
     if (!map || x < 0 || y < 0 || x >= map.width || y >= map.height) return false;
     const tile = map.tiles[Math.round(y)] && map.tiles[Math.round(y)][Math.round(x)];
-    return !TILE_BLOCKED[tile];
+    if (TILE_BLOCKED[tile]) return false;
+    for (const gate of closedSceneGates) {
+      const [left, right, row] = map.sceneGates[gate].tiles;
+      if (Math.round(y) === row && Math.round(x) >= left && Math.round(x) <= right) return false;
+    }
+    return true;
   }
 
   function isNpcWalkable(person, x, y) {
@@ -417,6 +427,7 @@ const MapView = (function () {
       drawGround();
       drawBackDecor();
     }
+    drawClosedSceneGates();
     drawFireTiles();
     drawAreaLabels();
     if (map.backgroundKey) drawMapLandmarkLabels();
@@ -424,6 +435,7 @@ const MapView = (function () {
 
     const actors = [];
     crowd.forEach((p, idx) => actors.push({ type:'ambient', y:p.y, data:p, idx }));
+    sceneExtras.forEach((p) => actors.push({ type:'ambient', y:p.y, data:p }));
     for (const n0 of liveNpcs) {
       const n = effectiveNpc(n0);
       actors.push({ type:'npc', y:n.y, data:n });
@@ -484,6 +496,41 @@ const MapView = (function () {
 
   function drawMapBackground() {
     FieldAssets.draw(ctx,map.backgroundKey,worldX(0),worldY(0),map.width*TILE,map.height*TILE);
+  }
+
+  function drawClosedSceneGates() {
+    for (const id of closedSceneGates) {
+      const { x, y, w, h } = map.sceneGates[id];
+      ctx.save();
+      ctx.translate(worldX(x), worldY(y));
+      ctx.scale(w * TILE / 100, h * TILE / 100);
+      const wood = ctx.createLinearGradient(0, 0, 0, 100);
+      wood.addColorStop(0, '#281b11');
+      wood.addColorStop(.28, '#44301d');
+      wood.addColorStop(1, '#3a2718');
+      ctx.fillStyle = wood;
+      ctx.fillRect(0, 0, 100, 100);
+      for (let plank = 0; plank < 10; plank++) {
+        const edge = plank * 10;
+        ctx.fillStyle = '#20150e';
+        ctx.fillRect(edge, 2, 1.8, 96);
+        ctx.fillStyle = plank % 2 ? '#59402a' : '#503820';
+        ctx.fillRect(edge + 3, 8, 2, 83);
+      }
+      ctx.fillStyle = '#2b2119';
+      ctx.fillRect(0, 22, 100, 7);
+      ctx.fillRect(0, 73, 100, 7);
+      ctx.fillRect(48.5, 0, 3, 100);
+      ctx.fillStyle = '#866343';
+      for (const rivetX of [9, 28, 43, 57, 72, 91]) {
+        ctx.fillRect(rivetX, 24, 2.3, 2.8);
+        ctx.fillRect(rivetX, 75, 2.3, 2.8);
+      }
+      ctx.strokeStyle = '#24190f';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(2, 2, 96, 96);
+      ctx.restore();
+    }
   }
 
   // 남문 지붕처럼 인물보다 앞에 와야 하는 배경 부분만 같은 좌표에 다시 그린다.
@@ -665,7 +712,9 @@ const MapView = (function () {
     // 미발견 인물은 군중처럼 보이고, 발견 뒤에는 ROSTER에 붙어있는 전용/세력별
     // HD 시트로 바뀐다 (스프라이트 스펙 자체는 js/data/roster.js에 정의됨).
     const spec = (!hidden && rd.sprite) ? rd.sprite : { key:`npc_${role}`, fw:96, fh:96, sx:.67, sy:.70 };
-    const drawn=FieldAssets.sprite(ctx,spec.key,x,y,'down',animFrame,spec.fw,spec.fh,spec.sx,3,spec.sy);
+    const dir = spec.directional ? (n._dir || 'down') : 'down';
+    const frame = spec.directional ? (n._walkFrame || 0) : animFrame;
+    const drawn=FieldAssets.sprite(ctx,spec.key,x,y,dir,frame,spec.fw,spec.fh,spec.sx,3,spec.sy);
     if (!drawn) {
       const palette=hidden
         ? {robe:'#72746e',dark:'#474a47',trim:'#9d9e94',skin:'#d1aa80'}
@@ -702,7 +751,7 @@ const MapView = (function () {
       // 유비 본인(ROSTER.yubi)에는 troop 필드가 없으므로 rd.troop 분기로는 못 잡는다.
       // 특정 지도로 한정하지 않는다 - 유비군이 등장하는 지도라면 어디서든 보여야 한다.
       const baseLabel = n.label || rd.name;
-      const label = (rd.kind === 'enemy' && rd.troop != null)
+      const label = n.formation ? baseLabel : (rd.kind === 'enemy' && rd.troop != null)
         ? `${baseLabel} · 병${rd.troop} · 무${enemyArmyGrade(rd)} · 지${gradeFor(rd.stats.int, JIRYEOK_GRADES)}`
         : (n.id === 'yubi' && GameState.allyArmy)
           ? `${baseLabel} · 병${GameState.allyArmy.troop} · 무${warArmyGrade({ commanderId:'yubi', army:GameState.allyArmy })} · 지${gradeFor(GameState.allyArmy.deputy && ROSTER[GameState.allyArmy.deputy] ? ROSTER[GameState.allyArmy.deputy].stats.int : 0, JIRYEOK_GRADES)}`
@@ -721,7 +770,10 @@ const MapView = (function () {
     const spriteY=y-attackBumpOffset(id);
     const key=id==='gwanwoo' ? 'hero_gwanwoo' : 'hero_jangbi';
     const frame=animFrame%3;
-    const drawn = id === 'gwanwoo'
+    const spec = ROSTER[id]?.sprite;
+    const drawn = spec?.directional
+      ? FieldAssets.sprite(ctx,spec.key,x,spriteY,player.dir,player._walkFrame || 0,spec.fw,spec.fh,spec.sx,3,spec.sy)
+      : id === 'gwanwoo'
       ? FieldAssets.sprite(ctx,key,x,spriteY,player.dir,frame,136,144,.43,3,.445)
       : FieldAssets.sprite(ctx,key,x,spriteY,player.dir,frame,362,362,.18,3,.18);
     if (!drawn) {
@@ -845,9 +897,9 @@ const MapView = (function () {
 
   // 저장 불러오기 등으로 임의의 좌표에 플레이어를 옮겨 세운다 (걸어서 이동하는 게
   // 아니므로 행동력 소모나 NPC 상호작용 판정 없이 위치와 카메라만 갱신한다).
-  function setPlayerPos(x, y) {
+  function setPlayerPos(x, y, dir = player.dir) {
     if (!map) return;
-    player.x = x; player.y = y;
+    player.x = x; player.y = y; player.dir = dir;
     updateCamera(true);
     render();
   }
@@ -890,7 +942,7 @@ const MapView = (function () {
     } else {
       footTileCount++;
     }
-    mover.x=nx; mover.y=ny;
+    moveFieldActor(mover, controlledId || GameState.mainHero, nx, ny);
     updateCamera();
     render();
     if (onStep) onStep();
@@ -967,6 +1019,68 @@ const MapView = (function () {
     render();
   }
 
+  function moveFieldActor(actor, id, x, y) {
+    const dx = x - actor.x;
+    const dy = y - actor.y;
+    actor.x = x;
+    actor.y = y;
+    if ((!dx && !dy) || !ROSTER[id]?.sprite?.directional) return;
+
+    actor._dir = Math.abs(dx) > Math.abs(dy)
+      ? (dx < 0 ? 'left' : 'right')
+      : (dy < 0 ? 'up' : 'down');
+    actor._stride = actor._stride === 1 ? 2 : 1;
+    actor._walkFrame = actor._stride;
+    clearTimeout(walkTimers.get(actor));
+    const currentMap = map;
+    walkTimers.set(actor, setTimeout(() => {
+      walkTimers.delete(actor);
+      actor._walkFrame = 0;
+      if (map === currentMap && (actor === player || liveNpcs.includes(actor))) render();
+    }, 220));
+  }
+
+  function setSceneGateClosed(id, closed) {
+    if (!map?.sceneGates?.[id]) return;
+    if (closed) closedSceneGates.add(id);
+    else closedSceneGates.delete(id);
+    render();
+  }
+
+  function shelterResidents() {
+    const shelter = map?.siegeShelter;
+    if (!shelter) return;
+    const { left, right, top, bottom } = shelter.bounds;
+    const inside = ({ x, y }) => x > left && x < right && y > top && y < bottom;
+    const occupied = new Set([player, ...liveNpcs.map(effectiveNpc), ...crowd]
+      .map(({ x, y }) => `${x},${y}`));
+    const available = shelter.spots.filter(([x, y]) => isWalkable(x, y) && !occupied.has(`${x},${y}`));
+    const evacuate = (person) => {
+      if (inside(person)) return person;
+      const spot = available.shift();
+      if (!spot) return person;
+      return { ...person, x:spot[0], y:spot[1] };
+    };
+    liveNpcs = liveNpcs.map((npc) => {
+      const current = effectiveNpc(npc);
+      const safe = evacuate(current);
+      if (safe === current) return npc;
+      const { x, y } = safe;
+      return { ...npc, x, y, residence: current._atResidence ? { ...npc.residence, x, y } : npc.residence };
+    });
+    crowd = crowd.map((person) => {
+      const safe = evacuate(person);
+      return { ...safe, _homeX:safe.x, _homeY:safe.y, wander:0 };
+    });
+    ambientEvents = [];
+    render();
+  }
+
+  function setSceneExtras(extras) {
+    sceneExtras = extras;
+    render();
+  }
+
   function removeNpc(id) { liveNpcs=liveNpcs.filter((n)=>n.id!==id); render(); }
 
   // 정해진 좌표들을 따라 한 칸씩 걸어가는 모습을 보여준 뒤 콜백한다(예: 원술이
@@ -977,7 +1091,7 @@ const MapView = (function () {
     if (!npc || !path || !path.length) { if (callback) callback(); return; }
     let step = 0;
     const tick = () => {
-      npc.x = path[step].x; npc.y = path[step].y;
+      moveFieldActor(npc, id, path[step].x, path[step].y);
       render();
       step++;
       if (step < path.length) setTimeout(tick, stepMs);
@@ -987,10 +1101,14 @@ const MapView = (function () {
   }
 
   // 스토리 진행에 따라 지도에 새 인물을 등장시킨다 (등무 처치 후 정원지 등장 등).
-  function addNpc(id) {
+  function addNpc(id, placement) {
     if (!map || liveNpcs.some((n) => n.id === id)) return;
-    const n0 = map.npcs.find((n) => n.id === id);
-    if (n0) { liveNpcs.push(n0); render(); }
+    const original = map.npcs.find((n) => n.id === id);
+    const npc = placement ? { ...original, ...placement, id } : original;
+    if (npc) {
+      liveNpcs.push(npc);
+      render();
+    }
   }
 
   function absMonth(year, month) { return year * 12 + month; }
@@ -1238,7 +1356,7 @@ const MapView = (function () {
     let step = 0;
     const tick = () => {
       for (const { n0, path } of plans) {
-        if (step < path.length) { n0.x = path[step].x; n0.y = path[step].y; }
+        if (step < path.length) moveFieldActor(n0, n0.id, path[step].x, path[step].y);
       }
       render();
       step++;
@@ -1287,7 +1405,7 @@ const MapView = (function () {
     let step = 0;
     const tick = () => {
       for (const { allyNpc, path } of plans) {
-        if (step < path.length) { allyNpc.x = path[step].x; allyNpc.y = path[step].y; }
+        if (step < path.length) moveFieldActor(allyNpc, allyNpc.id, path[step].x, path[step].y);
       }
       render();
       step++;
@@ -1445,7 +1563,7 @@ const MapView = (function () {
   }
 
   return {
-    load,render,removeNpc,addNpc,walkNpcPath,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,setPlayerPos,
+    load,render,removeNpc,addNpc,walkNpcPath,setSceneExtras,setSceneGateClosed,shelterResidents,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,setPlayerPos,
     panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,showDamageFloat,showAttackBump,setControlledUnit,npcPos,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},

@@ -962,7 +962,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 .duel-actor.raster-art.player .duel-body{transform:none}
 .duel-actor.enemy .duel-glyph,.duel-actor.enemy .duel-actor-label{transform:none}
 .duel-actor[data-id="gwanwoo"]{aspect-ratio:1312/1199}
-.duel-actor[data-id="hwaung"],.duel-actor[data-id="yeopo"]{aspect-ratio:1536/1024}
+.duel-actor[data-id="hwaung"],.duel-actor[data-id="yeopo"],.duel-actor[data-id="jangryo"]{aspect-ratio:1536/1024}
 /* 장비 그림은 캔버스 안에서 인물이 다른 캐릭터들보다 여백 없이 꽉 차게
    그려져 있어, 같은 기준 높이(58vh)를 쓰면 실제 실루엣이 상대보다
    눈에 띄게 커 보인다(실측 결과 약 23% 더 큼). 체급을 맞추려고 이
@@ -1173,3 +1173,63 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 #explore-viewport.compact .tp-btn{ font-size:15px; }
 #explore-viewport.compact .tp-action{ font-size:11px; }
+
+/* 소패 북문은 같은 지도를 밤으로 전환해 사용한다. */
+#screen-explore.sopae-night #game-canvas {
+  filter: brightness(.63) saturate(.7) hue-rotate(12deg);
+}
+
+#screen-explore::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  pointer-events: none;
+  background: #111018;
+  opacity: 0;
+  transition: opacity .45s ease;
+}
+
+#screen-explore.sopae-blackout::after {
+  opacity: 1;
+}
+
+#battle-actions.hidden,
+#btn-ending-continue.hidden {
+  display: none;
+}
+
+#battle-screen.night-duel #duel-arena {
+  background-image: linear-gradient(rgba(16, 23, 45, .55), rgba(10, 15, 32, .63)), url("../assets/battle/duel_bg_hulao_v1.jpg");
+}
+
+@media (orientation: portrait) and (max-width: 680px), (orientation: landscape) and (max-height: 500px) {
+  .sopae-duel .duel-actor { height: 48%; bottom: 19%; }
+  .sopae-duel .duel-actor.player { left: 6%; }
+  .sopae-duel .duel-actor.enemy { right: 5%; }
+  .sopae-duel .duel-actor[data-id="jangbi"] { height: 39%; bottom: 23%; }
+  .sopae-duel .battle-side { width: 27%; padding: 4px 6px; }
+  .sopae-duel #battle-side-p { left: 6px; top: 6px; }
+  .sopae-duel #battle-side-e { right: 6px; top: 6px; }
+  .sopae-duel .battle-log {
+    left: 50%;
+    bottom: 52px;
+    transform: translateX(-50%);
+    width: min(360px, 48%);
+    max-height: 44px;
+  }
+  .sopae-duel #battle-actions {
+    bottom: 6px;
+    width: 96%;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    padding: 5px;
+  }
+  .sopae-duel #battle-actions button { font-size: 12px; padding: 8px 3px; }
+}
+
+@media (orientation: portrait) and (max-width: 360px), (orientation: landscape) and (max-height: 360px) {
+  .sopae-duel .duel-actor { bottom: 24%; }
+  .sopae-duel .duel-actor[data-id="jangbi"] { bottom: 28%; }
+  .sopae-duel .battle-log { bottom: 73px; width: 42%; }
+}

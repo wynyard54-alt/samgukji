@@ -274,8 +274,11 @@ function getObjectives() {
     else if (gs.flags.dogyeomDied) list.push('도겸이 세상을 떠났다 - 왼쪽 위 [하비성으로 이동] 버튼을 눌러 다음으로 넘어가자');
   } else if (stage === 'sopae_free') {
     const newRecruits = gs.recruited.filter((id) => !(gs.sopaeRecruitedAtArrival || []).includes(id)).length;
-    if (newRecruits < 3) list.push(`소패를 탐색하여 장수 등용 (${newRecruits}/3)`);
-    else list.push('소패에서 웬만한 인재는 다 모았다 - 당분간 힘을 기르며 지내보자');
+    if (gs.flags.sopaeInvasionResolved) list.push('유비와 이야기하기');
+    else if (newRecruits < 3) list.push(`소패를 탐색하여 장수 등용 (${newRecruits}/3)`);
+    else list.push('원술군과 여포군의 동향을 살피자');
+  } else if (stage === 'sopae_finale') {
+    list.push('유비 일행이 빠져나갈 때까지 북문을 지켜라');
   } else if (stage === 'habi_camp') {
     const step = gs.flags.habiStep || 0;
     if (step === 0) list.push('유비를 찾아가자');
@@ -512,7 +515,13 @@ function updateHUD() {
 }
 
 // ---------------- NPC interaction ----------------
+function sopaeScenePlaying() {
+  return stage === 'sopae_finale' ||
+    (stage === 'sopae_free' && GameState.flags.sopaeInvasionStarted && !GameState.flags.sopaeInvasionResolved);
+}
+
 function interactNPC(id, context) {
+  if (sopaeScenePlaying()) return;
   const rd = ROSTER[id];
   if (!rd) return;
   // 적을 직접 클릭하지 않고 "지금 조작 중인 내 캐릭터(관우) 자신"을 클릭한
@@ -748,7 +757,14 @@ function handleYubi() {
   } else if (MapView.currentMapId === 'hoenam') {
     Dialogue.show([{ speaker: '유비', text: '교유는 내가 맡겠네. 아우는 기령에게 집중하게.' }]);
   } else if (stage === 'sopae_free') {
-    offerBarracksTraining('아우, 이 소패에서나마 힘을 길러야지.');
+    if (GameState.flags.sopaeInvasionResolved) {
+      showChoice('유비: “운장아, 장비가 성 밖에 나간 뒤로 소식이 없구나.”', [
+        { label:'성 밖으로 나간다', cb:startSopaeFinale },
+        { label:'조금 더 둘러본다', cb:() => {} },
+      ]);
+    } else {
+      offerBarracksTraining('아우, 이 소패에서나마 힘을 길러야지.');
+    }
   }
 }
 
@@ -3321,7 +3337,7 @@ function startSopaeWonsulInvasion() {
     ROSTER[a.id].troop = a.troop;
     delete GameState.npcStatus[a.id];
     delete ROSTER[a.id].commanderCaptured;
-    MapView.addNpc(a.id);
+    MapView.addNpc(a.id, { x:a.x, y:a.startY });
   });
   MapView.panCameraTo(19, 23, 1800);
   setTimeout(() => {
@@ -3352,7 +3368,7 @@ function sopaeSummonYeopoArmies() {
     ROSTER[a.id].troop = a.troop;
     delete GameState.npcStatus[a.id];
     delete ROSTER[a.id].commanderCaptured;
-    MapView.addNpc(a.id);
+    MapView.addNpc(a.id, { x:a.x, y:a.y });
   });
   MapView.panCameraTo(19, 22, 1500);
   setTimeout(() => {
@@ -3378,11 +3394,141 @@ function sopaeInvasionRetreat() {
         // 캐릭터)를 따라가도록 되돌린다 - 안 그러면 컷신 마지막 장면 위치에
         // 카메라가 그대로 멈춰있는다.
         MapView.clearCameraFocus();
+        GameState.flags.sopaeInvasionResolved = true;
         updateHUD();
-        toast('원술군과 여포군이 물러갔다. 당분간 소패에서 평화롭게 지낼 수 있게 되었다.');
+        toast('원술군과 여포군이 물러갔다. 준비되면 유비와 이야기하자.');
       }
     });
   });
+}
+
+const SOPAE_SIEGE_FORMATION = [
+  ['yeopo', 19, 23], ['gosun', 19, 19], ['songheon', 16, 21], ['wisok', 23, 21],
+  ['huseong', 13, 22], ['seongryeom', 26, 22], ['joseong', 35, 15],
+  ['hakmaeng', 4, 13], ['jangryo', 12, 3],
+];
+
+function startSopaeFinale() {
+  clearTimeout(centerAlertTimer);
+  document.getElementById('center-alert').classList.add('hidden');
+  stage = 'sopae_finale';
+  MapView.lockMovement(true);
+  updateHUD();
+  Dialogue.show(STORY.sopae_horse_seizure, () => {
+    Dialogue.show(STORY.sopae_yeopo_report, () => {
+      Dialogue.show(STORY.sopae_siege_standoff, () => {
+        Battle.showExhibition({
+          player: ROSTER.jangbi,
+          enemy: ROSTER.yeopo,
+          dodgeRounds: [true, true, false, true, true, false, true, true, false, true],
+          resultLabel: '승부를 가리지 못했다',
+          onEnd: showSopaeSiege,
+        });
+      });
+    });
+  });
+}
+
+function showSopaeSiege() {
+  MapView.setPlayerPos(19, 15, 'down');
+  for (const [id, x, y] of [['yubi', 18, 15], ['jangbi', 20, 15]]) {
+    MapView.removeNpc(id);
+    MapView.addNpc(id, { x, y });
+  }
+  MapView.shelterResidents();
+  MapView.setSceneGateClosed('south', true);
+  MapView.setSceneGateClosed('north', true);
+  for (const [id, x, y] of SOPAE_SIEGE_FORMATION) {
+    MapView.addNpc(id, { x, y, label:`${ROSTER[id].name} 군세`, formation:true });
+  }
+  const soldiers = [
+    [14,19], [16,19], [18,20], [20,20], [22,19], [24,19],
+    [17,23], [21,23], [4,10], [4,16], [35,12], [35,17],
+  ];
+  MapView.setSceneExtras(soldiers.map(([x, y]) => ({ x, y, archetype:'guard', palette:'iron', _dir:'up' })));
+  MapView.panCameraTo(19, 18, 1000);
+  Dialogue.show(STORY.sopae_siege_aftermath, goSopaeNorthGate);
+}
+
+function goSopaeNorthGate() {
+  const explore = document.getElementById('screen-explore');
+  explore.classList.add('sopae-night');
+  MapView.setSceneGateClosed('north', false);
+  MapView.setPlayerPos(8, 6, 'down');
+  for (const [id, x, y] of [['jangbi', 9, 4], ['yubi', 9, 5], ['jangryo', 8, 8]]) {
+    MapView.removeNpc(id);
+    MapView.addNpc(id, { x, y, label:ROSTER[id].name, formation:true });
+  }
+  drawSopaeRefugees(0);
+  MapView.clearCameraFocus();
+  MapView.walkNpcPath('jangryo', [{ x:8, y:7 }], 220, () => {
+    Dialogue.show(STORY.sopae_north_gate, () => startSopaeGateDuel());
+  });
+}
+
+function drawSopaeRefugees(steps) {
+  const refugees = [
+    { x:9, y:6, archetype:'woman', palette:'dust', _dir:'up' },
+    { x:9, y:7, archetype:'child', palette:'ash', _dir:'up' },
+    { x:9, y:8, archetype:'porter', palette:'earth', _dir:'up' },
+  ];
+  MapView.setSceneExtras(refugees.map((person) => ({ ...person, y:person.y - steps })).filter((person) => person.y >= 2));
+}
+
+function evacuateSopaeParty(onDone) {
+  MapView.walkNpcPath('jangbi', [{ x:9, y:3 }, { x:9, y:2 }], 220, () => MapView.removeNpc('jangbi'));
+  MapView.walkNpcPath('yubi', [{ x:9, y:4 }, { x:9, y:3 }, { x:9, y:2 }], 220, () => MapView.removeNpc('yubi'));
+  let steps = 0;
+  const timer = setInterval(() => {
+    drawSopaeRefugees(++steps);
+    if (steps < 7) return;
+    clearInterval(timer);
+    onDone();
+  }, 135);
+}
+
+function startSopaeGateDuel() {
+  Battle.start({
+    player: GameState.heroData(),
+    enemy: ROSTER.jangryo,
+    maxRounds: 3,
+    night: true,
+    goal: '장료를 이기거나 3합을 버티세요.',
+    resultLabel: '북문을 지켰다',
+    onEnd: ({ outcome, playerHp }) => {
+      if (outcome === 'lose') {
+        showChoice('관우가 물러나자 추격군이 북문 가까이 밀려들었다.', [
+          { label:'북문 일기토 다시 도전', cb:startSopaeGateDuel },
+        ]);
+        return;
+      }
+      GameState.heroHp = playerHp;
+      const lines = outcome === 'win'
+        ? [{ speaker:'장료', text:'아직도 이런 힘이 남아 있었군… 전열을 가다듬어라!' },
+           { speaker:'관우', text:'지금이다! 북문으로!' }]
+        : [{ speaker:'북문 쪽 병사', text:'관 장군! 가족과 백성이 모두 빠져나갔습니다!' },
+           { speaker:'관우', text:'장료 장군, 다음에 다시 봅시다.' }];
+      if (outcome === 'win') {
+        Dialogue.show(lines, () => evacuateSopaeParty(leaveSopae));
+      } else {
+        evacuateSopaeParty(() => Dialogue.show(lines, leaveSopae));
+      }
+    },
+  });
+}
+
+function leaveSopae() {
+  const explore = document.getElementById('screen-explore');
+  MapView.setPlayerPos(8, 5, 'up');
+  setTimeout(() => {
+    MapView.setPlayerPos(8, 4);
+    explore.classList.add('sopae-blackout');
+    setTimeout(() => {
+      MapView.setPlayerPos(8, 3);
+      Dialogue.show(STORY.sopae_heodo_departure, () => goEnding(2));
+      explore.classList.remove('sopae-blackout', 'sopae-night');
+    }, 550);
+  }, 300);
 }
 
 // 회수평야에서 관우군/유비군 중 어느 쪽이든 전투에서 완전히 무너지면(resolveArmyBattle의
@@ -3600,7 +3746,10 @@ function goHamgokgwan() {
   });
 }
 
-function goEnding() {
+function goEnding(chapter = 1) {
+  document.getElementById('ending-title').textContent =
+    chapter === 2 ? '챕터 2 · 군웅할거 완료' : '챕터1 클리어';
+  document.getElementById('btn-ending-continue').classList.toggle('hidden', chapter === 2);
   showScreen('screen-ending');
   const list = GameState.recruited.map((id) => ROSTER[id].name).join(', ') || '없음';
   document.getElementById('ending-summary').innerHTML =
@@ -3612,7 +3761,7 @@ function goEnding() {
 
 // 일기토 승리(패배가 아닌 모든 종료)시 명성 +10 — 등용/메인퀘스트 명성과 별개로 항상 적용
 BattleEvents.on('battleEnd', (payload) => {
-  if (payload.outcome !== 'lose') {
+  if (!payload.exhibition && payload.outcome !== 'lose') {
     GameState.addFame(10);
     updateHUD();
   }
@@ -4209,6 +4358,7 @@ function writeSaveSlots(slots) {
 
 function canSaveNow() {
   if (!SAVE_RESUMABLE_STAGES.includes(stage)) return false;
+  if (sopaeScenePlaying()) return false;
   if (!document.getElementById('screen-explore').classList.contains('active')) return false;
   if (Dialogue.isActive()) return false;
   // 일기토 화면은 #screen-explore 위에 별도로 떠 있는 오버레이라 화면 전환
@@ -4272,6 +4422,10 @@ function resumeExploreStage(targetStage, playerPos, mapId) {
 
 function applySaveSnapshot(snap) {
   Object.keys(snap.gameState).forEach((k) => { GameState[k] = snap.gameState[k]; });
+  // 기존 소패 저장에는 원문사극 발동 여부만 기록되어 있었다.
+  if (snap.stage === 'sopae_free' && GameState.flags.sopaeInvasionStarted && GameState.flags.sopaeInvasionResolved == null) {
+    GameState.flags.sopaeInvasionResolved = true;
+  }
   resumeExploreStage(snap.stage, snap.playerPos, snap.mapId);
   closeSaveBox();
   toast('불러오기 완료.');
@@ -4601,6 +4755,7 @@ document.getElementById('log-close').onclick = closeLogBox;
 
 document.querySelectorAll('#bottom-menu button').forEach((btn) => {
   btn.onclick = () => {
+    if (sopaeScenePlaying()) return;
     if (btn.dataset.menu === 'generals') { openRosterPanel(); return; }
     if (btn.dataset.menu === 'bag') { openBagBox(); return; }
     if (btn.dataset.menu === 'settings') { openSettingsMenu(); return; }
@@ -4989,6 +5144,7 @@ function runAmbientEvent(kind) {
 // 다 돌고 나서야 실제로 이 달의 마무리 처리(monthAdvanceClick)를 부른다 -
 // activateWarUnit이 라운드 끝에서 직접 호출한다.
 function monthAdvanceClick() {
+  if (sopaeScenePlaying()) return;
   GameState.nextMonth();
   GameState.merchantBought = { rice: 0, bow: 0, horse: 0 }; // 상인의 월간 판매 한도 초기화
   // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).

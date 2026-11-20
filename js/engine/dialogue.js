@@ -51,7 +51,7 @@ const Dialogue = (function () {
     if (!sceneEl) return;
     if (src) {
       if (viewport) viewport.classList.add('scene-active');
-      if (sceneImg.getAttribute('src') === src) {
+      if (sceneImg.getAttribute('src') === src && sceneImg.complete && sceneImg.naturalWidth) {
         sceneEl.classList.remove('hidden');
         return;
       }
@@ -59,6 +59,7 @@ const Dialogue = (function () {
       sceneImg.onload = sceneImg.onerror = () => { sceneEl.classList.remove('hidden'); };
       sceneImg.src = src;
     } else {
+      sceneImg.onload = sceneImg.onerror = null;
       sceneEl.classList.add('hidden');
       if (viewport) viewport.classList.remove('scene-active');
     }

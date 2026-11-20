@@ -15,7 +15,7 @@ const Battle = (function () {
   const eHpText = document.getElementById('battle-e-hptext');
   const eGaugeFill = document.getElementById('battle-e-gaugefill');
 
-  let p, e, round, maxRounds, retreatAt, onEnd, locked;
+  let p, e, round, maxRounds, retreatAt, onEnd, locked, exhibition, resultLabel;
 
   function maxHP(stats) { return Math.round(60 + stats.def * 2); }
 
@@ -112,11 +112,11 @@ const Battle = (function () {
     return Math.min(0.70, Math.max(0.40, 0.55 - (def - 55) * 0.002));
   }
 
-  function dealDamage(attacker, defender, mode, skillDef) {
+  function dealDamage(attacker, defender, mode, skillDef, scriptedDodge) {
     const side = attacker === p ? 'player' : 'enemy';
     const oppSide = side === 'player' ? 'enemy' : 'player';
 
-    if (mode === 'attack' && evasionRoll(defender, attacker)) {
+    if (mode === 'attack' && (scriptedDodge ?? evasionRoll(defender, attacker))) {
       log(`${defender.data.name}이(가) ${attacker.data.name}의 공격을 회피했다!`);
       BattleEvents.emit('dodge', {
         attackerSide: side, defenderSide: oppSide,
@@ -274,11 +274,12 @@ const Battle = (function () {
     const payload = {
       outcome, playerId: p.data.id, enemyId: e.data.id,
       playerHp: Math.max(0, p.hp), enemyHp: Math.max(0, e.hp),
-      hold: 0,
+      hold: 0, exhibition, resultLabel,
     };
     BattleEvents.emit('battleEnd', payload);
     setTimeout(() => {
       screen.classList.add('hidden');
+      actionsEl.classList.remove('hidden');
       const cb = onEnd;
       onEnd = null;
       if (cb) cb({ outcome, playerHp: Math.max(0, p.hp), playerMaxHp: p.maxHp });
@@ -292,13 +293,35 @@ const Battle = (function () {
     maxRounds = opts.maxRounds || null;
     retreatAt = opts.retreatAt || null;
     onEnd = opts.onEnd;
-    locked = false;
+    exhibition = !!opts.exhibition;
+    resultLabel = opts.resultLabel;
+    locked = exhibition;
+    actionsEl.classList.toggle('hidden', exhibition);
+    screen.classList.toggle('night-duel', !!opts.night);
+    screen.classList.toggle('sopae-duel', exhibition || !!opts.night);
+    logEl.replaceChildren();
     closeSkillMenu();
     screen.classList.remove('hidden');
-    log(`— ${e.data.name}와(과)의 일기토 시작 —`);
+    log(opts.goal || `— ${e.data.name}와(과)의 일기토 시작 —`);
     render();
     BattleEvents.emit('battleStart', { player: p.data, enemy: e.data, playerMaxHp: p.maxHp, enemyMaxHp: e.maxHp });
     emitStatus();
+  }
+
+  async function showExhibition(opts) {
+    start({ ...opts, exhibition: true });
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    await wait(1100);
+    for (const dodge of opts.dodgeRounds) {
+      for (const [attacker, defender] of [[p, e], [e, p]]) {
+        dealDamage(attacker, defender, 'attack', null, dodge);
+        render();
+        emitStatus();
+        await wait(650);
+      }
+      BattleEvents.emit('roundEnd', { round: ++round });
+    }
+    finish('scripted-end');
   }
 
   const skillMenu = document.getElementById('battle-skill-menu');
@@ -329,14 +352,14 @@ const Battle = (function () {
 
   actionsEl.addEventListener('click', (ev) => {
     const btn = ev.target.closest('button');
-    if (!btn || btn.disabled) return;
+    if (exhibition || !btn || btn.disabled) return;
     if (btn.dataset.action === 'ultimate') { openSkillMenu(); return; }
     resolveRound(btn.dataset.action);
   });
 
   const KEY_ACTION = { '1': 'attack', '2': 'defend', '3': 'skill', '4': 'ultimate' };
   window.addEventListener('keydown', (ev) => {
-    if (screen.classList.contains('hidden')) return;
+    if (exhibition || screen.classList.contains('hidden')) return;
     if (!skillMenu.classList.contains('hidden')) {
       if (ev.key === 'Escape') { closeSkillMenu(); return; }
       const idx = Number(ev.key) - 1;
@@ -353,5 +376,5 @@ const Battle = (function () {
     }
   });
 
-  return { start, maxHP };
+  return { start, showExhibition, maxHP };
 })();

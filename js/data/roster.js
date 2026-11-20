@@ -43,6 +43,7 @@ const ROSTER = {
     stats:{atk:100, def:90, spd:99, int:32, cha:46, lead:95}, weapon:'장팔사모',
     bio:'촉한의 오호대장군, 장판교에서 홀로 조조의 대군을 막아선 것으로 이름을 떨쳤다. 부하 장달·범강에게 암살당했다.',
     skills:['pohyo'],
+    sprite:{ key:'hero_jangbi', fw:362, fh:362, sx:.18, sy:.18, directional:true },
     battleArt:{ glyph:'張', weapon:'丈八蛇矛', className:'hero-green', src:'assets/battle/duel_jangbi_v2.png' } },
 
   // 탁현
@@ -305,7 +306,9 @@ const ROSTER = {
     stats:{atk:90, def:93, spd:81, int:58, cha:38, lead:95}, sprite:SPRITE_DONGTAK,
     bio:'여포의 맹장으로 정예부대 함진영을 이끌었으며, 하비성 함락 후 진궁과 함께 처형되었다.', intro:'…함진영은 항복을 모른다. 덤벼라.' },
   jangryo: { id:'jangryo', name:'장료', birth:169, deathReal:222, deathVirtual:259, kind:'enemy', forced:null, affiliation:'여포군',
-    stats:{atk:94, def:91, spd:93, int:78, cha:74, lead:96}, sprite:SPRITE_DONGTAK,
+    stats:{atk:94, def:91, spd:93, int:78, cha:74, lead:96},
+    sprite:{ key:'officer_jangryo', fw:136, fh:144, sx:.43, sy:.445, directional:true },
+    battleArt:{ glyph:'張', weapon:'長槍', className:'enemy-red', src:'assets/battle/duel_jangryo_v2.png' },
     bio:'본래 여포를 섬겼으나 하비성 함락 후 조조에게 귀순해, 훗날 합비에서 손권의 대군을 물리친 명장이 되었다.', intro:'…주공이 어리석었을 뿐, 나는 아직 죽을 자리를 찾지 못했다.' },
   hakmaeng: { id:'hakmaeng', name:'학맹', birth:158, deathReal:199, deathVirtual:248, kind:'enemy', forced:null, affiliation:'여포군',
     stats:{atk:80, def:74, spd:72, int:42, cha:50, lead:74}, sprite:SPRITE_DONGTAK,

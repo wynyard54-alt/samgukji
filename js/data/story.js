@@ -437,4 +437,43 @@ const STORY = {
     { speaker: '여포', text: '유현덕, 내가 아니었으면 오늘 위험했을 것이오.', scene: 'assets/illust/sopae_wonmun_hit.jpg' },
     { speaker: '유비', text: '장군, 큰 은혜를 입었습니다.', scene: 'assets/illust/sopae_wonmun_hit.jpg' },
   ],
+
+  sopae_horse_seizure: [
+    { speaker:'내레이션', text:'며칠 뒤, 여포의 부장 송헌과 위속이 사들인 말 삼백여 필을 이끌고 소패 밖을 지나고 있었다.', scene:'assets/illust/sopae_horse_seizure.jpg' },
+    { speaker:'송헌', text:'장비 장군, 여포 장군께 가져가는 말입니다. 고삐를 놓아주십시오.', scene:'assets/illust/sopae_horse_seizure.jpg' },
+    { speaker:'관우', text:'익덕아, 놓아라. 얼마 전 여포가 우리를 도와준 일을 잊었느냐?', scene:'assets/illust/sopae_horse_seizure.jpg' },
+    { speaker:'장비', text:'형님, 우리한테도 말이 필요하잖소. 절반만 데려가겠소.', scene:'assets/illust/sopae_horse_seizure.jpg' },
+    { speaker:'위속', text:'송헌, 우선 장군께 알려야겠소.', scene:'assets/illust/sopae_horse_seizure.jpg' },
+    { speaker:'내레이션', text:'관우가 거듭 말렸지만, 장비는 말 백오십여 필을 소패로 끌고 갔다.', scene:'assets/illust/sopae_horse_seizure.jpg' },
+  ],
+  sopae_yeopo_report: [
+    { speaker:'여포', text:'내가 기령을 물리쳐 소패를 지켜줬거늘, 장비가 내 말을 빼앗았다고?' },
+    { speaker:'진궁', text:'장군, 이대로 넘어가면 다음에도 그럴 겁니다. 직접 소패로 가시지요.' },
+  ],
+  sopae_siege_standoff: [
+    { speaker:'내레이션', text:'여포가 군사를 이끌고 소패성을 에워쌌다. 장비는 성문 밖으로 나가 여포 앞에 섰다.', scene:'assets/illust/sopae_siege_standoff.jpg' },
+    { speaker:'여포', text:'장비! 내가 너희를 구해준 것이 며칠 전인데, 이제는 내 말까지 빼앗느냐?', scene:'assets/illust/sopae_siege_standoff.jpg' },
+    { speaker:'장비', text:'내가 네 말 좀 가져가니 그렇게 화가 나나? 그럼 네가 우리 형님의 서주를 빼앗은 건 어찌할 건데!', scene:'assets/illust/sopae_siege_standoff.jpg' },
+    { speaker:'유비', text:'익덕아, 그만하거라!', scene:'assets/illust/sopae_siege_standoff.jpg' },
+  ],
+  sopae_siege_aftermath: [
+    { speaker:'내레이션', text:'두 장수는 백여 합을 겨루고도 승부를 내지 못했다. 유비는 관우와 장비를 데리고 성 안으로 물러났다.' },
+    { speaker:'유비', text:'말은 모두 돌려보내라. 내가 여포에게 사과하고 군사를 물려달라 청하겠다.' },
+    { speaker:'내레이션', text:'여포는 잠시 물러날 생각도 했다. 그러나 진궁이 지금 군사를 거두면 유비가 다시 힘을 모을 것이라며 만류했다.' },
+    { speaker:'손건', text:'주공, 고순의 군세가 남문을 치고 있습니다. 동쪽과 서쪽도 막혔습니다!' },
+    { speaker:'미축', text:'허도로 가시지요. 조조라면 여포의 군사를 막을 힘이 있습니다.' },
+    { speaker:'유비', text:'좋다. 오늘 밤 북문으로 나간다. 익덕이 앞길을 열어라. 내가 가족과 백성을 데리고 가겠다.' },
+    { speaker:'관우', text:'형님은 먼저 가십시오. 뒤는 제가 맡겠습니다.' },
+  ],
+  sopae_north_gate: [
+    { speaker:'장료', text:'관우 장군, 여기까지입니다. 남은 병사들을 데리고 물러서십시오.' },
+    { speaker:'관우', text:'아직 성을 빠져나가지 못한 사람들이 있소. 그들이 지나갈 때까지, 이 길은 내가 지키겠소.' },
+  ],
+  sopae_heodo_departure: [
+    { speaker:'내레이션', text:'동이 틀 무렵, 유비 일행은 소패성을 뒤로하고 조조에게 의탁하기 위해 허도로 향했다.', scene:'assets/illust/sopae_heodo_departure.jpg' },
+    { speaker:'장비', text:'형님. 제가 그 말들을 빼앗지만 않았어도… 백성들까지 이 고생을 하진 않았을 텐데요.', scene:'assets/illust/sopae_heodo_departure.jpg' },
+    { speaker:'유비', text:'지난 일이다. 지금은 살아남는 게 먼저다.', scene:'assets/illust/sopae_heodo_departure.jpg' },
+    { speaker:'관우', text:'형님, 뒤처졌던 사람들도 모두 따라왔습니다.', scene:'assets/illust/sopae_heodo_departure.jpg' },
+    { speaker:'유비', text:'그래. 그럼 아이들 걸음에 맞춰 가자.', scene:'assets/illust/sopae_heodo_departure.jpg' },
+  ],
 };

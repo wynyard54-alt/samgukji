@@ -523,6 +523,18 @@ const SEOJU_AREA_LABELS = [
     width: w, height: h,
     tiles: grid,
     backgroundKey: 'sopae_overview',
+    sceneGates: {
+      south: { x:19.16, y:17.23, w:1.68, h:1.36, tiles:[18, 21, 17] },
+      north: { x:8.42, y:5.82, w:.92, h:.83, tiles:[8, 9, 4] },
+    },
+    siegeShelter: {
+      bounds: { left:6, right:33, top:4, bottom:17 },
+      spots: [
+        [14,10], [15,11], [16,12], [18,12], [20,12], [21,10],
+        [24,10], [25,11], [26,11], [27,11], [28,11], [29,11],
+        [14,14], [15,15], [24,15], [25,15], [26,16], [29,16],
+      ],
+    },
     playerStart: { x:19, y:16 },
     camera: { viewportW:800, viewportH:480 },
     decor: [
