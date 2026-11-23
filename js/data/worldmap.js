@@ -162,6 +162,15 @@ function worldMapTimeline(stage, mapId, flags) {
   const notes = {};
   let flag;
 
+  if (stage === 'changan' || stage === 'changan_departed') {
+    Object.assign(factions, WORLDMAP_COALITION);
+    factions.hogwan = 'hanna';
+    factions.jangan = flags.changanAlarm ? 'ijgwak' : flags.changanOrdersReady ? 'hanna' : 'dongtak';
+    if (flags.changanAlarm) notes.jangan = '이각·곽사군 진입';
+    if (stage === 'changan_departed') notes.jangan = '동문으로 철수 · 무관 방면';
+    return { factions, labels, notes, flag:'jangan' };
+  }
+
   const chapterTwo = ['seoju_free', 'habi_camp', 'sopae_free', 'sopae_finale', 'heodo_departure'].includes(stage)
     || (stage === 'warmap' && ['hoenam', 'hoesu'].includes(mapId));
   if (!chapterTwo) {

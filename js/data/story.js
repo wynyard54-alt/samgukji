@@ -457,4 +457,37 @@ const STORY = {
     { speaker:'관우', text:'형님, 뒤처졌던 사람들도 모두 따라왔습니다.', scene:'assets/illust/sopae_heodo_departure.jpg' },
     { speaker:'유비', text:'그래. 그럼 아이들 걸음에 맞춰 가자.', scene:'assets/illust/sopae_heodo_departure.jpg' },
   ],
+  changan_arrival: [
+    { speaker:'내레이션', text:'192년, 장안. 낙양을 떠난 황제의 조정은 이곳에 있었다.' },
+    { speaker:'병사', text:'장료 장군, 궁성 앞에서 이숙 장군이 기다립니다. 왕윤 어른이 다녀갔다는데, 궁 안 분위기가 심상치 않습니다.' },
+  ],
+  changan_palace: [
+    { speaker:'이숙', text:'요즘 동탁과 여포 장군이 초선을 두고 서로를 의심하고 있소. 오늘은 동탁을 궁으로 모시라는 명을 받았소.' },
+    { speaker:'내레이션', text:'왕윤은 초선을 둘러싼 두 사람의 불화를 이용했다. 동탁이 궁으로 들어서자 여포가 왕윤의 뜻에 따라 동탁을 베었다.' },
+    { speaker:'전령', text:'장군! 동탁이 죽었습니다. 왕윤 어른이 조정을 맡으셨답니다!' },
+    { speaker:'내레이션', text:'그러나 오래지 않아, 서쪽에서 이각과 곽사가 병사를 모아 장안으로 향했다.' },
+    { speaker:'장료', text:'병영의 고순에게 가봐야겠다.' },
+  ],
+  changan_orders: [
+    { speaker:'고순', text:'이각과 곽사의 군세가 성으로 들어왔소. 장터 쪽 병사들이 아직 못 빠져나왔소.' },
+    { speaker:'여포', text:'장료, 고순! 흩어진 병사들을 모아 동문으로 빠져나간다!' },
+    { speaker:'내레이션', text:'여포는 왕윤에게도 함께 떠나자고 권했다. 왕윤은 황제를 두고 갈 수 없다며 장안에 남았다.' },
+    { speaker:'장료', text:'고순 장군, 먼저 길을 살펴 주시오. 나는 장터에 남은 병사들을 데려오겠소.' },
+  ],
+  changan_muster: [
+    { speaker:'장터 수비대', text:'장군! 이제야 오셨군요. 길이 막혀 여기서 기다리고 있었습니다.' },
+    { speaker:'장료', text:'대열을 맞추고 나를 따르라. 목적지는 동문이다.' },
+    { speaker:'고순', text:'동문 앞에 서량 선봉대가 있소. 그 군세를 뚫으면 밖으로 나갈 수 있소.' },
+  ],
+  changan_seongryeom: [
+    { speaker:'성렴', text:'장료 장군! 내 부대도 아직 남아 있소. 함께 움직입시다.' },
+  ],
+  changan_gate_open: [
+    { speaker:'병사', text:'서량군이 물러났습니다! 이제 동문으로 갈 수 있습니다!' },
+  ],
+  changan_departure: [
+    { speaker:'내레이션', text:'장료는 병사들을 이끌고 동문을 빠져나갔다. 여포군은 무관 방면으로 장안을 떠났다.', scene:'assets/illust/worldmap.jpg' },
+    { speaker:'내레이션', text:'이각과 곽사는 장안을 차지했다. 뒤늦게 왕윤이 죽었다는 소식이 여포군에 전해졌다.', scene:'assets/illust/worldmap.jpg' },
+    { speaker:'장료', text:'부상병부터 살펴라. 흩어진 사람들도 끝까지 찾는다.', scene:'assets/illust/worldmap.jpg', holdMs:3600 },
+  ],
 };

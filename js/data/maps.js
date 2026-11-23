@@ -875,3 +875,51 @@ const SEOJU_AREA_LABELS = [
     ],
   };
 })();
+
+// ---------------- 장안 도성 · 장료 편 ----------------
+(function () {
+  // 좁은 골목도 그림 속 포장 구간 안에서 두 사람이 비켜 갈 수 있도록
+  // 이 도성은 원본 15픽셀마다 한 칸을 둔다.
+  const w = 100, h = 70;
+  const grid = makeGrid(w, h, 2);
+  rectFill(grid, 1, 20, 91, 21, 1); // 궁성 앞 골목
+  rectFill(grid, 1, 34, 91, 39, 1); // 장터 대로
+  for (const x of [14, 33, 59, 79]) rectFill(grid, x, 20, x + 1, 35, 1);
+  rectFill(grid, 28, 38, 29, 49, 1); // 남쪽 민가 사이 골목
+  rectFill(grid, 91, 35, 98, 37, 1); // 동문
+
+  MAPS.changan = {
+    name:'장안 · 도성', width:w, height:h, tiles:grid, tileSize:22,
+    backgroundKey:'changan_overview', freeFootMovement:true,
+    playerStart:{ x:11, y:20 },
+    camera:{ viewportW:1280, viewportH:720 },
+    exit:{ x:97, top:35, bottom:37 },
+    sceneGates:{ east:{ tiles:[92, 95, 35, 37], drawDoor:false } },
+    foregroundCrops:[{ x:.922, y:.451, w:.038, h:.119 }],
+    decor:[
+      { type:'mapLabel', x:14, y:19.5, label:'궁성' },
+      { type:'mapLabel', x:81, y:19.5, label:'병영' },
+      { type:'mapLabel', x:46, y:33.4, label:'장터' },
+      { type:'mapLabel', x:91, y:33.3, label:'동문', gateId:'east', closedLabel:'동문 · 통제 중' },
+    ],
+    npcs:[
+      { id:'isuk', x:17, y:20, label:'이숙', fixed:true },
+      { id:'gosun', x:80, y:20, label:'고순', fixed:true, storyGate:'changanOrdersReady' },
+      { id:'seongryeom', x:83, y:20, label:'', discoverable:true, discoveryRange:1, chance:.85,
+        discoveryText:'병영 쪽에 낯익은 깃발을 든 장수가 보인다.' },
+      { id:'changan_market_guard', x:46, y:34, label:'장터 수비대', fixed:true, storyGate:'changanAlarm' },
+      { id:'changan_vanguard', x:79, y:36, label:'서량 선봉대', fixed:true, storyGate:'changanBattleReady' },
+      { id:'janggi', x:42, y:20, label:'', discoverable:true, discoveryRange:1, chance:.55,
+        discoveryText:'관청 옆에서 피란민의 이름을 적는 젊은 문관이 보인다.' },
+      { id:'dugi', x:36, y:35, label:'', discoverable:true, discoveryRange:1, chance:.35,
+        discoveryText:'좌판 뒤에서 한 문관이 길 잃은 사람들을 돕고 있다.' },
+      { id:'wangneung', x:29, y:46, label:'', discoverable:true, discoveryRange:1, chance:.20,
+        discoveryText:'골목 안쪽에서 한 젊은 무장이 누군가를 기다리고 있다.' },
+    ],
+    ambient:[
+      ['merchant',22,21,'earth'], ['woman',30,21,'dust'], ['porter',50,21,'ash'],
+      ['guard',72,21,'iron'], ['merchant',40,36,'earth'], ['child',38,38,'ash'],
+      ['porter',56,36,'dust'], ['elder',24,36,'ash'], ['woman',54,38,'dust'],
+    ].map(([archetype,x,y,palette]) => ({ archetype,x,y,palette,wander:3,roadOnly:true })),
+  };
+})();

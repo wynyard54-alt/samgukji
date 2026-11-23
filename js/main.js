@@ -15,7 +15,7 @@
   // (특히 오늘 막사·호로관 배경이 추가된 뒤로) 시작이 눈에 띄게 느려진다.
   // 게임 초반에 바로 보이는 탁현만 미리 받고, 나머지는 실제로 그 지도에
   // 들어갈 때 FieldAssets가 알아서 그때 받아오게 둔다.
-  const deferredFieldKeys = ['pyeongwon_city_overview', 'camp_overview', 'warmap_overview', 'seoju_siege_overview', 'seoju_overview', 'habi_gwannae_overview', 'suchun_overview', 'sopae_overview'];
+  const deferredFieldKeys = ['pyeongwon_city_overview', 'camp_overview', 'warmap_overview', 'seoju_siege_overview', 'seoju_overview', 'habi_gwannae_overview', 'suchun_overview', 'sopae_overview', 'changan_overview'];
   const fieldKeys = FieldAssets.keys().filter((k) => !deferredFieldKeys.includes(k));
   const total = fieldKeys.length + extraUrls.length;
   let done = 0;
@@ -227,12 +227,20 @@ const LOCATION_NAMES = {
   hoenam: '회남 벌판',
   hoesu: '회수평야',
   sopae: '소패성',
+  changan: '장안 · 도성',
 };
 
 function getObjectives() {
   const gs = GameState;
   const list = [];
-  if (stage === 'takhyeon_free') {
+  if (stage === 'changan') {
+    const objectives = {
+      palace:'궁성 앞의 이숙과 이야기하자', orders:'병영 앞의 고순을 찾아가자',
+      muster:'장터에 남은 병사들을 모으자', battle:'동문으로 가는 길의 서량 선봉대를 물리쳐라',
+      escape:'동문을 지나 장안 밖으로 나가자',
+    };
+    list.push(objectives[gs.flags.changanPhase]);
+  } else if (stage === 'takhyeon_free') {
     const jeongwonjiDone = ['recruited', 'resolved'].includes(gs.npcStatus['jeongwonji']);
     const goseungDone = ['recruited', 'resolved'].includes(gs.npcStatus['goseung']);
     if (!jeongwonjiDone && !gs.flags.act1Briefed) list.push('유비를 찾아가자');
@@ -388,6 +396,20 @@ function renderMinimap() {
     ctx.fill();
   }
 
+  if (mapId === 'changan') {
+    const destination = {
+      palace:'isuk', orders:'gosun', muster:CHANGAN_GUARD_ID, battle:CHANGAN_ENEMY_ID,
+    }[GameState.flags.changanPhase];
+    const gate = map.exit;
+    const point = destination ? MapView.npcPos(destination) : { x:gate.x, y:(gate.top + gate.bottom) / 2 };
+    if (point) {
+      ctx.fillStyle = '#5bbaf5';
+      ctx.beginPath();
+      ctx.arc(point.x / size.w * w, point.y / size.h * h, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   const px = (pos.x / Math.max(1, size.w)) * w;
   const py = (pos.y / Math.max(1, size.h)) * h;
   ctx.fillStyle = '#f2c94c';
@@ -406,8 +428,8 @@ function renderPlayerPanel() {
 
   const img = document.getElementById('player-portrait-img');
   const fallback = document.getElementById('player-portrait-fallback');
-  if (GameState.mainHero === 'gwanwoo') {
-    img.src = 'assets/ui/portrait_gwanwoo.png';
+  if (['gwanwoo', 'jangryo'].includes(GameState.mainHero)) {
+    img.src = `assets/ui/portrait_${GameState.mainHero}.png`;
     img.classList.remove('hidden');
     fallback.classList.add('hidden');
   } else {
@@ -431,6 +453,7 @@ function renderPlayerPanel() {
 
 function updateHUD() {
   const gs = GameState;
+  document.getElementById('screen-explore').classList.toggle('changan-crisis', stage === 'changan' && !!gs.flags.changanAlarm);
   // 소패 "장수 등용 (0/3)" 임무는 여러 갈래(일기토 등용/책사 친밀도 등용/
   // 포로 설득/간옹 재회 등)에서 완료될 수 있어, 매 갈래마다 따로 확인하는
   // 대신 등용 뒤 항상 불리는 updateHUD 한 곳에서만 확인한다(idempotent -
@@ -444,7 +467,8 @@ function updateHUD() {
   document.getElementById('hud-ap').textContent = `행동력 ${Math.round(Math.min(apCur, apMax))}/${apMax}`;
   document.getElementById('hud-gold').textContent = `금 ${gs.resources.gold}(+${scholarGoldIncome()})`;
   document.getElementById('hud-rice').textContent = `쌀 ${gs.resources.rice.toLocaleString()}(+${territoryRiceIncome()})`;
-  document.getElementById('hud-troop').textContent = `병사 ${gs.resources.troop}`;
+  const shownTroops = stage === 'changan' && gs.army ? gs.army.troop : gs.resources.troop;
+  document.getElementById('hud-troop').textContent = `병사 ${shownTroops}`;
   document.getElementById('hud-fame').textContent = `명성 ${gs.fame}`;
 
   // 유우가 요구한 최소 병력을 채우면, 딱 한 번 유비와 상의하라고 알려준다.
@@ -517,7 +541,7 @@ function updateHUD() {
 
 // ---------------- NPC interaction ----------------
 function isScriptedScenePlaying() {
-  return stage === 'hogwan_epilogue' || stage === 'sopae_finale' || stage === 'heodo_departure' ||
+  return stage === 'changan_departed' || stage === 'hogwan_epilogue' || stage === 'sopae_finale' || stage === 'heodo_departure' ||
     (stage === 'sopae_free' && GameState.flags.sopaeInvasionStarted && !GameState.flags.sopaeInvasionResolved);
 }
 
@@ -3725,7 +3749,8 @@ function startYeopoAssistScene() {
 
 function goEnding(chapter = 1) {
   document.getElementById('ending-title').textContent =
-    chapter === 2 ? '챕터 2 · 군웅할거 완료' : '챕터1 클리어';
+    stage === 'changan_departed' ? '장료 편 · 장안 탈출 완료'
+      : chapter === 2 ? '챕터 2 · 군웅할거 완료' : '챕터1 클리어';
   document.getElementById('btn-ending-continue').classList.toggle('hidden', chapter === 2);
   document.getElementById('btn-ending-map').hidden = chapter !== 2;
   showScreen('screen-ending');
@@ -3784,6 +3809,185 @@ document.querySelectorAll('.hero-card').forEach((card) => {
   };
 });
 
+// ---------------- 챕터 2 (장료) · 장안 ----------------
+const CHANGAN_GUARD_ID = 'changan_market_guard';
+const CHANGAN_ENEMY_ID = 'changan_vanguard';
+const CHANGAN_RECRUITS = {
+  janggi: '피란민 명단을 챙겼습니다. 동문까지 사람들이 흩어지지 않도록 제가 돕겠습니다.',
+  dugi: '길을 잃은 사람들에게 동문 쪽 길을 알려주었소. 나도 함께 가겠소.',
+  wangneung: '왕윤 어른의 집안도 피해야 하오. 나와 한 합 겨뤄, 믿고 따라갈 장수인지 보여주시오.',
+};
+
+function loadChangan() {
+  MapView.lockMovement(false);
+  ROSTER[CHANGAN_ENEMY_ID].troop = GameState.flags.changanEnemyTroop ?? 230;
+  MapView.load('changan', {
+    onInteract: interactChangan,
+    onApSpent: updateHUD,
+    onApBlocked,
+    onStep: () => {
+      renderMinimap();
+      const { x, y } = MapView.playerPos;
+      const gate = MAPS.changan.exit;
+      if (x < gate.x || y < gate.top || y > gate.bottom) return;
+      if (GameState.flags.changanPhase === 'escape') finishChangan();
+    },
+  });
+  MapView.setSceneGateClosed('east', GameState.flags.changanPhase !== 'escape');
+}
+
+function startChangan() {
+  stage = 'changan';
+  GameState.year = 192;
+  GameState.month = 4;
+  GameState.resources.troop = 340;
+  GameState.flags.changanPhase = 'palace';
+  loadChangan();
+  updateHUD();
+  Dialogue.show(STORY.changan_arrival);
+}
+
+function interactChangan(id, context) {
+  if (Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
+  const flags = GameState.flags;
+  switch (id) {
+    case 'isuk':
+      if (flags.changanPhase !== 'palace') return;
+      Dialogue.show(STORY.changan_palace, () => {
+        flags.changanPhase = 'orders';
+        flags.changanOrdersReady = true;
+        MapView.addNpc('gosun');
+        updateHUD();
+      });
+      return;
+    case 'gosun':
+      if (flags.changanPhase !== 'orders') return;
+      Dialogue.show(STORY.changan_orders, () => {
+        GameState.recruit('gosun', 0);
+        MapView.removeNpc('gosun');
+        flags.changanAlarm = true;
+        flags.changanPhase = 'muster';
+        MapView.addNpc(CHANGAN_GUARD_ID);
+        updateHUD();
+        toast('고순이 여포군 출전 명단에 등록되었습니다.');
+      });
+      return;
+    case CHANGAN_GUARD_ID:
+      if (flags.changanPhase !== 'muster') return;
+      Dialogue.show(STORY.changan_muster, () => {
+        GameState.addResource({ troop:180 });
+        prepareChanganArmy();
+        flags.changanPhase = 'battle';
+        flags.changanBattleReady = true;
+        GameState.npcStatus[CHANGAN_GUARD_ID] = 'resolved';
+        MapView.removeNpc(CHANGAN_GUARD_ID);
+        MapView.addNpc(CHANGAN_ENEMY_ID);
+        updateHUD();
+      });
+      return;
+    case CHANGAN_ENEMY_ID:
+      if (flags.changanPhase !== 'battle') return;
+      showChoice('서량 선봉대가 동문 쪽 길을 막고 있다.', [
+        { label:'전투', cb:fightChanganVanguard },
+        { label:'물러서기', cb:() => {} },
+      ]);
+      return;
+    case 'seongryeom':
+      Dialogue.show(STORY.changan_seongryeom, () => recruitChangan('seongryeom', 100));
+      return;
+    default:
+      if (Object.hasOwn(CHANGAN_RECRUITS, id)) meetChanganRecruit(id, context);
+  }
+}
+
+function recruitChangan(id, troop) {
+  GameState.recruit(id, troop);
+  if (GameState.army && !isScholarType(ROSTER[id])) GameState.army.generals.push(id);
+  MapView.removeNpc(id);
+  updateHUD();
+  toast(`${ROSTER[id].name}이(가) 여포군에 합류했습니다!`);
+}
+
+function meetChanganRecruit(id, context) {
+  const candidate = ROSTER[id];
+  const lines = [];
+  if (context?.firstDiscovery && context.discoveryText) {
+    lines.push({ speaker:'내레이션', text:context.discoveryText });
+  }
+  GameState.npcStatus[id] = 'met';
+  lines.push({ speaker:candidate.name, text:CHANGAN_RECRUITS[id] });
+  if (id !== 'wangneung') {
+    Dialogue.show(lines, () => {
+      showChoice(`${candidate.name}에게 함께 가자고 할까요?`, [
+        { label:'함께 가자', cb:() => recruitChangan(id, 0) },
+        { label:'나중에 오겠다', cb:() => {} },
+      ]);
+    });
+    return;
+  }
+  Dialogue.show(lines, () => {
+    showChoice('왕릉과 가볍게 겨뤄볼까요?', [
+      { label:'일기토', cb:() => {
+        Battle.start({
+          player:GameState.heroData(), enemy:candidate, maxRounds:3,
+          onEnd:({ outcome }) => {
+            if (outcome === 'lose') {
+              toast('왕릉은 이곳에서 기다립니다.');
+              return;
+            }
+            recruitChangan(id, 60);
+          },
+        });
+      } },
+      { label:'나중에 오겠다', cb:() => {} },
+    ]);
+  });
+}
+
+function prepareChanganArmy() {
+  const troop = GameState.resources.troop;
+  GameState.resources.troop = 0;
+  GameState.army = {
+    commanderId:'jangryo', deputy:null, generals:GameState.recruited.filter((id) => !isScholarType(ROSTER[id])),
+    troop, rice:0, unitType:'infantry',
+  };
+}
+
+function fightChanganVanguard() {
+  GameState.flags.changanStartingTroop ??= GameState.army.troop;
+  resolveArmyBattle(CHANGAN_ENEMY_ID, {
+    freeAction:true,
+    onComplete:({ enemyDown, playerDown }) => {
+      const flags = GameState.flags;
+      flags.changanEnemyTroop = ROSTER[CHANGAN_ENEMY_ID].troop;
+      if (enemyDown) {
+        flags.changanPhase = 'escape';
+        flags.changanBattleReady = false;
+        MapView.setSceneGateClosed('east', false);
+        updateHUD();
+        Dialogue.show(STORY.changan_gate_open);
+      } else if (playerDown) {
+        GameState.army.troop = flags.changanStartingTroop;
+        ROSTER[CHANGAN_ENEMY_ID].troop = 230;
+        flags.changanEnemyTroop = 230;
+        updateHUD();
+      }
+    },
+  });
+}
+
+function finishChangan() {
+  stage = 'changan_departed';
+  MapView.lockMovement(true);
+  dissolveArmy('army');
+  GameState.addFame(30);
+  updateHUD();
+  Dialogue.show(STORY.changan_departure, () => {
+    MapView.lockMovement(false);
+    goEnding(2);
+  });
+}
+
 // 챕터2 시작 공통 처리 - 챕터 선택 화면에서 장수를 새로 고를 때(carry 없음)와
 // 챕터1 엔딩에서 "계승하여 챕터2로"를 고를 때(carry 있음) 둘 다 이 함수를
 // 거친다. carry가 있으면 이어서 applyChapter2Inheritance가 금/쌀/명성/
@@ -3795,6 +3999,11 @@ function enterChapter2(heroId, carry) {
   // 하지 않는 안전한 호출이다.
   endWarInitiative();
   GameState.reset(heroId);
+  if (heroId === 'jangryo') {
+    showScreen('screen-explore');
+    startChangan();
+    return;
+  }
   // 연의 기준 유비의 서주 지원(도겸의 요청)은 194년 무렵이다 - 챕터1
   // 기본값(184년)을 그대로 이어받지 않고 챕터 시작 연도로 맞춰준다.
   GameState.year = 194;
@@ -4308,7 +4517,7 @@ window.addEventListener('keydown', (ev) => {
 // 대사, 장순의 난 행군(군세 이동모드) 중에는 되돌릴 상태가 애매해 제외한다.
 const SAVE_KEY = 'samgukji_saves_v1';
 const SAVE_SLOT_COUNT = 10;
-const SAVE_RESUMABLE_STAGES = ['takhyeon_free', 'pyeongwon_free', 'camp', 'warmap', 'seoju_free', 'habi_camp', 'sopae_free'];
+const SAVE_RESUMABLE_STAGES = ['takhyeon_free', 'pyeongwon_free', 'camp', 'warmap', 'seoju_free', 'habi_camp', 'sopae_free', 'changan'];
 // seoju_free는 도겸이 소환한 서주 대치(seoju_siege) 또는 그 뒤의 서주 자유탐방(seoju)
 // 둘 중 하나라 고정 매핑이 안 된다 - buildSaveSnapshot에서 MapView.currentMapId로 대신 구한다.
 const STAGE_MAP_ID = { takhyeon_free: 'takhyeon', pyeongwon_free: 'pyeongwon', camp: 'camp', warmap: 'warmap', habi_camp: 'habi' };
@@ -4375,7 +4584,9 @@ function resumeExploreStage(targetStage, playerPos, mapId) {
   stage = targetStage;
   showScreen('screen-explore');
   const opts = { onInteract: interactNPC, onApSpent: updateHUD, onApBlocked, onStep: renderMinimap };
-  if (targetStage === 'takhyeon_free') {
+  if (targetStage === 'changan') {
+    loadChangan();
+  } else if (targetStage === 'takhyeon_free') {
     MapView.load('takhyeon', { ...opts, spawnDeadlineAbsMonth: absMonth(DEADLINES.takhyeon, 12) + 1, onAmbientInteract: runAmbientEvent });
   } else if (targetStage === 'pyeongwon_free') {
     MapView.load('pyeongwon', { ...opts, spawnDeadlineAbsMonth: pyeongwonDeadlineAbsMonth(), onAmbientInteract: runAmbientEvent });
@@ -4394,7 +4605,11 @@ function resumeExploreStage(targetStage, playerPos, mapId) {
   } else if (targetStage === 'sopae_free') {
     MapView.load('sopae', { ...opts, onAmbientInteract: runAmbientEvent, onStep: () => { renderMinimap(); checkJegalgeunEscort(); } });
   }
-  if (playerPos) MapView.setPlayerPos(playerPos.x, playerPos.y);
+  // 이전 장안 지도에서 저장했다면 새 길 위의 유효한 좌표만 복원한다.
+  if (playerPos && (targetStage !== 'changan' || (
+    MAPS.changan.tiles[playerPos.y]?.[playerPos.x] === 1 &&
+    (GameState.flags.changanPhase === 'escape' || playerPos.x < MAPS.changan.sceneGates.east.tiles[0])
+  ))) MapView.setPlayerPos(playerPos.x, playerPos.y);
   updateHUD();
 }
 
@@ -5121,6 +5336,13 @@ function runAmbientEvent(kind) {
 // activateWarUnit이 라운드 끝에서 직접 호출한다.
 function monthAdvanceClick() {
   if (isScriptedScenePlaying()) return;
+  if (stage === 'changan') {
+    GameState.ap = GameState.apMax;
+    GameState.heroHp = null;
+    updateHUD();
+    toast('잠시 숨을 돌렸다. 체력과 행동력을 회복했다.');
+    return;
+  }
   GameState.nextMonth();
   GameState.merchantBought = { rice: 0, bow: 0, horse: 0 }; // 상인의 월간 판매 한도 초기화
   // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).

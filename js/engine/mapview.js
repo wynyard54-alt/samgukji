@@ -2,7 +2,8 @@ const MapView = (function () {
   const canvas = document.getElementById('game-canvas');
   const ctx = canvas.getContext('2d');
   const viewportEl = document.getElementById('explore-viewport');
-  const TILE = 40;
+  const DEFAULT_TILE = 40;
+  let TILE = DEFAULT_TILE;
   const DEFAULT_VIEW_W = 800;
   const DEFAULT_VIEW_H = 480;
 
@@ -164,6 +165,7 @@ const MapView = (function () {
     cameraFocus = null;
     mapId = id;
     map = MAPS[id];
+    TILE = map.tileSize || DEFAULT_TILE;
     player = { x:map.playerStart.x, y:map.playerStart.y, dir:'down' };
     footTileCount = 0;
     onInteract = (opts && opts.onInteract) || null;
@@ -185,8 +187,9 @@ const MapView = (function () {
       // (main.js의 MapView.addNpc 직접 호출)로 확률판정을 우회해 먼저 만났는데,
       // 그 전에 다른 지도 로드에서 확률판정이 이미 "숨김"으로 캐시돼 있으면
       // 등용 이후에도 계속 사라져버리는 버그가 있었다.
-      if (rd && rd.chance != null && !status) {
-        if (!(n.id in GameState.npcVisible)) GameState.npcVisible[n.id] = Math.random() < rd.chance;
+      const appearanceChance = n.chance ?? rd?.chance;
+      if (appearanceChance != null && !status) {
+        if (!(n.id in GameState.npcVisible)) GameState.npcVisible[n.id] = Math.random() < appearanceChance;
         if (!GameState.npcVisible[n.id]) return false;
       }
       // 미축처럼 소패 도착 전에 이미 등용된 채로 들어오는(도겸 사망 시 자동 합류)
@@ -368,8 +371,9 @@ const MapView = (function () {
     const tile = map.tiles[Math.round(y)] && map.tiles[Math.round(y)][Math.round(x)];
     if (TILE_BLOCKED[tile]) return false;
     for (const gate of closedSceneGates) {
-      const [left, right, row] = map.sceneGates[gate].tiles;
-      if (Math.round(y) === row && Math.round(x) >= left && Math.round(x) <= right) return false;
+      const [left, right, top, bottom = top] = map.sceneGates[gate].tiles;
+      if (Math.round(y) >= top && Math.round(y) <= bottom &&
+          Math.round(x) >= left && Math.round(x) <= right) return false;
     }
     return true;
   }
@@ -500,7 +504,8 @@ const MapView = (function () {
 
   function drawClosedSceneGates() {
     for (const id of closedSceneGates) {
-      const { x, y, w, h } = map.sceneGates[id];
+      const { x, y, w, h, drawDoor = true } = map.sceneGates[id];
+      if (!drawDoor) continue;
       ctx.save();
       ctx.translate(worldX(x), worldY(y));
       ctx.scale(w * TILE / 100, h * TILE / 100);
@@ -628,6 +633,7 @@ const MapView = (function () {
   // residenceIds를 쓰면 진등·진규처럼 한 집을 함께 쓰는 경우도 처리할 수 있다.
   function decorLabel(d) {
     if (d.storyGate && !GameState.flags[d.storyGate]) return null;
+    if (d.closedLabel && closedSceneGates.has(d.gateId)) return d.closedLabel;
     const ids=d.residenceIds || (d.residenceId ? [d.residenceId] : null);
     if (!ids) return d.label;
     const met=ids.some(id => ['met','recruited'].includes(GameState.npcStatus[id]));
@@ -939,12 +945,12 @@ const MapView = (function () {
       const spent = controlledId ? GameState.spendAllyAP(cost) : GameState.spendAP(cost);
       if (!spent) { if (onApBlocked) onApBlocked(); render(); return; }
       if (onApSpent) onApSpent();
-    } else if (footTileCount + 1 >= FOOT_TILES_PER_AP) {
+    } else if (!map.freeFootMovement && footTileCount + 1 >= FOOT_TILES_PER_AP) {
       // 완전히 무제한으로 돌아다니지는 못하도록, 장수 혼자 걷는 이동도 10칸째마다 행동력을 쓴다.
       if (!GameState.spendAP(1)) { if (onApBlocked) onApBlocked(); render(); return; }
       footTileCount = 0;
       if (onApSpent) onApSpent();
-    } else {
+    } else if (!map.freeFootMovement) {
       footTileCount++;
     }
     moveFieldActor(mover, controlledId || GameState.mainHero, nx, ny);

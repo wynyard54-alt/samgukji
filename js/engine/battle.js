@@ -80,7 +80,7 @@ const Battle = (function () {
   }
 
   function renderPortrait(el, data) {
-    const available = ['gwanwoo','jangbi','yubi','hwaung','yeopo'];
+    const available = ['gwanwoo','jangbi','yubi','hwaung','yeopo','jangryo'];
     if (available.includes(data.id)) {
       el.style.background = `#201b16 url("assets/ui/portrait_${data.id}.png") center 18% / cover no-repeat`;
       el.textContent = '';
