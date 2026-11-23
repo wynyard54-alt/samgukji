@@ -175,15 +175,15 @@ function worldMapTimeline(stage, mapId, flags) {
       flag = 'gye';
       notes.gye = '어양 방면';
       if (flags.pyeongwonGranted) factions.pyeongwon2 = 'yubi';
-    } else if (['camp', 'sasugwan', 'warmap', 'hamgokgwan'].includes(stage)) {
+    } else if (['camp', 'sasugwan', 'warmap', 'hogwan_epilogue'].includes(stage)) {
       Object.assign(factions, WORLDMAP_COALITION);
       for (const id of WORLDMAP_XU_ZHOU) factions[id] = 'dogyeom';
       for (const id of WORLDMAP_YI_ZHOU) factions[id] = 'yueon';
-      flag = stage === 'hamgokgwan' ? 'hamgokgwan' : 'hogwan';
+      flag = 'hogwan';
       if (stage === 'sasugwan') notes.hogwan = '사수관 방면';
-      if (stage === 'hamgokgwan') {
+      if (stage === 'hogwan_epilogue') {
         factions.hogwan = 'hanna';
-        notes.hogwan = '연합군 돌파';
+        notes.hogwan = '여포 퇴각';
       }
     }
     return { factions, labels, notes, flag };

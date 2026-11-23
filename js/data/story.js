@@ -168,30 +168,11 @@ const STORY = {
   ],
   warmap_yeopo_flee: [
     { speaker: '여포', text: '흥, 오늘은 이만하지. 다음에 또 보자!', scene: 'assets/illust/hogwan_yeopo_retreat.jpg' },
-    { speaker: '내레이션', text: '여포는 방천화극을 거두고 관 안으로 사라졌다.', scene: 'assets/illust/hogwan_yeopo_retreat.jpg', holdMs: 3500 },
+    { speaker: '내레이션', text: '여포는 방천화극을 거두고 관 안으로 사라졌다. 호로관에서 삼형제가 여포를 물리쳤다는 이야기는 제후들의 진영에 퍼졌다.', scene: 'assets/illust/hogwan_yeopo_retreat.jpg', holdMs: 4000 },
+    { speaker: '내레이션', text: '제후 연합군은 마침내 낙양에 들어섰다. 동탁은 황제를 데리고 이미 장안으로 떠났고, 불탄 도성에는 잿더미만 남아 있었다.', scene: 'assets/illust/worldmap.jpg' },
+    { speaker: '내레이션', text: '낙양에 이른 뒤 제후들의 뜻은 갈라졌다. 연합군은 흩어지고, 제후들은 저마다 자기 땅으로 돌아갔다.', scene: 'assets/illust/worldmap.jpg' },
+    { speaker: '내레이션', text: '한 깃발 아래 모였던 제후들은 이제 저마다 다른 꿈을 꾸었다. 각자의 땅에서 군사를 모으고 세력을 키우니, 천하의 패권을 다투는 군웅할거의 시대가 열렸다.', scene: 'assets/illust/worldmap.jpg', holdMs: 5200 },
   ],
-  warmap_clear: [
-    { speaker: '내레이션', text: '호로관의 동탁군이 완전히 무너졌다. 제후 연합군은 여세를 몰아 장안으로 향하는 길목, 함곡관으로 진군했다.' },
-  ],
-
-  hamgokgwan_pre: [
-    { speaker: '내레이션', text: '왕윤의 계책으로 여포가 동탁을 베었다는 소식이 전해졌다. 그러나 잔당 이각·곽사가 저항하고 있었다.' },
-    { speaker: '이각', text: '동탁 어른은 가셨지만, 우리까지 무너질 성싶으냐!' },
-    { speaker: '관우', text: '역적의 잔당들, 이곳에서 끝을 보자.' },
-  ],
-  // 이각을 물리친 직후, 곧바로 곽사 전투로 넘어가버리면 두 전투가 한 덩어리처럼
-  // 느껴진다. 짧게라도 숨 고르는 지점을 준다.
-  hamgokgwan_igak_result: [
-    { speaker: '내레이션', text: '이각은 얼마 버티지 못하고 말머리를 돌려 서쪽으로 달아났다.' },
-    { speaker: '관우', text: '아직 곽사가 남았다. 끝까지 몰아붙인다!' },
-  ],
-  hamgokgwan_post: [
-    { speaker: '곽사', text: '훗날 반드시 돌아오리라!' },
-    { speaker: '내레이션', text: '곽사마저 달아나며, 함곡관의 저항이 완전히 끝났다.' },
-    { speaker: '내레이션', text: '낙양은 마침내 조정의 손에 돌아왔고, 유비 삼형제의 이름은 천하에 알려지기 시작했다.' },
-    { speaker: '내레이션', text: '— 챕터1 클리어 —', holdMs: 2400 },
-  ],
-
   // ---- 챕터2 (관우) : 서주 - 삼양서주 [장면1] ----
   // 정사와 연의가 갈리는 지점부터는 이후 쭉 연의를 기준으로 삼는다.
   // 삽화가 화면을 가리는 동안 자연스럽게 담현(서주) 지도로 넘어가므로,

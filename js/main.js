@@ -297,7 +297,7 @@ function getObjectives() {
     } else if (mapId === 'hoesu') {
       list.push('원술군과 여포군을 피해, 유비군을 이끌고 오른쪽 관문(광릉)으로 탈출하라!');
     } else {
-      list.push('호로관의 적 군세를 모두 격파하기 (마지막은 여포다)');
+      list.push('호로관에서 여포를 물리쳐라');
     }
   } else {
     list.push('전투에 집중하자!');
@@ -516,13 +516,13 @@ function updateHUD() {
 }
 
 // ---------------- NPC interaction ----------------
-function sopaeScenePlaying() {
-  return stage === 'sopae_finale' || stage === 'heodo_departure' ||
+function isScriptedScenePlaying() {
+  return stage === 'hogwan_epilogue' || stage === 'sopae_finale' || stage === 'heodo_departure' ||
     (stage === 'sopae_free' && GameState.flags.sopaeInvasionStarted && !GameState.flags.sopaeInvasionResolved);
 }
 
 function interactNPC(id, context) {
-  if (sopaeScenePlaying()) return;
+  if (isScriptedScenePlaying()) return;
   const rd = ROSTER[id];
   if (!rd) return;
   // 적을 직접 클릭하지 않고 "지금 조작 중인 내 캐릭터(관우) 자신"을 클릭한
@@ -2843,21 +2843,27 @@ function goWarmap() {
 }
 
 function checkWarmapClear() {
-  const ids = ['hojin', 'jangje', 'beonjo', 'yeopo'];
-  const allDone = ids.every((id) => ['resolved', 'routed', 'recruited', 'fled', 'captured'].includes(GameState.npcStatus[id]));
-  if (allDone) {
-    GameState.addFame(30); // 메인퀘스트: 호로관 평정
-    endWarInitiative();
-    // 호로관 전투가 끝나면 관우군은 더 쓰이지 않는다(함곡관은 관우 개인
-    // 일기토, 그 뒤는 챕터1 엔딩) - 남은 병력·군량을 세력 자원으로
-    // 돌려준다. 예전엔 여기서 돌려주지 않아 챕터1이 끝날 때까지 관우군
-    // 안에 갇힌 채 조용히 사라졌었다.
-    dissolveArmy('army');
-    updateHUD();
-    offerCapturedRecruits(() => Dialogue.show(STORY.warmap_clear, goHamgokgwan));
+  if (stage !== 'warmap') return;
+  if (MapView.currentMapId !== 'warmap') {
+    checkHoenamClear();
     return;
   }
-  checkHoenamClear();
+  if (GameState.npcStatus.yeopo !== 'fled') return;
+
+  stage = 'hogwan_epilogue';
+  GameState.addFame(30); // 호로관 전투 공적
+  endWarInitiative();
+  MapView.lockMovement(true);
+  dissolveArmy('army');
+  updateHUD();
+  offerCapturedRecruits(() => {
+    Dialogue.show(STORY.warmap_yubi_assist, () => {
+      Dialogue.show(STORY.warmap_yeopo_flee, () => {
+        MapView.lockMovement(false);
+        goEnding();
+      });
+    });
+  });
 }
 
 // ---------------- 챕터2 (관우) : 회남 벌판 [장면3, 원술 정벌] ----------------
@@ -3707,46 +3713,12 @@ function startYeopoAssistScene() {
                 }
                 GameState.npcStatus['yeopo'] = 'fled';
                 MapView.removeNpc('yeopo');
-                Dialogue.show(STORY.warmap_yubi_assist, () => {
-                  Dialogue.show(STORY.warmap_yeopo_flee, checkWarmapClear);
-                });
+                checkWarmapClear();
               },
             });
           } },
         ]);
       });
-    });
-  });
-}
-
-function goHamgokgwan() {
-  stage = 'hamgokgwan';
-  Dialogue.show(STORY.hamgokgwan_pre, () => {
-    // 여포전과는 시간 간격이 있는 별개의 전투이므로 체력을 완전히 회복한 채 시작한다.
-    // 이각→곽사는 곧바로 이어지는 전투라 기존처럼 체력을 그대로 넘긴다.
-    GameState.heroHp = null;
-    updateHUD();
-    Battle.start({
-      player: GameState.heroData(), enemy: ROSTER.igak, maxRounds: 3,
-      startHp: heroCurrentHp(),
-      onEnd: (result) => {
-        GameState.heroHp = result.playerHp; // 이각전에서 닳은 체력을 곽사전까지 그대로 이어간다
-        updateHUD();
-        GameState.npcStatus['igak'] = 'fled';
-        Dialogue.show(STORY.hamgokgwan_igak_result, () => {
-          Battle.start({
-            player: GameState.heroData(), enemy: ROSTER.gwaksa, maxRounds: 3,
-            startHp: heroCurrentHp(),
-            onEnd: (result2) => {
-              GameState.heroHp = result2.playerHp;
-              GameState.npcStatus['gwaksa'] = 'fled';
-              GameState.addFame(30); // 메인퀘스트: 함곡관 평정
-              updateHUD();
-              Dialogue.show(STORY.hamgokgwan_post, goEnding);
-            },
-          });
-        });
-      },
     });
   });
 }
@@ -4364,7 +4336,7 @@ function writeSaveSlots(slots) {
 
 function canSaveNow() {
   if (!SAVE_RESUMABLE_STAGES.includes(stage)) return false;
-  if (sopaeScenePlaying()) return false;
+  if (isScriptedScenePlaying()) return false;
   if (!document.getElementById('screen-explore').classList.contains('active')) return false;
   if (Dialogue.isActive()) return false;
   // 일기토 화면은 #screen-explore 위에 별도로 떠 있는 오버레이라 화면 전환
@@ -4434,7 +4406,11 @@ function applySaveSnapshot(snap) {
   }
   resumeExploreStage(snap.stage, snap.playerPos, snap.mapId);
   closeSaveBox();
-  toast('불러오기 완료.');
+  if (stage === 'warmap' && MapView.currentMapId === 'warmap' && GameState.npcStatus.yeopo === 'fled') {
+    checkWarmapClear();
+  } else {
+    toast('불러오기 완료.');
+  }
 }
 
 function saveToSlot(index) {
@@ -4755,7 +4731,7 @@ document.getElementById('log-close').onclick = closeLogBox;
 
 document.querySelectorAll('#bottom-menu button').forEach((btn) => {
   btn.onclick = () => {
-    if (sopaeScenePlaying()) return;
+    if (isScriptedScenePlaying()) return;
     if (btn.dataset.menu === 'generals') { openRosterPanel(); return; }
     if (btn.dataset.menu === 'bag') { openBagBox(); return; }
     if (btn.dataset.menu === 'settings') { openSettingsMenu(); return; }
@@ -5144,7 +5120,7 @@ function runAmbientEvent(kind) {
 // 다 돌고 나서야 실제로 이 달의 마무리 처리(monthAdvanceClick)를 부른다 -
 // activateWarUnit이 라운드 끝에서 직접 호출한다.
 function monthAdvanceClick() {
-  if (sopaeScenePlaying()) return;
+  if (isScriptedScenePlaying()) return;
   GameState.nextMonth();
   GameState.merchantBought = { rice: 0, bow: 0, horse: 0 }; // 상인의 월간 판매 한도 초기화
   // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).
@@ -5264,7 +5240,7 @@ let stickRepeat = null;
 
 function touchControlsBlocked() {
   return !document.getElementById('screen-explore').classList.contains('active')
-    || sopaeScenePlaying() || Dialogue.isActive()
+    || isScriptedScenePlaying() || Dialogue.isActive()
     || movementOverlays.some((overlay) => !overlay.classList.contains('hidden'));
 }
 
