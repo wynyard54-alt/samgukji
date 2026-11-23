@@ -1563,7 +1563,7 @@ const MapView = (function () {
   }
 
   return {
-    load,render,removeNpc,addNpc,walkNpcPath,setSceneExtras,setSceneGateClosed,shelterResidents,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,setPlayerPos,
+    isRotatedPresentation,load,render,removeNpc,addNpc,walkNpcPath,setSceneExtras,setSceneGateClosed,shelterResidents,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,setPlayerPos,
     panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,showDamageFloat,showAttackBump,setControlledUnit,npcPos,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},

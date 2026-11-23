@@ -292,30 +292,38 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 #bottom-menu button:hover{ background:rgba(24,20,15,.9); }
 
-/* 터치패드 (우하단 오버레이) */
-#touchpad{
-  position:absolute; bottom:10px; right:10px; z-index:5;
-  display:grid;
-  grid-template-columns:44px 44px 44px;
-  grid-template-rows:40px 40px 40px;
-  grid-template-areas:
-    ".    up      ."
-    "left action  right"
-    ".    down    .";
-  gap:4px;
-  user-select:none;
-  -webkit-user-select:none;
-  pointer-events:auto;
+/* 좌우 터치 조작. 투명한 가운데 영역은 지도와 하단 메뉴에 양보한다. */
+#explore-viewport { --stick-size: 104px; }
+#touchpad {
+  position:absolute; inset:auto 12px 12px; z-index:5;
+  display:flex; align-items:flex-end; justify-content:space-between;
+  pointer-events:none; user-select:none; -webkit-user-select:none;
 }
-.tp-btn{
-  font-family:inherit; font-size:15px; font-weight:700;
-  background:rgba(241,233,212,.88); border:1px solid var(--panel-border); border-radius:8px;
-  color:var(--ink); cursor:pointer; touch-action:manipulation;
+#tp-stick, #tp-action {
+  pointer-events:auto; border-radius:50%; box-sizing:border-box;
 }
-.tp-btn:active{ background:var(--accent); color:#fff8ea; }
-.tp-up{ grid-area:up; } .tp-down{ grid-area:down; }
-.tp-left{ grid-area:left; } .tp-right{ grid-area:right; }
-.tp-action{ grid-area:action; font-size:11px; background:var(--accent); color:#fff8ea; }
+#tp-stick {
+  position:relative; width:var(--stick-size); height:var(--stick-size);
+  border:2px solid rgba(247,230,192,.62);
+  background:rgba(27,21,16,.52); box-shadow:inset 0 0 0 3px rgba(28,20,13,.2);
+  touch-action:none; cursor:grab;
+}
+#tp-stick:active { cursor:grabbing; }
+#tp-knob {
+  position:absolute; left:50%; top:50%; width:43%; height:43%;
+  border-radius:50%; border:1px solid #fff1cf;
+  background:rgba(247,230,192,.9); box-shadow:0 2px 5px rgba(18,13,9,.4);
+  transform:translate(calc(-50% + var(--stick-x, 0px)), calc(-50% + var(--stick-y, 0px)));
+  pointer-events:none;
+}
+#tp-action {
+  width:64px; height:64px; touch-action:manipulation; cursor:pointer;
+  font-family:inherit; font-weight:700; font-size:14px;
+  color:#fff8ea; background:var(--accent); border:2px solid #e9d6a8;
+  box-shadow:0 3px 8px rgba(28,20,13,.42);
+}
+#tp-action:active { background:var(--accent-strong); }
+#explore-viewport #player-panel { bottom:calc(var(--stick-size) + 20px); }
 
 /* 대화창 */
 #dialogue-box{
@@ -1157,22 +1165,19 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #explore-viewport.compact .hp-row .stat-val,
 #explore-viewport.player-compact .hp-row .stat-val{ width:38px; font-size:9.5px; }
 
-#explore-viewport.compact #bottom-menu{
-  /* 세로로 든 상태(회전 프리젠테이션)에서는 화면 중앙이 아니라 터치패드 쪽에
-     가깝게 배치해야 실제로 보이는 화면에서 인물 초상화 패널과 겹치지 않는다. */
-  left:auto; right:140px; bottom:8px; gap:5px; transform:scale(.92);
-  transform-origin:bottom right;
+#explore-viewport.compact #bottom-menu {
+  bottom:8px; gap:4px;
 }
-#explore-viewport.compact #bottom-menu button{ padding:6px 8px; }
+#explore-viewport.compact #bottom-menu button { padding:5px 6px; }
 
-#explore-viewport.compact #touchpad{
-  bottom:8px; right:8px;
-  grid-template-columns:42px 42px 42px;
-  grid-template-rows:38px 38px 38px;
-  gap:4px;
-}
-#explore-viewport.compact .tp-btn{ font-size:15px; }
-#explore-viewport.compact .tp-action{ font-size:11px; }
+#explore-viewport.compact,
+#explore-viewport.player-compact { --stick-size: 78px; }
+#explore-viewport.compact #touchpad,
+#explore-viewport.player-compact #touchpad { inset:auto 8px 8px; }
+#explore-viewport.compact #tp-action,
+#explore-viewport.player-compact #tp-action { width:50px; height:50px; font-size:12px; }
+#explore-viewport.compact #player-panel,
+#explore-viewport.player-compact #player-panel { bottom:calc(var(--stick-size) + 14px); }
 
 /* 소패 북문은 같은 지도를 밤으로 전환해 사용한다. */
 #screen-explore.sopae-night #game-canvas {

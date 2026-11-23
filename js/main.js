@@ -5255,19 +5255,85 @@ document.getElementById('btn-ending-continue').onclick = () => {
 document.getElementById('btn-ending-map').onclick = openWorldMapBox;
 document.getElementById('btn-ending-chapters').onclick = () => showScreen('screen-chapter');
 
-// 모바일 터치 이동패드 (클릭=탭으로 동일하게 동작)
-function touchpadBlocked() {
-  return Dialogue.isActive() || !document.getElementById('bag-box').classList.contains('hidden')
-    || !document.getElementById('roster-box').classList.contains('hidden')
-    || !document.getElementById('army-box').classList.contains('hidden')
-    || !document.getElementById('choice-box').classList.contains('hidden');
+// 조이스틱은 기존 한 칸 이동을 반복해 이동 비용과 전투 규칙을 그대로 적용한다.
+const movementStick = document.getElementById('tp-stick');
+const movementOverlays = [...document.querySelectorAll('[id$="-box"], #battle-screen, #timing-minigame')];
+let stickPointer = null;
+let stickDirection = null;
+let stickRepeat = null;
+
+function touchControlsBlocked() {
+  return !document.getElementById('screen-explore').classList.contains('active')
+    || sopaeScenePlaying() || Dialogue.isActive()
+    || movementOverlays.some((overlay) => !overlay.classList.contains('hidden'));
 }
-function guardedMove(dx, dy) {
-  if (touchpadBlocked()) return;
-  MapView.tryMove(dx, dy);
+
+function stopJoystick() {
+  const pointer = stickPointer;
+  stickPointer = null;
+  stickDirection = null;
+  clearInterval(stickRepeat);
+  stickRepeat = null;
+  movementStick.style.removeProperty('--stick-x');
+  movementStick.style.removeProperty('--stick-y');
+  if (pointer !== null && movementStick.hasPointerCapture(pointer)) {
+    movementStick.releasePointerCapture(pointer);
+  }
 }
-document.getElementById('tp-up').onclick = () => guardedMove(0, -1);
-document.getElementById('tp-down').onclick = () => guardedMove(0, 1);
-document.getElementById('tp-left').onclick = () => guardedMove(-1, 0);
-document.getElementById('tp-right').onclick = () => guardedMove(1, 0);
-document.getElementById('tp-action').onclick = () => { if (!touchpadBlocked()) MapView.interactFacing(); };
+
+function stepJoystick() {
+  if (touchControlsBlocked()) {
+    stopJoystick();
+    return;
+  }
+  if (stickDirection) MapView.tryMove(...stickDirection);
+}
+
+function aimJoystick(event) {
+  if (event.pointerId !== stickPointer) return;
+  const rect = movementStick.getBoundingClientRect();
+  const dx = event.clientX - (rect.left + rect.width / 2);
+  const dy = event.clientY - (rect.top + rect.height / 2);
+  const rotated = MapView.isRotatedPresentation();
+  const x = rotated ? dy : dx;
+  const y = rotated ? -dx : dy;
+  const distance = Math.hypot(x, y);
+  const maxOffset = rect.width * .26;
+  const scale = distance > maxOffset ? maxOffset / distance : 1;
+  movementStick.style.setProperty('--stick-x', `${x * scale}px`);
+  movementStick.style.setProperty('--stick-y', `${y * scale}px`);
+
+  const wasMoving = !!stickDirection;
+  // 대각선 입력은 현재 그리드에서 가장 크게 기운 축으로 해석한다.
+  stickDirection = distance < rect.width * .16 ? null
+    : Math.abs(x) >= Math.abs(y) ? [Math.sign(x), 0] : [0, Math.sign(y)];
+  if (!stickDirection) {
+    clearInterval(stickRepeat);
+    stickRepeat = null;
+  } else if (!wasMoving) {
+    stickRepeat = setInterval(stepJoystick, 160);
+    stepJoystick();
+  }
+}
+
+movementStick.addEventListener('pointerdown', (event) => {
+  if (stickPointer !== null || event.button !== 0 || touchControlsBlocked()) return;
+  stickPointer = event.pointerId;
+  movementStick.setPointerCapture(event.pointerId);
+  aimJoystick(event);
+});
+movementStick.addEventListener('pointermove', aimJoystick);
+for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+  movementStick.addEventListener(type, (event) => {
+    if (event.pointerId === stickPointer) stopJoystick();
+  });
+}
+window.addEventListener('blur', stopJoystick);
+window.addEventListener('resize', stopJoystick);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stopJoystick();
+});
+document.getElementById('tp-action').onclick = () => {
+  stopJoystick();
+  if (!touchControlsBlocked()) MapView.interactFacing();
+};
