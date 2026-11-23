@@ -203,10 +203,10 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #explore-viewport.scene-active #location-banner,
 #explore-viewport.scene-active #minimap-panel,
 #explore-viewport.scene-active #hud-army,
-#explore-viewport.scene-active #player-panel,
+#explore-viewport.scene-active #player-controls,
 #explore-viewport.scene-active #bottom-menu,
 #explore-viewport.scene-active #hud-top,
-#explore-viewport.scene-active #touchpad{ display:none; }
+#explore-viewport.scene-active #tp-action{ display:none; }
 
 .hud-panel{
   position:absolute; background:rgba(16,13,10,1); color:#f5ecd6;
@@ -257,7 +257,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 
 /* 플레이어 초상화 + 스텟 패널 (좌하단) */
 #player-panel{
-  bottom:10px; left:10px; z-index:4; padding:8px; display:flex; gap:8px; align-items:flex-start;
+  position:static; padding:8px; display:flex; gap:8px; align-items:flex-start;
 }
 #player-portrait{ width:52px; height:52px; border-radius:8px; overflow:hidden; border:2px solid rgba(233,214,168,.55); flex:none; }
 #player-portrait img{ width:100%; height:100%; object-fit:cover; }
@@ -292,11 +292,11 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 #bottom-menu button:hover{ background:rgba(24,20,15,.9); }
 
-/* 좌우 터치 조작. 투명한 가운데 영역은 지도와 하단 메뉴에 양보한다. */
-#explore-viewport { --stick-size: 104px; }
-#touchpad {
-  position:absolute; inset:auto 12px 12px; z-index:5;
-  display:flex; align-items:flex-end; justify-content:space-between;
+/* 왼쪽 조이스틱과 프로필을 쌓아 내용 높이가 달라도 겹치지 않게 한다. */
+#explore-viewport { --stick-size: 114px; }
+#player-controls {
+  position:absolute; bottom:10px; left:10px; z-index:5;
+  display:flex; flex-direction:column; align-items:flex-start; gap:8px;
   pointer-events:none; user-select:none; -webkit-user-select:none;
 }
 #tp-stick, #tp-action {
@@ -317,13 +317,13 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   pointer-events:none;
 }
 #tp-action {
+  position:absolute; right:12px; bottom:12px; z-index:5;
   width:64px; height:64px; touch-action:manipulation; cursor:pointer;
   font-family:inherit; font-weight:700; font-size:14px;
   color:#fff8ea; background:var(--accent); border:2px solid #e9d6a8;
   box-shadow:0 3px 8px rgba(28,20,13,.42);
 }
 #tp-action:active { background:var(--accent-strong); }
-#explore-viewport #player-panel { bottom:calc(var(--stick-size) + 20px); }
 
 /* 대화창 */
 #dialogue-box{
@@ -1148,7 +1148,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 
 #explore-viewport.compact #player-panel,
 #explore-viewport.player-compact #player-panel{
-  bottom:6px; left:6px; padding:4px 6px; gap:5px; align-items:center;
+  padding:4px 6px; gap:5px; align-items:center;
 }
 #explore-viewport.compact #player-portrait,
 #explore-viewport.player-compact #player-portrait{ width:32px; height:32px; border-radius:6px; }
@@ -1171,13 +1171,11 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 #explore-viewport.compact #bottom-menu button { padding:5px 6px; }
 
 #explore-viewport.compact,
-#explore-viewport.player-compact { --stick-size: 78px; }
-#explore-viewport.compact #touchpad,
-#explore-viewport.player-compact #touchpad { inset:auto 8px 8px; }
+#explore-viewport.player-compact { --stick-size: 88px; }
+#explore-viewport.compact #player-controls,
+#explore-viewport.player-compact #player-controls { bottom:6px; left:6px; gap:6px; }
 #explore-viewport.compact #tp-action,
-#explore-viewport.player-compact #tp-action { width:50px; height:50px; font-size:12px; }
-#explore-viewport.compact #player-panel,
-#explore-viewport.player-compact #player-panel { bottom:calc(var(--stick-size) + 14px); }
+#explore-viewport.player-compact #tp-action { right:8px; bottom:8px; width:50px; height:50px; font-size:12px; }
 
 /* 소패 북문은 같은 지도를 밤으로 전환해 사용한다. */
 #screen-explore.sopae-night #game-canvas {

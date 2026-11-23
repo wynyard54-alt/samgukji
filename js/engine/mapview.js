@@ -904,7 +904,7 @@ const MapView = (function () {
     render();
   }
 
-  function tryMove(dx, dy) {
+  function tryMove(dx, dy, { interactOnContact = true } = {}) {
     if (!map || movementLocked) return;
     const mover = activeMover();
     if (!mover) return;
@@ -921,7 +921,12 @@ const MapView = (function () {
     // 대칭이다(그쪽은 아래 npcAt 검사가 이미 막는다).
     if (mover !== player && nx === player.x && ny === player.y) { render(); return; }
     const npc=npcAt(nx,ny);
-    if (npc) { interact(npc,false); return; } // 인접칸으로 다가가 공격하는 행동엔 행동력을 소모하지 않는다
+    if (npc) {
+      // 조이스틱은 통행만 막고, 대화 버튼으로 직접 상호작용한다.
+      if (interactOnContact) interact(npc, false);
+      else render();
+      return;
+    }
     if (map.apMovement) {
       // 적 AI 행동력(computeAiPath)과 동일한 moveCostMult 배율을 플레이어
       // 이동에도 적용한다 - 나중에 적 책사가 플레이어 쪽에 이 디버프를

@@ -5286,7 +5286,7 @@ function stepJoystick() {
     stopJoystick();
     return;
   }
-  if (stickDirection) MapView.tryMove(...stickDirection);
+  if (stickDirection) MapView.tryMove(...stickDirection, { interactOnContact:false });
 }
 
 function aimJoystick(event) {
@@ -5298,14 +5298,15 @@ function aimJoystick(event) {
   const x = rotated ? dy : dx;
   const y = rotated ? -dx : dy;
   const distance = Math.hypot(x, y);
+  const activationRadius = rect.width * .44;
   const maxOffset = rect.width * .26;
-  const scale = distance > maxOffset ? maxOffset / distance : 1;
+  const scale = maxOffset / Math.max(distance, activationRadius);
   movementStick.style.setProperty('--stick-x', `${x * scale}px`);
   movementStick.style.setProperty('--stick-y', `${y * scale}px`);
 
   const wasMoving = !!stickDirection;
   // 대각선 입력은 현재 그리드에서 가장 크게 기운 축으로 해석한다.
-  stickDirection = distance < rect.width * .16 ? null
+  stickDirection = distance < activationRadius ? null
     : Math.abs(x) >= Math.abs(y) ? [Math.sign(x), 0] : [0, Math.sign(y)];
   if (!stickDirection) {
     clearInterval(stickRepeat);
