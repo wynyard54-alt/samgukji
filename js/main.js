@@ -1,58 +1,63 @@
 // ---------------- 시작 전 그림 미리 불러오기 ----------------
-// 지도 배경·삽화·인물 그림을 타이틀 화면이 보이기 전에 미리 받아둬서,
-// 플레이 중간중간 그림이 하나씩 늦게 뜨는 것을 막는다.
-(function preloadAssets() {
+(async function preloadAssets() {
+  const screen = document.getElementById('preload-screen');
+  const fill = document.getElementById('preload-bar-fill');
+  const status = document.getElementById('preload-percent');
+  const retry = document.getElementById('preload-retry');
+  const title = document.getElementById('screen-title');
+  const mapKeys = [...new Set(Object.values(MAPS).map((map) => map.backgroundKey).filter(Boolean))];
   const extraUrls = [
     'assets/illust/dowon_market.jpg', 'assets/illust/dowon_oath.jpg', 'assets/illust/pyeongwon_urgent.jpg',
-    'assets/illust/anhee_dokwoo.jpg',
-    'assets/illust/sasugwan_pledge.jpg', 'assets/illust/sasugwan_victory.jpg',
-    'assets/illust/hogwan_yeopo_retreat.jpg',
-    'assets/illust/worldmap.jpg',
-    'assets/ui/portrait_gwanwoo.png',
-    'assets/battle/duel_gwanwoo.png', 'assets/battle/duel_hwaung.png', 'assets/battle/duel_yeopo.png',
+    'assets/illust/anhee_dokwoo.jpg', 'assets/illust/sasugwan_pledge.jpg', 'assets/illust/sasugwan_victory.jpg',
+    'assets/illust/hogwan_yeopo_retreat.jpg', 'assets/illust/worldmap.jpg',
+    'assets/ui/portrait_gwanwoo.png', 'assets/battle/duel_generic_officer_v2.png',
+    ...new Set(Object.values(ROSTER).map((officer) => officer.battleArt?.src).filter(Boolean)),
   ];
-  // 평원/막사/호로관 배경은 각각 3MB대라, 타이틀 화면 뜨기 전에 다 같이 받으면
-  // (특히 오늘 막사·호로관 배경이 추가된 뒤로) 시작이 눈에 띄게 느려진다.
-  // 게임 초반에 바로 보이는 탁현만 미리 받고, 나머지는 실제로 그 지도에
-  // 들어갈 때 FieldAssets가 알아서 그때 받아오게 둔다.
-  const deferredFieldKeys = ['pyeongwon_city_overview', 'camp_overview', 'warmap_overview', 'seoju_siege_overview', 'seoju_overview', 'habi_gwannae_overview', 'suchun_overview', 'sopae_overview', 'changan_overview'];
-  const fieldKeys = FieldAssets.keys().filter((k) => !deferredFieldKeys.includes(k));
-  const total = fieldKeys.length + extraUrls.length;
+  const total = mapKeys.length + 1;
   let done = 0;
-  const screenEl = document.getElementById('preload-screen');
-  const fillEl = document.getElementById('preload-bar-fill');
-  const pctEl = document.getElementById('preload-percent');
-  let finished = false;
+  let timer;
+  let failed = false;
 
-  function finish() {
-    if (finished) return;
-    finished = true;
-    screenEl.classList.add('hidden');
-  }
-
-  function tick() {
-    done++;
-    const pct = Math.min(100, Math.round((done / total) * 100));
-    fillEl.style.width = pct + '%';
-    pctEl.textContent = `불러오는 중… ${pct}%`;
-    if (done >= total) finish();
-  }
-
-  if (!total) { finish(); return; }
-  fieldKeys.forEach((key) => {
-    const img = FieldAssets.get(key);
-    if (!img || (img.complete && img.naturalWidth)) { tick(); return; }
-    img.addEventListener('load', tick, { once: true });
-    img.addEventListener('error', tick, { once: true });
-  });
-  extraUrls.forEach((src) => {
+  function loadImage(src) {
     const img = new Image();
-    img.addEventListener('load', tick, { once: true });
-    img.addEventListener('error', tick, { once: true });
     img.src = src;
-  });
-  // 느린 네트워크에서 일부 그림이 끝내 안 불러와져도 화면이 멈춰있지 않도록 안전장치를 둔다.
-  setTimeout(finish, 15000);
+    return img;
+  }
+
+  async function prepare(img) {
+    await img.decode();
+    if (failed) return;
+    done++;
+    const pct = Math.round(done / total * 100);
+    fill.style.width = pct + '%';
+    status.textContent = `불러오는 중… ${pct}%`;
+  }
+
+  retry.addEventListener('click', () => location.reload());
+  const required = [
+    ...mapKeys.map((key) => prepare(FieldAssets.get(key))),
+    prepare(loadImage('assets/battle/duel_bg_hulao_v1.jpg')),
+  ];
+  const optional = [
+    ...FieldAssets.keys().filter((key) => !mapKeys.includes(key)).map((key) => FieldAssets.get(key).decode()),
+    ...extraUrls.map((src) => loadImage(src).decode()),
+  ];
+  const optionalReady = Promise.allSettled(optional);
+  try {
+    await Promise.race([
+      Promise.all(required),
+      new Promise((_, reject) => { timer = setTimeout(reject, 45000); }),
+    ]);
+    await Promise.race([optionalReady, new Promise((resolve) => setTimeout(resolve, 1500))]);
+    screen.classList.add('hidden');
+    title.inert = false;
+  } catch {
+    failed = true;
+    status.textContent = '지도 또는 일기토 배경을 불러오지 못했어요.';
+    retry.hidden = false;
+  } finally {
+    clearTimeout(timer);
+  }
 })();
 
 let stage = 'title';
