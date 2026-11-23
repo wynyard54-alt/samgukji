@@ -163,6 +163,7 @@ function scholarGoldIncome() {
 // 여러 flag를 시간순으로 검사해 "지금 시점"의 영지 목록만 돌려주므로
 // 새로 얻은 땅이 예전 땅을 대신하는 식(합산이 아님)으로 자연히 처리된다.
 function currentTerritoryIds() {
+  if (GameState.flags.sopaeLost) return [];
   if (GameState.flags.sopaeGranted) return ['sopae'];
   if (GameState.flags.wonsulRetreated) return []; // 원술과 얽힌 사이 여포에게 서주를 빼앗겨 수확할 땅이 없다
   if (GameState.flags.dogyeomDied) return ['sopae', 'habi', 'nangya', 'gwangneung'];
@@ -516,7 +517,7 @@ function updateHUD() {
 
 // ---------------- NPC interaction ----------------
 function sopaeScenePlaying() {
-  return stage === 'sopae_finale' ||
+  return stage === 'sopae_finale' || stage === 'heodo_departure' ||
     (stage === 'sopae_free' && GameState.flags.sopaeInvasionStarted && !GameState.flags.sopaeInvasionResolved);
 }
 
@@ -3430,6 +3431,7 @@ function startSopaeFinale() {
 }
 
 function showSopaeSiege() {
+  GameState.flags.sopaeBesieged = true;
   MapView.setPlayerPos(19, 15, 'down');
   for (const [id, x, y] of [['yubi', 18, 15], ['jangbi', 20, 15]]) {
     MapView.removeNpc(id);
@@ -3525,6 +3527,9 @@ function leaveSopae() {
     explore.classList.add('sopae-blackout');
     setTimeout(() => {
       MapView.setPlayerPos(8, 3);
+      GameState.flags.sopaeLost = true;
+      stage = 'heodo_departure';
+      updateHUD();
       Dialogue.show(STORY.sopae_heodo_departure, () => goEnding(2));
       explore.classList.remove('sopae-blackout', 'sopae-night');
     }, 550);
@@ -3750,6 +3755,7 @@ function goEnding(chapter = 1) {
   document.getElementById('ending-title').textContent =
     chapter === 2 ? '챕터 2 · 군웅할거 완료' : '챕터1 클리어';
   document.getElementById('btn-ending-continue').classList.toggle('hidden', chapter === 2);
+  document.getElementById('btn-ending-map').hidden = chapter !== 2;
   showScreen('screen-ending');
   const list = GameState.recruited.map((id) => ROSTER[id].name).join(', ') || '없음';
   document.getElementById('ending-summary').innerHTML =
@@ -4510,13 +4516,6 @@ function renderSaveBox() {
 // ---------------- 대지도 ----------------
 let worldMapMode = 'faction'; // 'faction' | 'troops' | 'rice'
 
-// stage만으로는 챕터1의 호로관 전선과 챕터2의 회남 벌판을 구분할 수 없다
-// (둘 다 stage='warmap'). 실제로 로드된 지도로 구분해 챕터2용 세력 표를 쓴다.
-function worldMapStageKey() {
-  if (stage === 'warmap' && MapView.currentMapId === 'hoenam') return 'hoenam';
-  return stage;
-}
-
 function worldMapMarkerColor(loc, faction) {
   if (worldMapMode === 'troops') return worldmapTierColor(loc.troops, WORLDMAP_TROOPS_THRESHOLDS, WORLDMAP_TROOPS_COLORS);
   if (worldMapMode === 'rice') return worldmapTierColor(loc.rice, WORLDMAP_RICE_THRESHOLDS, WORLDMAP_RICE_COLORS);
@@ -4526,18 +4525,17 @@ function worldMapMarkerColor(loc, faction) {
 function renderWorldMap() {
   const wrap = document.getElementById('worldmap-markers');
   wrap.innerHTML = '';
-  const overrides = WORLDMAP_SCENE_FACTIONS[worldMapStageKey()] || {};
-  const flagLocId = WORLDMAP_SCENE_FLAG[worldMapStageKey()];
+  const { factions, labels, notes, flag:flagLocId } = worldMapTimeline(stage, MapView.currentMapId, GameState.flags);
   WORLDMAP_LOCATIONS.forEach((loc) => {
     const el = document.createElement('div');
     el.className = `wm-marker ${loc.type}`;
     el.style.left = `${loc.x}%`;
     el.style.top = `${loc.y}%`;
-    const faction = overrides[loc.id] || loc.faction;
+    const faction = factions[loc.id] || loc.faction;
     el.style.setProperty('--wm-color', worldMapMarkerColor(loc, faction));
     const label = document.createElement('div');
     label.className = 'wm-label';
-    label.textContent = loc.name;
+    label.textContent = labels[loc.id] || loc.name;
     el.appendChild(label);
     if (loc.id === flagLocId) {
       const flag = document.createElement('div');
@@ -4545,10 +4543,10 @@ function renderWorldMap() {
       flag.textContent = '🚩';
       el.appendChild(flag);
     }
-    el.onclick = () => openCityCard(loc, faction);
+    el.onclick = () => openCityCard(loc, faction, label.textContent, notes[loc.id]);
     wrap.appendChild(el);
   });
-  renderWorldMapLegend();
+  renderWorldMapLegend(factions);
 }
 
 function tierLegendRows(thresholds, colors, unit) {
@@ -4563,7 +4561,7 @@ function tierLegendRows(thresholds, colors, unit) {
   return rows;
 }
 
-function renderWorldMapLegend() {
+function renderWorldMapLegend(factions) {
   const wrap = document.getElementById('worldmap-legend');
   wrap.innerHTML = '';
   let title;
@@ -4576,10 +4574,9 @@ function renderWorldMapLegend() {
     rows = tierLegendRows(WORLDMAP_RICE_THRESHOLDS, WORLDMAP_RICE_COLORS, '석');
   } else {
     title = '세력';
-    const overrides = WORLDMAP_SCENE_FACTIONS[worldMapStageKey()] || {};
     const seen = [];
     WORLDMAP_LOCATIONS.forEach((loc) => {
-      const f = overrides[loc.id] || loc.faction;
+      const f = factions[loc.id] || loc.faction;
       if (!seen.includes(f)) seen.push(f);
     });
     rows = seen.map((f) => ({
@@ -4657,8 +4654,11 @@ function contrastTextColor(hex) {
   return luminance > 0.6 ? '#2b2620' : '#fff8ea';
 }
 
-function openCityCard(loc, faction) {
-  document.getElementById('citycard-title').textContent = loc.name;
+function openCityCard(loc, faction, name, note) {
+  document.getElementById('citycard-title').textContent = name;
+  const noteEl = document.getElementById('citycard-note');
+  noteEl.textContent = note || '';
+  noteEl.hidden = !note;
   const factionEl = document.getElementById('citycard-faction');
   factionEl.textContent = WORLDMAP_FACTION_NAMES[faction] || faction;
   const color = WORLDMAP_FACTION_COLORS[faction] || WORLDMAP_FACTION_COLORS.neutral;
@@ -5252,6 +5252,7 @@ document.getElementById('btn-ending-continue').onclick = () => {
   };
   enterChapter2(GameState.mainHero, carry);
 };
+document.getElementById('btn-ending-map').onclick = openWorldMapBox;
 document.getElementById('btn-ending-chapters').onclick = () => showScreen('screen-chapter');
 
 // 모바일 터치 이동패드 (클릭=탭으로 동일하게 동작)

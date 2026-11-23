@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>어린이 삼국지 — 챕터1: 도원결의</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Song+Myung&family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="css/style.css?v=20260921-210">
+<link rel="stylesheet" href="css/style.css?v=20261123-211">
 </head>
 <body>
 
@@ -346,6 +346,7 @@
     <h2 id="ending-title">챕터1 클리어</h2>
     <div id="ending-summary"></div>
     <button id="btn-ending-continue" class="big-btn">계승하여 챕터2로</button>
+    <button id="btn-ending-map" class="big-btn outline" hidden>지도 보기</button>
     <button id="btn-ending-chapters" class="big-btn">챕터 선택 화면으로</button>
   </div>
 </div>
@@ -521,6 +522,7 @@
 <div id="citycard-box" class="hidden">
   <button id="citycard-close" aria-label="닫기">✕</button>
   <div id="citycard-title"></div>
+  <p id="citycard-note" hidden></p>
   <div class="citycard-row"><span class="citycard-label">세력</span><span id="citycard-faction" class="citycard-faction"></span></div>
   <div class="citycard-row"><span class="citycard-label">배치 장수</span><span>미정</span></div>
   <div class="citycard-row"><span class="citycard-label">병력</span><span id="citycard-troops"></span></div>
@@ -580,21 +582,21 @@
 <div id="center-alert" class="hidden"></div>
 <div id="build-version" aria-hidden="true"></div>
 
-<script src="js/data/roster.js?v=20260921-210"></script>
-<script src="js/data/skills.js?v=20260921-210"></script>
-<script src="js/data/strategies.js?v=20260921-210"></script>
-<script src="js/data/maps.js?v=20260921-210"></script>
-<script src="js/data/worldmap.js?v=20260921-210"></script>
-<script src="js/data/story.js?v=20260921-210"></script>
-<script src="js/engine/state.js?v=20260921-210"></script>
-<script src="js/engine/status-effects.js?v=20260921-210"></script>
-<script src="js/engine/battle-events.js?v=20260921-210"></script>
-<script src="js/engine/dialogue.js?v=20260921-210"></script>
-<script src="js/engine/battle.js?v=20260921-210"></script>
-<script src="js/engine/battle-vfx.js?v=20260921-210"></script>
-<script src="js/engine/field-assets.js?v=20260921-210"></script>
-<script src="js/engine/mapview.js?v=20260921-210"></script>
-<script src="js/main.js?v=20260921-210"></script>
+<script src="js/data/roster.js?v=20261123-211"></script>
+<script src="js/data/skills.js?v=20261123-211"></script>
+<script src="js/data/strategies.js?v=20261123-211"></script>
+<script src="js/data/maps.js?v=20261123-211"></script>
+<script src="js/data/worldmap.js?v=20261123-211"></script>
+<script src="js/data/story.js?v=20261123-211"></script>
+<script src="js/engine/state.js?v=20261123-211"></script>
+<script src="js/engine/status-effects.js?v=20261123-211"></script>
+<script src="js/engine/battle-events.js?v=20261123-211"></script>
+<script src="js/engine/dialogue.js?v=20261123-211"></script>
+<script src="js/engine/battle.js?v=20261123-211"></script>
+<script src="js/engine/battle-vfx.js?v=20261123-211"></script>
+<script src="js/engine/field-assets.js?v=20261123-211"></script>
+<script src="js/engine/mapview.js?v=20261123-211"></script>
+<script src="js/main.js?v=20261123-211"></script>
 <!-- 지금 브라우저가 실제로 어느 버전을 불러왔는지 눈으로 바로 확인하기
      위한 배지 - 캐시나 인앱 브라우저가 옛날 파일을 물고 있는지를 "아마
      그럴 것"이라고 추측하는 대신 직접 확인할 수 있게 한다. 이 시점에는

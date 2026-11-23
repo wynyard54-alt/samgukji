@@ -76,11 +76,6 @@ if (false) (function () {
       { id:'yuwongi', x:8, y:9, label:'유원기' },
       { id:'sossang', x:23, y:13, label:'소쌍' },
       { id:'jangsepyeong', x:25, y:13, label:'장세평' },
-      {
-        id:'gongyung', x:14, y:12, label:'', discoverable:true, discoveryRange:2,
-        discoveryText:'비단 좌판 옆에서 사람들의 언쟁을 조용히 듣던 선비가, 문득 핵심을 찌르는 한마디를 던진다.',
-        residence:{ x:26, y:7, label:'공융이 머무는 집' }
-      },
       { id:'ganong', x:18, y:9, label:'간옹', randomSpawn:true },
       { id:'gwanhae', x:9, y:19, label:'관해(황건적 잔당)' },
       { id:'muangug', x:30, y:9, label:'무안국' },
