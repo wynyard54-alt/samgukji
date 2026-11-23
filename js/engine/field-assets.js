@@ -36,7 +36,7 @@ const FieldAssets = (function () {
     suchun_overview:'suchun_map_v1.jpg',
     hoesu_overview:'hoesu_map_v1.jpg',
     sopae_overview:'sopae_map_v1.jpg',
-    changan_overview:'changan_map_v1.jpg?v=3',
+    changan_overview:'changan_map_v1.jpg?v=4',
   };
 
   function get(key) {

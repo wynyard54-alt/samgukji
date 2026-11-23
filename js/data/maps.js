@@ -885,7 +885,19 @@ const SEOJU_AREA_LABELS = [
   rectFill(grid, 1, 20, 91, 21, 1); // 궁성 앞 골목
   rectFill(grid, 1, 34, 91, 39, 1); // 장터 대로
   for (const x of [14, 33, 59, 79]) rectFill(grid, x, 20, x + 1, 35, 1);
-  rectFill(grid, 28, 38, 29, 49, 1); // 남쪽 민가 사이 골목
+  // 장터 대로에서 궁성 북쪽과 남쪽 주택가까지 포장된 골목을 잇는다.
+  rectFill(grid, 32, 5, 33, 20, 1);
+  rectFill(grid, 47, 8, 48, 20, 1);
+  rectFill(grid, 68, 2, 69, 20, 1);
+
+  rectFill(grid, 2, 39, 3, 54, 1);
+  rectFill(grid, 14, 39, 15, 54, 1);
+  rectFill(grid, 28, 39, 29, 54, 1);
+  rectFill(grid, 60, 39, 61, 54, 1);
+  rectFill(grid, 2, 53, 90, 54, 1); // 남쪽 주택가 첫 골목
+
+  for (const x of [3, 18, 28, 52, 71]) rectFill(grid, x, 54, x + 1, 66, 1);
+  rectFill(grid, 3, 65, 90, 66, 1); // 남쪽 주택가 안쪽 골목
   rectFill(grid, 91, 35, 98, 37, 1); // 동문
 
   MAPS.changan = {
