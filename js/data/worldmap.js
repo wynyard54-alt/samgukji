@@ -127,6 +127,12 @@ const WORLDMAP_LOCATIONS = [
   { id: 'bogyang', name: '복양', type: 'city', faction: 'hanna', x: 69.1, y: 30.4, troops: 3350, defCur: 4200, defMax: 5700, rice: 8300 },
 ];
 
+// 챕터 1의 기존 황건적 거점. 이후 사건에서 바뀐 곳만 덮어쓴다.
+const WORLDMAP_YELLOW_TURBAN = {
+  gye:'hwangeonjeok', nampi:'hwangeonjeok', georok:'hwangeonjeok', pyeongwon2:'hwangeonjeok',
+  eop:'hwangeonjeok', baengma:'hwangeonjeok', jinchang:'hwangeonjeok', heochang:'hwangeonjeok',
+  wan:'hwangeonjeok', bogyang:'hwangeonjeok',
+};
 const WORLDMAP_YOU_ZHOU = { gye:'yuwu', takhyeontown:'yuwu', bukpyeong:'gongsonchan' };
 const WORLDMAP_WEST = { muwi:'seoryang', geumseong:'seoryang', takhyeon:'seoryang' };
 const WORLDMAP_YI_ZHOU = ['jadong', 'myeonjukgwan', 'seongdo', 'gangju', 'yeongan'];
@@ -159,6 +165,7 @@ function worldMapTimeline(stage, mapId, flags) {
   const chapterTwo = ['seoju_free', 'habi_camp', 'sopae_free', 'sopae_finale', 'heodo_departure'].includes(stage)
     || (stage === 'warmap' && ['hoenam', 'hoesu'].includes(mapId));
   if (!chapterTwo) {
+    Object.assign(factions, WORLDMAP_YELLOW_TURBAN);
     if (stage === 'takhyeon_free') {
       flag = 'takhyeontown';
       notes.georok = '황건 봉기';
