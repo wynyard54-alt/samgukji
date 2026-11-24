@@ -253,7 +253,7 @@ function getObjectives() {
       rumors:`장안 탐색 · 주민들의 이야기를 들어보자 ${CHANGAN_RESIDENTS.length - unheardChanganResidents().length}/${CHANGAN_RESIDENTS.length}`,
       report:'장안 탐색 · 동쪽 병영 근처의 이숙에게 민심을 전하자',
       orders:'장안 탈출 · 동쪽 병영에서 고순과 합류하자',
-      muster:`장안 탈출 · 수비대 구출 ${CHANGAN_GUARDS.length - remainingChanganGuards().length}/${CHANGAN_GUARDS.length}`,
+      muster:`장안 탈출 · 곽사 격파 / 선택: 수비대 구출 ${CHANGAN_GUARDS.length - remainingChanganGuards().length}/${CHANGAN_GUARDS.length}`,
       battle:'장안 탈출 · 동문의 곽사를 물리치자',
       escape:'장안 탈출 · 동문을 지나 성 밖으로 나가자',
     };
@@ -417,7 +417,7 @@ function renderMinimap() {
   if (mapId === 'changan') {
     const phase = GameState.flags.changanPhase;
     const ids = {
-      rumors: unheardChanganResidents(), report:['isuk'], orders:['gosun'], muster:remainingChanganGuards(), battle:[CHANGAN_ENEMY_ID],
+      rumors: unheardChanganResidents(), report:['isuk'], orders:['gosun'], muster:[...remainingChanganGuards(), CHANGAN_ENEMY_ID], battle:[CHANGAN_ENEMY_ID],
     }[phase] || [];
     const points = ids.map((id) => MapView.npcPos(id)).filter(Boolean);
     const gate = map.exit;
@@ -4153,10 +4153,6 @@ function prepareChanganArmy() {
 }
 
 function openChanganBattleMenu(id, { intercepted = false } = {}) {
-  if (id === CHANGAN_ENEMY_ID && remainingChanganGuards().length) {
-    toast('수비대 두 곳을 모두 구한 뒤 동문을 돌파하자.');
-    return;
-  }
   showChoice(intercepted ? '이각의 주력군이 따라붙었다!' : `${ROSTER[id].name}와 마주쳤다.`, [
     { label:'전투', cb:() => fightChanganEnemy(id) },
     { label:'책략 (행동력 1)', cb:() => attemptStrategy(id) },
@@ -4178,7 +4174,7 @@ function fightChanganEnemy(id) {
         if (id === CHANGAN_ENEMY_ID) {
           flags.changanPhase = 'escape';
           flags.changanSkirmishReady = false;
-          for (const enemy of Object.keys(CHANGAN_ENEMIES)) MapView.removeNpc(enemy);
+          for (const target of [...Object.keys(CHANGAN_ENEMIES), ...remainingChanganGuards()]) MapView.removeNpc(target);
           MapView.setSceneGateClosed('east', false);
           Dialogue.show(STORY.changan_gate_open);
         }
