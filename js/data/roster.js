@@ -27,6 +27,10 @@ const SPRITE_MERCHANT = { key:'npc_merchant', fw:96, fh:96, sx:.67, sy:.70 };
 const SPRITE_ELDER = { key:'npc_elder', fw:96, fh:96, sx:.67, sy:.70 };
 
 const ROSTER = {
+  changan_merchant: { id:'changan_merchant', name:'낙양에서 온 상인', kind:'resource', sprite:SPRITE_MERCHANT },
+  changan_refugee: { id:'changan_refugee', name:'피란민', kind:'resource',
+    sprite:{ key:'npc_woman', fw:96, fh:96, sx:.67, sy:.70 } },
+  changan_soldier: { id:'changan_soldier', name:'여포군 병사', kind:'resource', sprite:SPRITE_COALITION },
   changan_market_guard: { id:'changan_market_guard', name:'장터 수비대', kind:'ally-story',
     affiliation:'여포군', sprite:SPRITE_COALITION },
   changan_vanguard: { id:'changan_vanguard', name:'서량 선봉대', kind:'enemy',

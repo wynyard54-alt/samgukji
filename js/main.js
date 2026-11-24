@@ -10,6 +10,7 @@
     'assets/illust/dowon_market.jpg', 'assets/illust/dowon_oath.jpg', 'assets/illust/pyeongwon_urgent.jpg',
     'assets/illust/anhee_dokwoo.jpg', 'assets/illust/sasugwan_pledge.jpg', 'assets/illust/sasugwan_victory.jpg',
     'assets/illust/hogwan_yeopo_retreat.jpg', 'assets/illust/worldmap.jpg',
+    ...new Set(STORY.changan_coup.map((line) => line.scene)),
     'assets/ui/portrait_gwanwoo.png', 'assets/battle/duel_generic_officer_v2.png',
     ...new Set(Object.values(ROSTER).map((officer) => officer.battleArt?.src).filter(Boolean)),
   ];
@@ -240,8 +241,8 @@ function getObjectives() {
   const list = [];
   if (stage === 'changan') {
     const objectives = {
-      palace:'장안 탐색 · 궁성 앞의 이숙과 이야기하자',
-      orders:'장안 탐색 · 골목을 둘러보고 준비되면 고순을 찾아가자',
+      rumors:`장안 탐색 · 주민들의 이야기를 들어보자 ${CHANGAN_RESIDENTS.length - unheardChanganResidents().length}/${CHANGAN_RESIDENTS.length}`,
+      orders:'장안 탈출 · 동쪽 병영에서 고순과 합류하자',
       muster:'장안 탈출 · 장터에 남은 병사들을 모으자',
       battle:'장안 탈출 · 동문 앞 서량 선봉대를 물리치자',
       escape:'장안 탈출 · 동문을 지나 성 밖으로 나가자',
@@ -404,13 +405,14 @@ function renderMinimap() {
   }
 
   if (mapId === 'changan') {
-    const destination = {
-      palace:'isuk', orders:'gosun', muster:CHANGAN_GUARD_ID, battle:CHANGAN_ENEMY_ID,
-    }[GameState.flags.changanPhase];
+    const phase = GameState.flags.changanPhase;
+    const destination = { orders:'gosun', muster:CHANGAN_GUARD_ID, battle:CHANGAN_ENEMY_ID }[phase];
+    const ids = phase === 'rumors' ? unheardChanganResidents() : [destination].filter(Boolean);
+    const points = ids.map((id) => MapView.npcPos(id)).filter(Boolean);
     const gate = map.exit;
-    const point = destination ? MapView.npcPos(destination) : { x:gate.x, y:(gate.top + gate.bottom) / 2 };
-    if (point) {
-      ctx.fillStyle = '#5bbaf5';
+    if (phase === 'escape') points.push({ x:gate.x, y:(gate.top + gate.bottom) / 2 });
+    ctx.fillStyle = '#5bbaf5';
+    for (const point of points) {
       ctx.beginPath();
       ctx.arc(point.x / size.w * w, point.y / size.h * h, 3.4, 0, Math.PI * 2);
       ctx.fill();
@@ -3817,6 +3819,7 @@ document.querySelectorAll('.hero-card').forEach((card) => {
 });
 
 // ---------------- 챕터 2 (장료) · 장안 ----------------
+const CHANGAN_RESIDENTS = Object.keys(STORY.changan_residents);
 const CHANGAN_GUARD_ID = 'changan_market_guard';
 const CHANGAN_ENEMY_ID = 'changan_vanguard';
 const CHANGAN_RECRUITS = {
@@ -3825,9 +3828,16 @@ const CHANGAN_RECRUITS = {
   wangneung: '왕윤 어른의 집안도 피해야 하오. 나와 한 합 겨뤄, 믿고 따라갈 장수인지 보여주시오.',
 };
 
+function unheardChanganResidents() {
+  return CHANGAN_RESIDENTS.filter((id) => !GameState.npcStatus[id]);
+}
+
 function loadChangan() {
+  if (GameState.flags.changanPhase === 'palace') GameState.flags.changanPhase = 'rumors';
   // 이전 장안 저장본은 고순 합류 이후에도 장터에 도착하기 전까지 군세가 없었다.
   if (GameState.flags.changanPhase === 'muster' && !GameState.army) prepareChanganArmy();
+  GameState.flags.changanAlarm = GameState.flags.changanPhase !== 'rumors';
+  GameState.flags.changanGuardReady = GameState.flags.changanPhase === 'muster';
   MAPS.changan.apMovement = !!GameState.army;
   MapView.lockMovement(false);
   ROSTER[CHANGAN_ENEMY_ID].troop = GameState.flags.changanEnemyTroop ?? 230;
@@ -3844,11 +3854,11 @@ function loadChangan() {
     },
   });
   MapView.setSceneGateClosed('east', GameState.flags.changanPhase !== 'escape');
-  if (GameState.army) closeChanganExploration();
+  if (GameState.flags.changanPhase !== 'rumors') closeChanganExploration();
 }
 
 function closeChanganExploration() {
-  for (const id of ['seongryeom', ...Object.keys(CHANGAN_RECRUITS)]) MapView.removeNpc(id);
+  for (const id of [...CHANGAN_RESIDENTS, 'seongryeom', ...Object.keys(CHANGAN_RECRUITS)]) MapView.removeNpc(id);
 }
 
 function startChangan() {
@@ -3856,7 +3866,7 @@ function startChangan() {
   GameState.year = 192;
   GameState.month = 4;
   GameState.resources.troop = 340;
-  GameState.flags.changanPhase = 'palace';
+  GameState.flags.changanPhase = 'rumors';
   loadChangan();
   updateHUD();
   Dialogue.show(STORY.changan_arrival);
@@ -3865,28 +3875,34 @@ function startChangan() {
 function interactChangan(id, context) {
   if (Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
   const flags = GameState.flags;
+  if (flags.changanPhase === 'rumors' && CHANGAN_RESIDENTS.includes(id)) {
+    Dialogue.show(STORY.changan_residents[id], () => {
+      GameState.npcStatus[id] = 'met';
+      updateHUD();
+      if (unheardChanganResidents().length === 0) {
+        Dialogue.show(STORY.changan_coup, () => {
+          flags.changanPhase = 'orders';
+          flags.changanOrdersReady = true;
+          flags.changanAlarm = true;
+          closeChanganExploration();
+          MapView.addNpc('gosun');
+          updateHUD();
+          Dialogue.show(STORY.changan_alarm);
+        });
+      }
+    });
+    return;
+  }
   switch (id) {
-    case 'isuk':
-      if (flags.changanPhase !== 'palace') return;
-      Dialogue.show(STORY.changan_palace, () => {
-        flags.changanPhase = 'orders';
-        flags.changanOrdersReady = true;
-        MapView.addNpc('gosun');
-        updateHUD();
-      });
-      return;
     case 'gosun':
-      if (flags.changanPhase !== 'orders') return;
-      showChoice('고순과 합류하면 장안 탐색이 끝나요. 골목에서 장수를 더 찾아볼까요?', [
-        { label:'계속 탐색하기', cb:() => {} },
-        { label:'고순과 합류하고 탈출 시작', cb:beginChanganEscape },
-      ]);
+      if (flags.changanPhase === 'orders') musterChanganArmy();
       return;
     case CHANGAN_GUARD_ID:
       if (flags.changanPhase !== 'muster') return;
       Dialogue.show(STORY.changan_muster, () => {
         GameState.army.troop += 180;
         flags.changanPhase = 'battle';
+        flags.changanGuardReady = false;
         flags.changanBattleReady = true;
         GameState.npcStatus[CHANGAN_GUARD_ID] = 'resolved';
         MapView.removeNpc(CHANGAN_GUARD_ID);
@@ -3909,18 +3925,17 @@ function interactChangan(id, context) {
   }
 }
 
-function beginChanganEscape() {
+function musterChanganArmy() {
   Dialogue.show(STORY.changan_orders, () => {
     GameState.recruit('gosun', 0);
     prepareChanganArmy();
     MAPS.changan.apMovement = true;
     MapView.removeNpc('gosun');
-    closeChanganExploration();
-    GameState.flags.changanAlarm = true;
+    GameState.flags.changanGuardReady = true;
     GameState.flags.changanPhase = 'muster';
     MapView.addNpc(CHANGAN_GUARD_ID);
     updateHUD();
-    toast('장안 탈출 시작! 군세는 길 한 칸을 이동할 때 행동력 1을 씁니다.');
+    toast('고순이 합류했습니다. 군세는 길 한 칸에 행동력 1을 씁니다.');
   });
 }
 
