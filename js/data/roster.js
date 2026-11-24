@@ -43,9 +43,6 @@ const ROSTER = {
   changan_patrol: { id:'changan_patrol', name:'서량 순찰대', kind:'enemy',
     affiliation:'이각·곽사군', troop:250, sprite:SPRITE_DONGTAK,
     stats:{atk:51, def:48, spd:58, int:38, cha:40, lead:52} },
-  changan_adviser: { id:'changan_adviser', name:'여포군 군사', kind:'ally-story', affiliation:'여포군',
-    stats:{atk:28, def:32, spd:44, int:78, cha:56, lead:48} },
-
   yubi: { id:'yubi', name:'유비', birth:161, deathReal:223, deathVirtual:251, role:'주군', kind:'ally-story', affiliation:'유비군',
     desc:'무소속에서 의용군을 일으킨 인물. 지도 위에서 WASD로 조작하는 것은 항상 관우지만, 회남 벌판처럼 유비군을 따로 편성하는 장면에서는 이 능력치로 그 군세의 무력을 계산한다.',
     bio:'촉한을 세운 시조, 도원결의로 관우·장비와 의형제를 맺고 삼고초려로 제갈량을 얻었다. 이릉대전 패배 후 백제성에서 병사했다.',

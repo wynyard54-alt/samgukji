@@ -3826,7 +3826,7 @@ document.querySelectorAll('.hero-card').forEach((card) => {
 const CHANGAN_RESIDENTS = Object.keys(STORY.changan_residents);
 const CHANGAN_GUARD_ID = 'changan_market_guard';
 const CHANGAN_ENEMY_ID = 'changan_vanguard';
-const CHANGAN_ADVISER_ID = 'changan_adviser';
+const CHANGAN_ADVISER_ID = 'dugi';
 const CHANGAN_ENEMIES = { changan_patrol:250, changan_igak:390, changan_vanguard:540 };
 
 function nextChanganBlocker() {
@@ -3855,6 +3855,7 @@ function loadChangan() {
   GameState.flags.changanAlarm = GameState.flags.changanPhase !== 'rumors';
   GameState.flags.changanGuardReady = GameState.flags.changanPhase === 'muster';
   if (GameState.army && !GameState.flags.changanCavalry) equipChanganCavalry();
+  if (GameState.army?.deputy === 'changan_adviser') GameState.army.deputy = CHANGAN_ADVISER_ID;
   if (GameState.flags.changanAlarm) igniteChangan();
   MAPS.changan.apMovement = !!GameState.army;
   MapView.lockMovement(false);
@@ -3957,7 +3958,7 @@ function musterChanganArmy() {
     GameState.flags.changanPhase = 'muster';
     MapView.addNpc(CHANGAN_GUARD_ID);
     updateHUD();
-    toast('고순과 군사가 합류했습니다. 기병은 행동력 2로 길 3칸을 이동합니다.');
+    toast('고순과 두기가 합류했습니다. 기병은 행동력 2로 길 3칸을 이동합니다.');
   });
 }
 
@@ -4022,7 +4023,7 @@ function prepareChanganArmy() {
   const troop = GameState.resources.troop;
   GameState.resources.troop = 0;
   GameState.army = {
-    commanderId:'jangryo', generals:GameState.recruited.filter((id) => !isScholarType(ROSTER[id])),
+    commanderId:'jangryo', generals:GameState.recruited.filter((id) => id !== CHANGAN_ADVISER_ID && !isScholarType(ROSTER[id])),
     troop, rice:0,
   };
   equipChanganCavalry();
