@@ -3790,8 +3790,8 @@ function startYeopoAssistScene() {
                   releaseCapturedOnDefeat();
                   Dialogue.show(STORY.warmap_yeopo_defeat, () => {
                     showChoice(`${GameState.heroData().name}이(가) 여포 저지에 실패했다. 어떻게 할까?`, [
-                      { label: '처음부터 다시 시작', cb: () => showScreen('screen-title') },
                       { label: '어양에서 다시 시작', cb: () => restoreToPyeongwonCheckpoint() },
+                      { label: '메인 화면으로', cb: () => showScreen('screen-title') },
                     ]);
                   });
                   return;
