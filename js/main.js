@@ -3824,12 +3824,15 @@ const CHANGAN_RECRUITS = {
 };
 
 function loadChangan() {
+  // 이전 장안 저장본은 고순 합류 이후에도 장터에 도착하기 전까지 군세가 없었다.
+  if (GameState.flags.changanPhase === 'muster' && !GameState.army) prepareChanganArmy();
+  MAPS.changan.apMovement = !!GameState.army;
   MapView.lockMovement(false);
   ROSTER[CHANGAN_ENEMY_ID].troop = GameState.flags.changanEnemyTroop ?? 230;
   MapView.load('changan', {
     onInteract: interactChangan,
     onApSpent: updateHUD,
-    onApBlocked,
+    onApBlocked: () => centerAlert('행동력이 부족하다. 휴식해서 회복하자.'),
     onStep: () => {
       renderMinimap();
       const { x, y } = MapView.playerPos;
@@ -3869,19 +3872,20 @@ function interactChangan(id, context) {
       if (flags.changanPhase !== 'orders') return;
       Dialogue.show(STORY.changan_orders, () => {
         GameState.recruit('gosun', 0);
+        prepareChanganArmy();
+        MAPS.changan.apMovement = true;
         MapView.removeNpc('gosun');
         flags.changanAlarm = true;
         flags.changanPhase = 'muster';
         MapView.addNpc(CHANGAN_GUARD_ID);
         updateHUD();
-        toast('고순이 여포군 출전 명단에 등록되었습니다.');
+        toast('고순이 합류했습니다. 이제 군세가 이동할 때 행동력을 씁니다.');
       });
       return;
     case CHANGAN_GUARD_ID:
       if (flags.changanPhase !== 'muster') return;
       Dialogue.show(STORY.changan_muster, () => {
-        GameState.addResource({ troop:180 });
-        prepareChanganArmy();
+        GameState.army.troop += 180;
         flags.changanPhase = 'battle';
         flags.changanBattleReady = true;
         GameState.npcStatus[CHANGAN_GUARD_ID] = 'resolved';
@@ -3906,8 +3910,12 @@ function interactChangan(id, context) {
 }
 
 function recruitChangan(id, troop) {
-  GameState.recruit(id, troop);
-  if (GameState.army && !isScholarType(ROSTER[id])) GameState.army.generals.push(id);
+  const army = GameState.army;
+  GameState.recruit(id, army ? 0 : troop);
+  if (army) {
+    army.troop += troop;
+    if (!isScholarType(ROSTER[id])) army.generals.push(id);
+  }
   MapView.removeNpc(id);
   updateHUD();
   toast(`${ROSTER[id].name}이(가) 여포군에 합류했습니다!`);
