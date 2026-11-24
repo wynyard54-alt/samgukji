@@ -240,9 +240,11 @@ function getObjectives() {
   const list = [];
   if (stage === 'changan') {
     const objectives = {
-      palace:'궁성 앞의 이숙과 이야기하자', orders:'병영 앞의 고순을 찾아가자',
-      muster:'장터에 남은 병사들을 모으자', battle:'동문으로 가는 길의 서량 선봉대를 물리쳐라',
-      escape:'동문을 지나 장안 밖으로 나가자',
+      palace:'장안 탐색 · 궁성 앞의 이숙과 이야기하자',
+      orders:'장안 탐색 · 골목을 둘러보고 준비되면 고순을 찾아가자',
+      muster:'장안 탈출 · 장터에 남은 병사들을 모으자',
+      battle:'장안 탈출 · 동문 앞 서량 선봉대를 물리치자',
+      escape:'장안 탈출 · 동문을 지나 성 밖으로 나가자',
     };
     list.push(objectives[gs.flags.changanPhase]);
   } else if (stage === 'takhyeon_free') {
@@ -3842,6 +3844,11 @@ function loadChangan() {
     },
   });
   MapView.setSceneGateClosed('east', GameState.flags.changanPhase !== 'escape');
+  if (GameState.army) closeChanganExploration();
+}
+
+function closeChanganExploration() {
+  for (const id of ['seongryeom', ...Object.keys(CHANGAN_RECRUITS)]) MapView.removeNpc(id);
 }
 
 function startChangan() {
@@ -3870,17 +3877,10 @@ function interactChangan(id, context) {
       return;
     case 'gosun':
       if (flags.changanPhase !== 'orders') return;
-      Dialogue.show(STORY.changan_orders, () => {
-        GameState.recruit('gosun', 0);
-        prepareChanganArmy();
-        MAPS.changan.apMovement = true;
-        MapView.removeNpc('gosun');
-        flags.changanAlarm = true;
-        flags.changanPhase = 'muster';
-        MapView.addNpc(CHANGAN_GUARD_ID);
-        updateHUD();
-        toast('고순이 합류했습니다. 이제 군세가 이동할 때 행동력을 씁니다.');
-      });
+      showChoice('고순과 합류하면 장안 탐색이 끝나요. 골목에서 장수를 더 찾아볼까요?', [
+        { label:'계속 탐색하기', cb:() => {} },
+        { label:'고순과 합류하고 탈출 시작', cb:beginChanganEscape },
+      ]);
       return;
     case CHANGAN_GUARD_ID:
       if (flags.changanPhase !== 'muster') return;
@@ -3907,6 +3907,21 @@ function interactChangan(id, context) {
     default:
       if (Object.hasOwn(CHANGAN_RECRUITS, id)) meetChanganRecruit(id, context);
   }
+}
+
+function beginChanganEscape() {
+  Dialogue.show(STORY.changan_orders, () => {
+    GameState.recruit('gosun', 0);
+    prepareChanganArmy();
+    MAPS.changan.apMovement = true;
+    MapView.removeNpc('gosun');
+    closeChanganExploration();
+    GameState.flags.changanAlarm = true;
+    GameState.flags.changanPhase = 'muster';
+    MapView.addNpc(CHANGAN_GUARD_ID);
+    updateHUD();
+    toast('장안 탈출 시작! 군세는 길 한 칸을 이동할 때 행동력 1을 씁니다.');
+  });
 }
 
 function recruitChangan(id, troop) {

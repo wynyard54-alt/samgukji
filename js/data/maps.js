@@ -902,7 +902,7 @@ const SEOJU_AREA_LABELS = [
 
   MAPS.changan = {
     name:'장안 · 도성', width:w, height:h, tiles:grid, tileSize:22,
-    backgroundKey:'changan_overview', freeFootMovement:true,
+    backgroundKey:'changan_overview',
     playerStart:{ x:11, y:20 },
     camera:{ viewportW:1280, viewportH:720 },
     exit:{ x:97, top:35, bottom:37 },
