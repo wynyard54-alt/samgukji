@@ -282,7 +282,7 @@ const MapView = (function () {
   // 전환 없이 "성벽 밖 적진을 비춘다" 같은 연출에 쓴다. clearCameraFocus()를
   // 부르기 전까지는 플레이어가 움직여도 카메라가 따라가지 않는다.
   let cameraPanTimer = null;
-  function panCameraTo(x, y, durationMs) {
+  function panCameraTo(x, y, durationMs, onArrival) {
     if (!map) return;
     if (cameraPanTimer) { clearInterval(cameraPanTimer); cameraPanTimer = null; }
     const startX = camera.x, startY = camera.y;
@@ -299,7 +299,11 @@ const MapView = (function () {
       camera.x = startX + (endX - startX) * t;
       camera.y = startY + (endY - startY) * t;
       render();
-      if (t >= 1) { clearInterval(cameraPanTimer); cameraPanTimer = null; }
+      if (t >= 1) {
+        clearInterval(cameraPanTimer);
+        cameraPanTimer = null;
+        if (onArrival) onArrival();
+      }
     }, 40);
   }
 

@@ -63,6 +63,7 @@
 
 let stage = 'title';
 let changanPursuerMarching = false;
+let changanBriefingActive = false;
 let centerAlertTimer = null;
 let pyeongwonCheckpoint = null; // 어양(구 평원현 지도) 도착 시점 GameState 스냅샷 (장순전 패배시 이 시점으로 복귀)
 let coalitionDepartCheckpoint = null; // 반동탁연합 출정(군세 편성) 직전 GameState 스냅샷 (여포전 등 호로관 이후 패배시 이 시점으로 복귀)
@@ -560,7 +561,7 @@ function updateHUD() {
 
 // ---------------- NPC interaction ----------------
 function isScriptedScenePlaying() {
-  return changanPursuerMarching || stage === 'changan_departed' || stage === 'hogwan_epilogue' || stage === 'sopae_finale' || stage === 'heodo_departure' ||
+  return changanPursuerMarching || changanBriefingActive || stage === 'changan_departed' || stage === 'hogwan_epilogue' || stage === 'sopae_finale' || stage === 'heodo_departure' ||
     (stage === 'sopae_free' && GameState.flags.sopaeInvasionStarted && !GameState.flags.sopaeInvasionResolved);
 }
 
@@ -3926,8 +3927,8 @@ function loadChangan() {
   // 이전 장안 저장본은 고순 합류 이후에도 장터에 도착하기 전까지 군세가 없었다.
   if (GameState.flags.changanPhase === 'muster' && !GameState.army) prepareChanganArmy();
   GameState.flags.changanAlarm = GameState.flags.changanPhase !== 'rumors';
-  GameState.flags.changanGuardReady = GameState.flags.changanPhase === 'muster';
-  GameState.flags.changanSkirmishReady = ['muster', 'battle'].includes(GameState.flags.changanPhase);
+  GameState.flags.changanGuardReady = ['orders', 'muster'].includes(GameState.flags.changanPhase);
+  GameState.flags.changanSkirmishReady = ['orders', 'muster', 'battle'].includes(GameState.flags.changanPhase);
   if (GameState.army && !GameState.flags.changanCavalry) equipChanganCavalry();
   if (GameState.army?.deputy === 'changan_adviser') GameState.army.deputy = CHANGAN_ADVISER_ID;
   if (GameState.flags.changanAlarm) igniteChangan();
@@ -3971,8 +3972,27 @@ function startChangan() {
   Dialogue.show(STORY.changan_arrival);
 }
 
+function showChanganBriefing() {
+  changanBriefingActive = true;
+  MapView.lockMovement(true);
+  function showShot(index) {
+    const line = STORY.changan_briefing[index];
+    if (!line) {
+      MapView.clearCameraFocus();
+      changanBriefingActive = false;
+      MapView.lockMovement(false);
+      return;
+    }
+    const showLine = () => Dialogue.show([line], () => showShot(index + 1));
+    const point = MapView.npcPos(line.focus);
+    if (point) MapView.panCameraTo(point.x, point.y, 480, showLine);
+    else showLine();
+  }
+  Dialogue.show(STORY.changan_alarm, () => showShot(0));
+}
+
 function interactChangan(id, context) {
-  if (changanPursuerMarching || Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
+  if (changanBriefingActive || changanPursuerMarching || Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
   const flags = GameState.flags;
   if (flags.changanPhase === 'rumors' && CHANGAN_RESIDENTS.includes(id)) {
     Dialogue.show(STORY.changan_residents[id], () => {
@@ -3983,11 +4003,13 @@ function interactChangan(id, context) {
           flags.changanPhase = 'orders';
           flags.changanOrdersReady = true;
           flags.changanAlarm = true;
+          flags.changanGuardReady = true;
+          flags.changanSkirmishReady = true;
           igniteChangan();
           closeChanganExploration();
-          MapView.addNpc('gosun');
+          for (const id of ['gosun', ...CHANGAN_GUARDS, ...Object.keys(CHANGAN_ENEMIES)]) MapView.addNpc(id);
           updateHUD();
-          Dialogue.show(STORY.changan_alarm);
+          showChanganBriefing();
         });
       }
     });
