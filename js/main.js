@@ -100,7 +100,7 @@ const STAT_LABELS = { atk: '공격', def: '방어', spd: '속도', int: '지력'
 const COMBAT_STATS = ['atk', 'def', 'spd']; // 통솔(lead)은 필살공격 습득 진행에는 관여하지 않는다
 
 function showScreen(id) {
-  if (id === 'screen-title' && MapView.currentMapId === 'changan') restoreChanganEnemyTroops();
+  if (id === 'screen-title' && MapView.currentMapId === 'changan') restoreChanganEnemyArmies();
   document.querySelectorAll('.screen').forEach((s) => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
@@ -1118,9 +1118,8 @@ function openWarCommandMenu(id) {
   // 것과 달리 실제로 붙어 있을 때만 신청할 수 있어야 한다 - 사거리
   // 판정과 같은 inAttackRange를 그대로 쓰되 range를 항상 1(인접)로
   // 고정해, 병종에 상관없이 "붙어 있는지"만 본다.
-  if (inAttackRange(mapPosOf(ctx.commanderId), mapPosOf(id), 1)) {
-    options.push({ label: '일기토', cb: () => attemptDuelChallenge(id) });
-  }
+  const duel = warDuelOption(ctx.commanderId, id);
+  if (duel) options.push(duel);
   // engagementBudget이 설정돼 있으면(적이 자동으로 다가와 붙어 이 메뉴가
   // 뜬 경우) 이 교전은 적이 다가와 붙인 것이라, 궁병 사거리 판정에서
   // "누가 다가갔는지"를 정확히 반영해야 한다.
@@ -1875,6 +1874,13 @@ function attemptStrategySelf(commanderId) {
   showChoice(`${deputy.name}의 책략 - 무엇을 쓰시겠습니까?`, options);
 }
 
+function warDuelOption(commanderId, id) {
+  if (inAttackRange(mapPosOf(commanderId), mapPosOf(id), 1)) {
+    return { label:'일기토', cb:() => attemptDuelChallenge(id) };
+  }
+  return null;
+}
+
 function attemptDuelChallenge(id) {
   const rd = ROSTER[id];
   if (!spendCombatAP(DUEL_AP_COST)) return;
@@ -1892,7 +1898,10 @@ function attemptDuelChallenge(id) {
   const chance = StatusEffects.isTaunted(id) ? 100 : duelAcceptChance(challengerGrade, defenderGrade);
   const roll = Math.random() * 100;
   if (roll < chance) {
-    startFreeBattle(id, () => { if (stage === 'warmap') checkWarmapClear(); }, true);
+    startFreeBattle(id, () => {
+      if (stage === 'warmap') checkWarmapClear();
+      if (stage === 'changan' && MapView.liveNpcIds.includes(id)) openWarCommandMenu(id);
+    }, true);
   } else {
     Dialogue.show([{ speaker: rd.name, text: '흥, 그런 도발에 넘어갈 성싶으냐! 정정당당히 전군으로 붙어보자!' }], () => {
       toast(`${rd.name}이(가) 일기토를 거절했다. (수락 확률 ${Math.round(chance)}%)`);
@@ -2238,7 +2247,7 @@ function onFreeBattleEnd(id, result, afterCb, persistHp) {
   if (persistHp) { GameState.heroHp = result.playerHp; updateHUD(); }
   if (result.outcome === 'win') {
     if (isOverwhelmingWin(rd, result)) { captureCommander(id, afterCb); return; }
-    if (rd.forced === 'escape') {
+    if (rd.forced === 'escape' && stage !== 'changan') {
       GameState.npcStatus[id] = 'fled';
       MapView.removeNpc(id);
       Dialogue.show([{ speaker: '내레이션', text: `${rd.name}이(가) 승산이 없다고 보았는지 군세를 버리고 달아났다.` }], () => {
@@ -2247,11 +2256,12 @@ function onFreeBattleEnd(id, result, afterCb, persistHp) {
       });
       return;
     }
-    if (stage === 'warmap' && rd.kind === 'enemy') {
+    if (['warmap', 'changan'].includes(stage) && rd.kind === 'enemy') {
       // 일반 승리(포획엔 못 미침) - 적장은 개인전에서 밀려 진영으로 돌아갈
       // 뿐, 병력 손실 없이 군세는 그대로 남는다. 대신 사기가 크게 꺾여
       // 이후 [전투] 피해 계산에 그대로 반영된다(fixedHitDamage의 사기 보정).
-      rd.morale = Math.max(0, (rd.morale != null ? rd.morale : 100) - 10);
+      StatusEffects.drainMorale(id, 10);
+      if (stage === 'changan') (GameState.flags.changanEnemyMorale ??= {})[id] = rd.morale;
       delete GameState.warLocks[id]; // 사기가 바뀌었으니 다음 교전 피해량을 새로 계산해야 한다
       Dialogue.show([{ speaker: '내레이션', text: `${rd.name}이(가) 밀려 진영으로 물러났다! 군세의 사기가 크게 떨어졌다.` }], () => {
         toast(`${rd.name}의 군세 사기가 떨어졌다(${rd.morale}). [전투]로 몰아붙이자.`);
@@ -3853,12 +3863,12 @@ const CHANGAN_ENEMY_ID = 'gwaksa';
 const CHANGAN_PURSUER = 'igak';
 const CHANGAN_PURSUER_START = { x:12, y:36 };
 const CHANGAN_ENEMIES = { jangje:200, beonjo:200, igak:5000, gwaksa:2000 };
-const CHANGAN_ORIGINAL_TROOPS = Object.fromEntries(
-  Object.keys(CHANGAN_ENEMIES).map((id) => [id, ROSTER[id].troop]),
+const CHANGAN_ORIGINAL_ARMIES = Object.fromEntries(
+  Object.keys(CHANGAN_ENEMIES).map((id) => [id, { troop:ROSTER[id].troop, morale:ROSTER[id].morale }]),
 );
 
-function restoreChanganEnemyTroops() {
-  for (const [id, troop] of Object.entries(CHANGAN_ORIGINAL_TROOPS)) ROSTER[id].troop = troop;
+function restoreChanganEnemyArmies() {
+  for (const [id, army] of Object.entries(CHANGAN_ORIGINAL_ARMIES)) Object.assign(ROSTER[id], army);
 }
 
 function remainingChanganGuards() {
@@ -3916,8 +3926,8 @@ function igniteChangan() {
   }
 }
 const CHANGAN_RECRUITS = {
-  janggi: '피란민 명단을 챙겼습니다. 동문까지 사람들이 흩어지지 않도록 제가 돕겠습니다.',
-  dugi: '길을 잃은 사람들에게 동문 쪽 길을 알려주었소. 나도 함께 가겠소.',
+  janggi: '낙양에서 온 피란민들의 명단을 챙겼습니다. 장군께서 사람들을 돌보신다면 저도 돕겠습니다.',
+  dugi: '길을 잃은 사람들에게 장안 길을 알려주고 있었소. 장군 곁에서 도울 일이 있다면 함께 가겠소.',
   wangneung: '왕윤 어른의 집안도 피해야 하오. 나와 한 합 겨뤄, 믿고 따라갈 장수인지 보여주시오.',
 };
 
@@ -3943,6 +3953,7 @@ function loadChangan() {
   MapView.lockMovement(false);
   for (const [id, troop] of Object.entries(CHANGAN_ENEMIES)) {
     ROSTER[id].troop = GameState.flags.changanEnemyTroops?.[id] ?? troop;
+    ROSTER[id].morale = GameState.flags.changanEnemyMorale?.[id] ?? 100;
   }
   MapView.load('changan', {
     onInteract: interactChangan,
@@ -4153,7 +4164,9 @@ function prepareChanganArmy() {
 }
 
 function openChanganBattleMenu(id, { intercepted = false } = {}) {
+  const duel = warDuelOption(GameState.mainHero, id);
   showChoice(intercepted ? '이각의 주력군이 따라붙었다!' : `${ROSTER[id].name}와 마주쳤다.`, [
+    ...(duel ? [duel] : []),
     { label:'전투', cb:() => fightChanganEnemy(id) },
     { label:'책략 (행동력 1)', cb:() => attemptStrategy(id) },
     { label:'물러서기', cb:() => {} },
@@ -4195,7 +4208,7 @@ function fightChanganEnemy(id) {
 
 function finishChangan() {
   stage = 'changan_departed';
-  restoreChanganEnemyTroops();
+  restoreChanganEnemyArmies();
   MapView.lockMovement(true);
   dissolveArmy('army');
   GameState.addFame(30);
@@ -4803,7 +4816,7 @@ function buildSaveSnapshot() {
 // 지도(옛 저장 데이터라 없으면 undefined) - warmap/seoju_free처럼 스테이지 하나가
 // 지도 두 개를 오가는 경우를 정확히 구분하는 데 쓴다.
 function resumeExploreStage(targetStage, playerPos, mapId) {
-  if (targetStage !== 'changan' && MapView.currentMapId === 'changan') restoreChanganEnemyTroops();
+  if (targetStage !== 'changan' && MapView.currentMapId === 'changan') restoreChanganEnemyArmies();
   stage = targetStage;
   showScreen('screen-explore');
   const opts = { onInteract: interactNPC, onApSpent: updateHUD, onApBlocked, onStep: renderMinimap };

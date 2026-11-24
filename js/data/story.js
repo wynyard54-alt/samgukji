@@ -517,7 +517,7 @@ const STORY = {
     { speaker:'고순', text:'두 수비대가 모두 모였소. 동문을 막고 있는 곽사를 물리칩시다.' },
   ],
   changan_seongryeom: [
-    { speaker:'성렴', text:'장료 장군! 내 부대도 아직 남아 있소. 함께 움직입시다.' },
+    { speaker:'성렴', text:'장료 장군! 제 휘하에도 병사들이 있소. 장군과 함께 움직이겠습니다.' },
   ],
   changan_gate_open: [
     { speaker:'병사', text:'서량군이 물러났습니다! 이제 동문으로 갈 수 있습니다!' },
