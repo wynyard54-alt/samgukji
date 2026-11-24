@@ -2177,8 +2177,13 @@ function startFreeBattle(id, afterCb, persistHp, context) {
 // 서사 강제(forced) 전투(화웅/여포/이각/곽사 등)는 이 메카닉에서 제외된다.
 const CAPTURE_HP_RATIO = 0.7;
 
+function canCaptureDuelCommander() {
+  return stage === 'warmap' || (stage === 'changan' && !!GameState.army);
+}
+
 function isOverwhelmingWin(rd, result) {
-  return stage === 'warmap' && !rd.forced && result.playerMaxHp > 0 &&
+  return canCaptureDuelCommander() && rd.kind === 'enemy' && !rd.forced &&
+    !GameState.capturedCommanders.includes(rd.id) && result.playerMaxHp > 0 &&
     (result.playerHp / result.playerMaxHp) >= CAPTURE_HP_RATIO;
 }
 
@@ -2279,7 +2284,7 @@ function onFreeBattleEnd(id, result, afterCb, persistHp) {
     ]);
   } else if (result.outcome === 'lose') {
     toast(`${rd.name}에게 밀렸다... 다시 도전할 수 있다.`);
-    if (stage === 'warmap') releaseCapturedOnDefeat();
+    if (canCaptureDuelCommander()) releaseCapturedOnDefeat();
     if (afterCb) afterCb();
   }
 }
@@ -3971,7 +3976,8 @@ function loadChangan() {
   MapView.setSceneGateClosed('east', GameState.flags.changanPhase !== 'escape');
   if (GameState.flags.changanAlarm) closeChanganExploration();
   for (const id of Object.keys(CHANGAN_ENEMIES)) {
-    if (GameState.npcStatus[id] === 'routed') MapView.removeNpc(id);
+    const status = GameState.npcStatus[id];
+    if (status === 'routed' || (status === 'captured' && !ROSTER[id].deputy)) MapView.removeNpc(id);
   }
 }
 
@@ -4213,10 +4219,10 @@ function finishChangan() {
   dissolveArmy('army');
   GameState.addFame(30);
   updateHUD();
-  Dialogue.show(STORY.changan_departure, () => {
+  Dialogue.show(STORY.changan_departure, () => offerCapturedRecruits(() => {
     MapView.lockMovement(false);
     goEnding(2);
-  });
+  }));
 }
 
 // 챕터2 시작 공통 처리 - 챕터 선택 화면에서 장수를 새로 고를 때(carry 없음)와
