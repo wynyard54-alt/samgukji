@@ -62,6 +62,7 @@
 })();
 
 let stage = 'title';
+let changanPursuerMarching = false;
 let centerAlertTimer = null;
 let pyeongwonCheckpoint = null; // 어양(구 평원현 지도) 도착 시점 GameState 스냅샷 (장순전 패배시 이 시점으로 복귀)
 let coalitionDepartCheckpoint = null; // 반동탁연합 출정(군세 편성) 직전 GameState 스냅샷 (여포전 등 호로관 이후 패배시 이 시점으로 복귀)
@@ -244,10 +245,8 @@ function getObjectives() {
     const objectives = {
       rumors:`장안 탐색 · 주민들의 이야기를 들어보자 ${CHANGAN_RESIDENTS.length - unheardChanganResidents().length}/${CHANGAN_RESIDENTS.length}`,
       orders:'장안 탈출 · 동쪽 병영에서 고순과 합류하자',
-      muster:changanBlockedByBeonjo()
-        ? '장안 탈출 · 번조를 물리치고 남쪽 골목을 열자'
-        : '장안 탈출 · 남쪽 골목의 장터 수비대를 구하자',
-      battle:`장안 탈출 · ${ROSTER[nextChanganBlocker()].name}를 물리치자`,
+      muster:`장안 탈출 · 수비대 구출 ${CHANGAN_GUARDS.length - remainingChanganGuards().length}/${CHANGAN_GUARDS.length}`,
+      battle:'장안 탈출 · 동문의 곽사를 물리치자',
       escape:'장안 탈출 · 동문을 지나 성 밖으로 나가자',
     };
     list.push(objectives[gs.flags.changanPhase]);
@@ -409,8 +408,9 @@ function renderMinimap() {
 
   if (mapId === 'changan') {
     const phase = GameState.flags.changanPhase;
-    const destination = { orders:'gosun', muster:changanBlockedByBeonjo() ? 'beonjo' : CHANGAN_GUARD_ID, battle:nextChanganBlocker() }[phase];
-    const ids = phase === 'rumors' ? unheardChanganResidents() : [destination].filter(Boolean);
+    const ids = {
+      rumors: unheardChanganResidents(), orders:['gosun'], muster:remainingChanganGuards(), battle:[CHANGAN_ENEMY_ID],
+    }[phase] || [];
     const points = ids.map((id) => MapView.npcPos(id)).filter(Boolean);
     const gate = map.exit;
     if (phase === 'escape') points.push({ x:gate.x, y:(gate.top + gate.bottom) / 2 });
@@ -418,6 +418,13 @@ function renderMinimap() {
     for (const point of points) {
       ctx.beginPath();
       ctx.arc(point.x / size.w * w, point.y / size.h * h, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const pursuer = MapView.npcPos('igak');
+    if (pursuer) {
+      ctx.fillStyle = '#ff694f';
+      ctx.beginPath();
+      ctx.arc(pursuer.x / size.w * w, pursuer.y / size.h * h, 3.4, 0, Math.PI * 2);
       ctx.fill();
     }
   }
@@ -553,7 +560,7 @@ function updateHUD() {
 
 // ---------------- NPC interaction ----------------
 function isScriptedScenePlaying() {
-  return stage === 'changan_departed' || stage === 'hogwan_epilogue' || stage === 'sopae_finale' || stage === 'heodo_departure' ||
+  return changanPursuerMarching || stage === 'changan_departed' || stage === 'hogwan_epilogue' || stage === 'sopae_finale' || stage === 'heodo_departure' ||
     (stage === 'sopae_free' && GameState.flags.sopaeInvasionStarted && !GameState.flags.sopaeInvasionResolved);
 }
 
@@ -3827,10 +3834,11 @@ document.querySelectorAll('.hero-card').forEach((card) => {
 
 // ---------------- 챕터 2 (장료) · 장안 ----------------
 const CHANGAN_RESIDENTS = Object.keys(STORY.changan_residents);
-const CHANGAN_GUARD_ID = 'changan_market_guard';
-const CHANGAN_ENEMY_ID = 'jangje';
+const CHANGAN_GUARDS = ['changan_market_guard', 'changan_east_guard'];
+const CHANGAN_ENEMY_ID = 'gwaksa';
+const CHANGAN_PURSUER = 'igak';
 const CHANGAN_ADVISER_ID = 'dugi';
-const CHANGAN_ENEMIES = { gwaksa:230, beonjo:300, jangje:540 };
+const CHANGAN_ENEMIES = { jangje:200, beonjo:200, igak:5000, gwaksa:2000 };
 const CHANGAN_ORIGINAL_TROOPS = Object.fromEntries(
   Object.keys(CHANGAN_ENEMIES).map((id) => [id, ROSTER[id].troop]),
 );
@@ -3839,22 +3847,62 @@ function restoreChanganEnemyTroops() {
   for (const [id, troop] of Object.entries(CHANGAN_ORIGINAL_TROOPS)) ROSTER[id].troop = troop;
 }
 
-function changanBlockedByBeonjo() {
-  return GameState.npcStatus.beonjo !== 'routed';
+function remainingChanganGuards() {
+  return CHANGAN_GUARDS.filter((id) => GameState.npcStatus[id] !== 'resolved');
 }
 
-function nextChanganBlocker() {
-  return changanBlockedByBeonjo() ? 'beonjo' : CHANGAN_ENEMY_ID;
-}
-
-function migrateChanganEnemies() {
-  const { npcStatus, warLocks } = GameState;
-  const oldIds = { changan_patrol:'gwaksa', changan_igak:'beonjo', changan_vanguard:'jangje' };
-  for (const [oldId, id] of Object.entries(oldIds)) {
-    if (npcStatus[oldId] === 'routed') npcStatus[id] = 'routed';
-    delete npcStatus[oldId];
-    delete warLocks[oldId];
+function migrateChanganEscape() {
+  const { flags, npcStatus, warLocks } = GameState;
+  if (flags.changanEscapeRevision) return;
+  flags.changanEscapeRevision = true;
+  if (npcStatus.gwaksa === 'routed' || npcStatus.changan_patrol === 'routed') npcStatus.jangje = 'routed';
+  if (npcStatus.changan_igak === 'routed') npcStatus.beonjo = 'routed';
+  if (flags.changanPhase === 'escape') {
+    for (const id of CHANGAN_GUARDS) npcStatus[id] = 'resolved';
+    npcStatus.gwaksa = 'routed';
+  } else {
+    delete npcStatus.gwaksa;
+    if (flags.changanPhase === 'battle') {
+      flags.changanPhase = 'muster';
+      if (GameState.army && npcStatus.changan_market_guard === 'resolved') GameState.army.troop += 270;
+    }
   }
+  delete flags.changanEnemyTroops;
+  delete flags.changanRetryTroops;
+  for (const id of [...Object.keys(CHANGAN_ENEMIES), 'changan_patrol', 'changan_igak', 'changan_vanguard']) {
+    delete warLocks[id];
+  }
+}
+
+function addChanganPursuer() {
+  const x = GameState.flags.changanPursuerX ?? 34;
+  MapView.removeNpc(CHANGAN_PURSUER);
+  if (GameState.flags.changanSkirmishReady && GameState.npcStatus.igak !== 'routed') {
+    MapView.addNpc(CHANGAN_PURSUER, { x, y:36 });
+  }
+}
+
+function marchChanganPursuer() {
+  const pursuer = MapView.npcPos(CHANGAN_PURSUER);
+  if (!pursuer) return;
+  const player = MapView.playerPos;
+  const path = [];
+  for (let x = pursuer.x + 1; x <= Math.min(89, pursuer.x + 6); x++) {
+    if (Math.abs(x - player.x) + Math.abs(36 - player.y) < 1) break;
+    path.push({ x, y:36 });
+    if (inAttackRange(player, path.at(-1), 1)) break;
+  }
+  changanPursuerMarching = true;
+  MapView.lockMovement(true);
+  MapView.walkNpcPath(CHANGAN_PURSUER, path, 85, () => {
+    const position = MapView.npcPos(CHANGAN_PURSUER);
+    changanPursuerMarching = false;
+    if (!position || stage !== 'changan') return;
+    GameState.flags.changanPursuerX = position.x;
+    MapView.lockMovement(false);
+    updateHUD();
+    if (inAttackRange(MapView.playerPos, position, 1)) fightChanganEnemy(CHANGAN_PURSUER);
+  });
 }
 
 function igniteChangan() {
@@ -3873,7 +3921,7 @@ function unheardChanganResidents() {
 }
 
 function loadChangan() {
-  migrateChanganEnemies();
+  migrateChanganEscape();
   if (GameState.flags.changanPhase === 'palace') GameState.flags.changanPhase = 'rumors';
   // 이전 장안 저장본은 고순 합류 이후에도 장터에 도착하기 전까지 군세가 없었다.
   if (GameState.flags.changanPhase === 'muster' && !GameState.army) prepareChanganArmy();
@@ -3900,6 +3948,7 @@ function loadChangan() {
       if (GameState.flags.changanPhase === 'escape') finishChangan();
     },
   });
+  addChanganPursuer();
   MapView.setSceneGateClosed('east', GameState.flags.changanPhase !== 'escape');
   if (GameState.flags.changanPhase !== 'rumors') closeChanganExploration();
   for (const id of Object.keys(CHANGAN_ENEMIES)) {
@@ -3923,7 +3972,7 @@ function startChangan() {
 }
 
 function interactChangan(id, context) {
-  if (Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
+  if (changanPursuerMarching || Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
   const flags = GameState.flags;
   if (flags.changanPhase === 'rumors' && CHANGAN_RESIDENTS.includes(id)) {
     Dialogue.show(STORY.changan_residents[id], () => {
@@ -3948,24 +3997,26 @@ function interactChangan(id, context) {
     openChanganBattleMenu(id);
     return;
   }
+  if (CHANGAN_GUARDS.includes(id)) {
+    if (flags.changanPhase !== 'muster' || GameState.npcStatus[id] === 'resolved') return;
+    const last = remainingChanganGuards().length === 1;
+    const lines = last ? STORY.changan_muster : [{ speaker:ROSTER[id].name, text:'장군, 수비대 450명이 합류합니다! 남은 수비대도 구해 주십시오.' }];
+    Dialogue.show(lines, () => {
+      GameState.army.troop += 450;
+      GameState.ap = GameState.apMax;
+      GameState.npcStatus[id] = 'resolved';
+      MapView.removeNpc(id);
+      if (last) {
+        flags.changanPhase = 'battle';
+        flags.changanGuardReady = false;
+      }
+      updateHUD();
+    });
+    return;
+  }
   switch (id) {
     case 'gosun':
       if (flags.changanPhase === 'orders') musterChanganArmy();
-      return;
-    case CHANGAN_GUARD_ID:
-      if (flags.changanPhase !== 'muster') return;
-      if (changanBlockedByBeonjo()) { toast('먼저 번조를 물리쳐 수비대가 빠져나갈 길을 열자.'); return; }
-      Dialogue.show(STORY.changan_muster, () => {
-        GameState.army.troop += 180;
-        GameState.ap = GameState.apMax;
-        flags.changanPhase = 'battle';
-        flags.changanGuardReady = false;
-        flags.changanBattleReady = true;
-        GameState.npcStatus[CHANGAN_GUARD_ID] = 'resolved';
-        MapView.removeNpc(CHANGAN_GUARD_ID);
-        MapView.addNpc(CHANGAN_ENEMY_ID);
-        updateHUD();
-      });
       return;
     case 'seongryeom':
       Dialogue.show(STORY.changan_seongryeom, () => recruitChangan('seongryeom', 100));
@@ -3983,10 +4034,9 @@ function musterChanganArmy() {
     MapView.removeNpc('gosun');
     GameState.flags.changanGuardReady = true;
     GameState.flags.changanSkirmishReady = true;
-    MapView.addNpc('gwaksa');
-    MapView.addNpc('beonjo');
+    for (const id of Object.keys(CHANGAN_ENEMIES)) MapView.addNpc(id);
     GameState.flags.changanPhase = 'muster';
-    MapView.addNpc(CHANGAN_GUARD_ID);
+    for (const id of CHANGAN_GUARDS) MapView.addNpc(id);
     updateHUD();
     toast('고순과 두기가 합류했습니다. 기병은 행동력 2로 길 3칸을 이동합니다.');
   });
@@ -4060,8 +4110,8 @@ function prepareChanganArmy() {
 }
 
 function openChanganBattleMenu(id) {
-  if (id === CHANGAN_ENEMY_ID && nextChanganBlocker() !== id) {
-    toast('먼저 남쪽 골목의 번조를 물리치자.');
+  if (id === CHANGAN_ENEMY_ID && remainingChanganGuards().length) {
+    toast('수비대 두 곳을 모두 구한 뒤 동문을 돌파하자.');
     return;
   }
   showChoice(`${ROSTER[id].name}와 마주쳤다.`, [
@@ -4084,19 +4134,20 @@ function fightChanganEnemy(id) {
         GameState.ap = GameState.apMax;
         if (id === CHANGAN_ENEMY_ID) {
           flags.changanPhase = 'escape';
-          flags.changanBattleReady = false;
           flags.changanSkirmishReady = false;
-          MapView.removeNpc('gwaksa');
+          for (const enemy of Object.keys(CHANGAN_ENEMIES)) MapView.removeNpc(enemy);
           MapView.setSceneGateClosed('east', false);
           Dialogue.show(STORY.changan_gate_open);
-        } else {
-          const reinforcements = id === 'beonjo' ? 180 : 120;
-          GameState.army.troop += reinforcements;
-          Dialogue.show([{ speaker:'병사', text:`길이 열렸습니다! 흩어졌던 아군 ${reinforcements}명이 합류합니다!` }]);
         }
       } else if (playerDown) {
         GameState.army.troop = retryTroops[id];
         ROSTER[id].troop = enemyTroops[id] = CHANGAN_ENEMIES[id];
+        if (id === CHANGAN_PURSUER) {
+          flags.changanPursuerX = 34;
+          addChanganPursuer();
+          MapView.setPlayerPos(80, 20);
+          toast('이각에게 밀려 동쪽 병영으로 후퇴했다.');
+        }
       }
       updateHUD();
     },
@@ -5466,10 +5517,12 @@ function runAmbientEvent(kind) {
 function monthAdvanceClick() {
   if (isScriptedScenePlaying()) return;
   if (stage === 'changan') {
+    if (Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
     GameState.ap = GameState.apMax;
     GameState.heroHp = null;
     updateHUD();
     toast('잠시 숨을 돌렸다. 체력과 행동력을 회복했다.');
+    if (GameState.army) marchChanganPursuer();
     return;
   }
   GameState.nextMonth();
