@@ -23,6 +23,7 @@ const GameState = {
   tileEffects: {}, // "mapId#x#y" -> {type:'fire', x, y, ticksLeft, dps} - 화염 등 타일에 붙는 상태이상
   strategyUsedInScene: {}, // skillId -> true - S급 책략처럼 "전투당(그 전장 씬) 1회"인 책략을 이번 군세 편성 이후 이미 썼는지
   strategyUsedInMonth: {}, // skillId -> true - A급 책략처럼 "이번 달 1회"인 책략을 이미 썼는지 (다음달이 되면 초기화)
+  heroGrowth: null, // 현재 회차의 주인공 능력치와 필살기
   trainingEv: 0, // 훈련 노력치 (100마다 스텟 1 상승)
   combatStatUps: 0, // 공/방/속 상승 누적 횟수 (skillThreshold 도달시 필살공격 습득)
   skillThreshold: 2 + Math.floor(Math.random() * 2), // 2 또는 3
@@ -59,6 +60,7 @@ const GameState = {
     this.tileEffects = {};
     this.strategyUsedInScene = {};
     this.strategyUsedInMonth = {};
+    this.heroGrowth = null;
     this.trainingEv = 0;
     this.combatStatUps = 0;
     this.skillThreshold = 2 + Math.floor(Math.random() * 2);
@@ -69,7 +71,20 @@ const GameState = {
     this.flags = { act1: false, act2: false };
   },
 
-  heroData() { return ROSTER[this.mainHero]; },
+  heroData() {
+    const hero = ROSTER[this.mainHero];
+    return hero && this.heroGrowth ? { ...hero, ...this.heroGrowth } : hero;
+  },
+
+  trainableHeroData() {
+    if (!this.heroGrowth) {
+      const hero = this.heroData();
+      this.heroGrowth = { stats:{ ...hero.stats }, skills:[...(hero.skills || [])] };
+    }
+    return this.heroData();
+  },
+
+  officerData(id) { return id === this.mainHero ? this.heroData() : ROSTER[id]; },
 
   spendAP(n) {
     if (this.ap < n) return false;

@@ -568,7 +568,7 @@ function updateHUD() {
 
 // ---------------- NPC interaction ----------------
 function isScriptedScenePlaying() {
-  return changanPursuerMarching || changanBriefingActive || stage === 'changan_departed' || stage === 'hogwan_epilogue' || stage === 'sopae_finale' || stage === 'heodo_departure' ||
+  return changanPursuerMarching || changanBriefingActive || stage === 'changan_failed' || stage === 'changan_departed' || stage === 'hogwan_epilogue' || stage === 'sopae_finale' || stage === 'heodo_departure' ||
     (stage === 'sopae_free' && GameState.flags.sopaeInvasionStarted && !GameState.flags.sopaeInvasionResolved);
 }
 
@@ -1095,11 +1095,11 @@ function resolveWarArmy(rd) {
 }
 
 function warArmyGrade(ctx) {
-  const base = gradeFor(armyMuryeokValue(ROSTER[ctx.commanderId], ctx.army.generals), MURYEOK_GRADES);
+  const base = gradeFor(armyMuryeokValue(GameState.officerData(ctx.commanderId), ctx.army.generals), MURYEOK_GRADES);
   return shiftGrade(base, StatusEffects.gradeBoostAmount(ctx.commanderId));
 }
 function warArmySpeed(ctx) {
-  return armySpeedValue(ROSTER[ctx.commanderId], ctx.army.generals);
+  return armySpeedValue(GameState.officerData(ctx.commanderId), ctx.army.generals);
 }
 
 function openWarCommandMenu(id) {
@@ -1882,6 +1882,7 @@ function warDuelOption(commanderId, id) {
 }
 
 function attemptDuelChallenge(id) {
+  if (heroCurrentHp() <= 0) { toast('휴식으로 체력을 회복한 뒤 다시 도전하자.'); return; }
   const rd = ROSTER[id];
   if (!spendCombatAP(DUEL_AP_COST)) return;
   if (id === 'jangsun') { // 장순은 절대 일기토에 응하지 않는다 - 반드시 군세전투로 넘어간다
@@ -1999,6 +2000,7 @@ function resolveArmyBattle(id, opts) {
   if (!ctx) { toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`); return; }
   if (!opts.freeAction && !spendCombatAP(ARMY_BATTLE_AP_COST)) return;
   const army = ctx.army;
+  opts.onStart?.(army);
   const commanderName = ROSTER[ctx.commanderId].name;
   const playerKey = ctx.commanderId; // 유비군 전투는 유비 마커에, 관우군 전투는 관우 본인에 공격/피격 연출을 건다.
 
@@ -2144,7 +2146,7 @@ function resolveArmyBattle(id, opts) {
       Dialogue.show([{ speaker: '내레이션', text: `아군이 ${rd.name}의 군세에 완전히 밀려 무너졌다.` }], () => {
         releaseCapturedOnDefeat();
         if (stage === 'warmap' && MapView.currentMapId === 'hoesu') handleHoesuArmyDown(army === GameState.army);
-        else toast('전열을 정비해 다시 도전하자.');
+        else toast(opts.defeatMessage ?? '전열을 정비해 다시 도전하자.');
         onComplete({ concluded: true, enemyDown, playerDown });
       });
     }
@@ -2155,6 +2157,11 @@ function resolveArmyBattle(id, opts) {
 // 넘어온다 - challengeWarrior와 같은 이유로, 예전엔 이 함수가 context 자체를 받지
 // 않아 kind:'enemy'인 태산군 오돈 등은 discoveryText를 설정해둬도 화면에 안 떴다.
 function startFreeBattle(id, afterCb, persistHp, context) {
+  if (persistHp && heroCurrentHp() <= 0) {
+    toast('휴식으로 체력을 회복한 뒤 다시 도전하자.');
+    if (afterCb) afterCb();
+    return;
+  }
   const rd = ROSTER[id];
   const firstTime = !GameState.npcStatus[id];
   const openingLines = [];
@@ -2283,7 +2290,7 @@ function onFreeBattleEnd(id, result, afterCb, persistHp) {
         } },
     ]);
   } else if (result.outcome === 'lose') {
-    toast(`${rd.name}에게 밀렸다... 다시 도전할 수 있다.`);
+    toast(persistHp ? `${rd.name}에게 밀렸다. 휴식으로 체력을 회복한 뒤 다시 도전하자.` : `${rd.name}에게 밀렸다... 다시 도전할 수 있다.`);
     if (canCaptureDuelCommander()) releaseCapturedOnDefeat();
     if (afterCb) afterCb();
   }
@@ -3015,7 +3022,7 @@ let warIndex = 0;
 const WAR_AI_MOVE_BUDGET = 8;
 
 function warCombatantSpeed(id) {
-  if (id === GameState.mainHero) return armySpeedValue(ROSTER[GameState.mainHero], (GameState.army && GameState.army.generals) || []);
+  if (id === GameState.mainHero) return armySpeedValue(GameState.heroData(), (GameState.army && GameState.army.generals) || []);
   if (id === 'yubi') return armySpeedValue(ROSTER.yubi, (GameState.allyArmy && GameState.allyArmy.generals) || []);
   return ROSTER[id].stats.spd;
 }
@@ -3048,7 +3055,7 @@ function warUiBusy() {
     !document.getElementById('army-box').classList.contains('hidden');
 }
 
-function activateWarUnit() {
+function activateWarUnit({ preserveAp = false } = {}) {
   // 이 전쟁이 이미 끝나 endWarInitiative()가 불린 뒤라면, 지연되어 있던
   // (예: 적 차례가 플레이어와 붙어 메뉴가 뜬 채로 마무리 컷신까지 이어진 경우)
   // 호출이 뒤늦게 와도 아무 일도 하지 않는다.
@@ -3071,8 +3078,10 @@ function activateWarUnit() {
     // 공격해도 유비군의 전투로 잘못 판정되는 버그가 생긴다.
     activeCommanderId = isYubi ? 'yubi' : GameState.mainHero;
     MapView.setControlledUnit(isYubi ? 'yubi' : null);
-    if (isYubi) GameState.allyAp = GameState.allyApMax = effectiveApMax();
-    else GameState.ap = effectiveApMax();
+    if (!preserveAp) {
+      if (isYubi) GameState.allyAp = GameState.allyApMax = effectiveApMax();
+      else GameState.ap = effectiveApMax();
+    }
     updateHUD();
     setWarTurnUi(id, true);
   } else {
@@ -3869,7 +3878,7 @@ const CHANGAN_PURSUER = 'igak';
 const CHANGAN_PURSUER_START = { x:12, y:36 };
 const CHANGAN_ENEMIES = { jangje:200, beonjo:200, igak:5000, gwaksa:2000 };
 const CHANGAN_ORIGINAL_ARMIES = Object.fromEntries(
-  Object.keys(CHANGAN_ENEMIES).map((id) => [id, { troop:ROSTER[id].troop, morale:ROSTER[id].morale }]),
+  Object.keys(CHANGAN_ENEMIES).map((id) => [id, { troop:ROSTER[id].troop, morale:ROSTER[id].morale, rice:ROSTER[id].rice }]),
 );
 
 function restoreChanganEnemyArmies() {
@@ -3950,6 +3959,7 @@ function loadChangan() {
   GameState.flags.changanGuardReady = ['orders', 'muster'].includes(GameState.flags.changanPhase);
   GameState.flags.changanSkirmishReady = ['orders', 'muster', 'battle'].includes(GameState.flags.changanPhase);
   if (GameState.army && !GameState.flags.changanCavalry) equipChanganCavalry();
+  if (GameState.army) supplyChanganArmy();
   if (['changan_adviser', 'dugi'].includes(GameState.army?.deputy)) {
     GameState.army.deputy = GameState.heroData().routeAdviser;
   }
@@ -3959,6 +3969,7 @@ function loadChangan() {
   for (const [id, troop] of Object.entries(CHANGAN_ENEMIES)) {
     ROSTER[id].troop = GameState.flags.changanEnemyTroops?.[id] ?? troop;
     ROSTER[id].morale = GameState.flags.changanEnemyMorale?.[id] ?? 100;
+    ROSTER[id].rice = GameState.flags.changanEnemyRice?.[id];
   }
   MapView.load('changan', {
     onInteract: interactChangan,
@@ -4159,6 +4170,15 @@ function equipChanganCavalry() {
   GameState.ap = GameState.apMax;
 }
 
+function supplyChanganArmy() {
+  if (GameState.flags.changanArmySupplied) return;
+  const army = GameState.army;
+  const rice = Math.min(GameState.resources.rice, monthlyRiceUpkeep(army.troop) * 10);
+  army.rice = (army.rice || 0) + rice;
+  GameState.resources.rice -= rice;
+  GameState.flags.changanArmySupplied = true;
+}
+
 function prepareChanganArmy() {
   const troop = GameState.resources.troop;
   GameState.resources.troop = 0;
@@ -4167,13 +4187,14 @@ function prepareChanganArmy() {
     troop, rice:0,
   };
   equipChanganCavalry();
+  supplyChanganArmy();
 }
 
 function openChanganBattleMenu(id, { intercepted = false } = {}) {
   const duel = warDuelOption(GameState.mainHero, id);
   showChoice(intercepted ? '이각의 주력군이 따라붙었다!' : `${ROSTER[id].name}와 마주쳤다.`, [
     ...(duel ? [duel] : []),
-    { label:'전투', cb:() => fightChanganEnemy(id) },
+    { label:`전투 (행동력 ${ARMY_BATTLE_AP_COST})`, cb:() => fightChanganEnemy(id) },
     { label:'책략 (행동력 1)', cb:() => attemptStrategy(id) },
     { label:'물러서기', cb:() => {} },
   ]);
@@ -4183,9 +4204,9 @@ function fightChanganEnemy(id) {
   const flags = GameState.flags;
   const enemyTroops = flags.changanEnemyTroops ??= {};
   const retryTroops = flags.changanRetryTroops ??= {};
-  retryTroops[id] ??= GameState.army.troop;
   resolveArmyBattle(id, {
-    freeAction:true,
+    onStart: (army) => { retryTroops[id] ??= army.troop; },
+    defeatMessage: id === CHANGAN_ENEMY_ID ? '장안 탈출에 실패했습니다.' : undefined,
     onComplete:({ enemyDown, playerDown }) => {
       enemyTroops[id] = ROSTER[id].troop;
       if (enemyDown) {
@@ -4198,6 +4219,15 @@ function fightChanganEnemy(id) {
           Dialogue.show(STORY.changan_gate_open);
         }
       } else if (playerDown) {
+        if (id === CHANGAN_ENEMY_ID) {
+          stage = 'changan_failed';
+          MapView.lockMovement(true);
+          showChoice('곽사에게 패해 장안 탈출에 실패했습니다.', [
+            { label:'장안에서 다시 시작', cb:() => enterChapter2('jangryo') },
+            { label:'메인 화면으로', cb:() => { MapView.lockMovement(false); showScreen('screen-title'); } },
+          ]);
+          return;
+        }
         GameState.army.troop = retryTroops[id];
         ROSTER[id].troop = enemyTroops[id] = CHANGAN_ENEMIES[id];
         if (id === CHANGAN_PURSUER) {
@@ -4258,14 +4288,14 @@ function enterChapter2(heroId, carry) {
 }
 
 // 챕터1 엔딩의 "계승하여 챕터2로"에서 넘어온 금/쌀/명성/등용장수를 반영한다.
-// 장수 성장(스탯·필살기)은 ROSTER 객체 자체에 남아있어 GameState.reset이
-// 손대지 않으므로 별도 처리가 필요 없다. 등용장수 중에는, 챕터 사이 흐른
+// 능력치와 필살기도 함께 계승한다. 등용장수 중에는, 챕터 사이 흐른
 // 10년(184~194년) 동안 실제(deathReal, 연의 기준 우선) 천수를 다한 이가
 // 있을 수 있어 그런 이는 자동으로 이탈시키고 이름을 돌려준다.
 function applyChapter2Inheritance(carry) {
   GameState.resources.gold = carry.gold;
   GameState.resources.rice = carry.rice;
-  GameState.fame = carry.fame;
+  GameState.addFame(carry.fame);
+  GameState.heroGrowth = carry.heroGrowth ?? null;
   const deceased = [];
   carry.recruited.forEach((id) => {
     const rd = ROSTER[id];
@@ -4290,7 +4320,7 @@ function learnRandomSkill(hero) {
 // ---- 개인훈련 (세력 막사, 유비) - 필살공격은 오직 이 경로로만 습득할 수 있다 ----
 function trainWithHero() {
   if (!spend(2)) return;
-  const hero = GameState.heroData();
+  const hero = GameState.trainableHeroData();
   const gainedEv = 25 + Math.floor(Math.random() * 26); // 25~50
   GameState.trainingEv += gainedEv;
   const greatSession = gainedEv >= 40;
@@ -4323,7 +4353,7 @@ function trainWithHero() {
 function trainWithGeneral(id) {
   const rd = ROSTER[id];
   if (!spend(2)) return;
-  const hero = GameState.heroData();
+  const hero = GameState.trainableHeroData();
   const gainedEv = 25 + Math.floor(Math.random() * 26);
   GameState.trainingEv += gainedEv;
   let msg = `${rd.name}과(와) 함께 훈련했다. (노력치 ${GameState.trainingEv}/100)`;
@@ -4398,7 +4428,7 @@ function renderRosterPanel() {
     ...playerArmies().filter((army) => army.deputy).map((army) => ({ id:army.deputy, role:'책사' })),
   ].map((entry) => [entry.id, entry])).values()];
   entries.forEach(({ id, role, lord }) => {
-    const rd = ROSTER[id];
+    const rd = GameState.officerData(id);
     if (!rd) return;
     const scholar = !lord && (role === '책사' || (role == null && isScholarType(rd)));
     const label = role || (scholar ? '책사' : '장수');
@@ -4427,7 +4457,7 @@ function renderRosterPanel() {
 // "이 사람이 누구야?"에 바로 답할 수 있는 정도로만(소속/한 줄 업적/결말),
 // 장황한 설명은 넣지 않는다.
 function openHeroDetail(id, label) {
-  const rd = ROSTER[id];
+  const rd = GameState.officerData(id);
   if (!rd) return;
   document.getElementById('hero-detail-name').textContent = rd.name;
   document.getElementById('hero-detail-role').textContent = label;
@@ -4620,7 +4650,7 @@ function playerArmyGrade() { return gradeFor(playerArmyMuryeok(), MURYEOK_GRADES
 function updateArmyPower() {
   const deputyId = document.getElementById('army-deputy').value;
   const deputy = deputyId ? ROSTER[deputyId] : null;
-  const commanderRd = ROSTER[armyComposingCtx.commanderId] || GameState.heroData();
+  const commanderRd = GameState.officerData(armyComposingCtx.commanderId) || GameState.heroData();
   const muryeok = armyMuryeokValue(commanderRd, armySelectedGenerals);
   const jiryeok = deputy ? deputy.stats.int : 0;
   const el = document.getElementById('army-power');
@@ -4651,7 +4681,7 @@ function openArmyBox(onConfirm, opts) {
   const targetField = opts.field || 'army';
   const excludeIds = opts.excludeIds || [];
   armyComposingCtx = { commanderId, excludeIds };
-  const commanderRd = ROSTER[commanderId];
+  const commanderRd = GameState.officerData(commanderId);
 
   document.getElementById('army-title').textContent = `${commanderRd.name}군 편성`;
   document.getElementById('army-desc').textContent = opts.desc
@@ -4788,7 +4818,8 @@ function canSaveNow() {
   if (!SAVE_RESUMABLE_STAGES.includes(stage)) return false;
   if (isScriptedScenePlaying()) return false;
   if (!document.getElementById('screen-explore').classList.contains('active')) return false;
-  if (Dialogue.isActive()) return false;
+  if (Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return false;
+  if (stage === 'warmap' && warRoundActive && ![GameState.mainHero, 'yubi'].includes(warOrder[warIndex])) return false;
   // 일기토 화면은 #screen-explore 위에 별도로 떠 있는 오버레이라 화면 전환
   // 시스템(showScreen)을 거치지 않는다 - 전투 중인지는 직접 확인해야 한다.
   if (!document.getElementById('battle-screen').classList.contains('hidden')) return false;
@@ -4813,6 +4844,17 @@ function buildSaveSnapshot() {
     mapId,
     playerPos: { x: pos.x, y: pos.y },
     gameState: JSON.parse(JSON.stringify(GameState)),
+    warTurn: stage === 'warmap' && warRoundActive ? {
+      order:[...warOrder], index:warIndex,
+      npcs: MapView.liveNpcIds.map((id) => {
+        const rd = ROSTER[id];
+        const army = rd.kind === 'enemy' ? {
+          troop:rd.troop, rice:rd.rice ?? null, morale:rd.morale ?? null, commanderCaptured:!!rd.commanderCaptured,
+          _duelOfferRolled:rd._duelOfferRolled ?? null,
+        } : null;
+        return { id, pos:MapView.npcPos(id), army };
+      }),
+    } : null,
   };
 }
 
@@ -4855,7 +4897,36 @@ function resumeExploreStage(targetStage, playerPos, mapId) {
   updateHUD();
 }
 
+function restoreSavedWarTurn(turn) {
+  if (turn) {
+    for (const id of MapView.liveNpcIds) MapView.removeNpc(id);
+    for (const { id, pos, army } of turn.npcs) {
+      if (army) Object.assign(ROSTER[id], army);
+      MapView.addNpc(id, pos);
+    }
+    warRoundActive = true;
+    warOrder = turn.order;
+    warIndex = turn.index;
+    activateWarUnit({ preserveAp:true });
+  } else {
+    for (const id of enemiesInScene()) {
+      const status = GameState.npcStatus[id];
+      if (status === 'routed' || (status === 'captured' && !ROSTER[id].deputy)) MapView.removeNpc(id);
+    }
+    const order = computeWarOrder();
+    const firstPlayer = order.findIndex((id) => id === GameState.mainHero || id === 'yubi');
+    if (firstPlayer < 0) return;
+    warOrder = order;
+    warIndex = firstPlayer;
+    warRoundActive = true;
+    activateWarUnit({ preserveAp:true });
+  }
+}
+
 function applySaveSnapshot(snap) {
+  endWarInitiative();
+  engagementBudget = null;
+  GameState.heroGrowth = null;
   Object.keys(snap.gameState).forEach((k) => { GameState[k] = snap.gameState[k]; });
   // 기존 소패 저장에는 원문사극 발동 여부만 기록되어 있었다.
   if (snap.stage === 'sopae_free' && GameState.flags.sopaeInvasionStarted && GameState.flags.sopaeInvasionResolved == null) {
@@ -4866,6 +4937,7 @@ function applySaveSnapshot(snap) {
   if (stage === 'warmap' && MapView.currentMapId === 'warmap' && GameState.npcStatus.yeopo === 'fled') {
     checkWarmapClear();
   } else {
+    if (stage === 'warmap') restoreSavedWarTurn(snap.warTurn);
     toast('불러오기 완료.');
   }
 }
@@ -5584,27 +5656,29 @@ function monthAdvanceClick() {
   // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).
   // 같은 달 안에서 연달아 전투를 치를 때만 체력이 그대로 이어진다 - 휴식(다음달)을 거치면 항상 완전 회복.
   const inCampaign = stage === 'warmap';
+  const inChanganBattle = stage === 'changan' && !!GameState.army;
   // 장순의 난: 군세로 전환된 뒤에는 어양이라도 warmap처럼 매달 행동력을 재보급받는다.
   const inJangsunMarch = stage === 'pyeongwon_free' && MAPS.pyeongwon.apMovement && !!GameState.army;
   GameState.heroHp = null;
-  if (inCampaign || inJangsunMarch) {
+  if (inCampaign || inJangsunMarch || inChanganBattle) {
     // 십면매복/이사결류 같은 행동력 디버프가 걸려 있으면(apMult) 이번 달
     // 재보급량 자체가 그만큼 줄어든다 - 적 AI의 이동 예산(mapview.js
     // computeAiPath)과 완전히 동일한 배율 방식이다.
     const apScale = GameState.army ? StatusEffects.apMult(GameState.army.commanderId) : 1;
     GameState.ap = Math.max(0, Math.floor(effectiveApMax() * apScale));
   }
-  if (inCampaign && GameState.army) {
+  if ((inCampaign || inChanganBattle) && GameState.army) {
     GameState.army.rice = Math.max(0, GameState.army.rice - monthlyRiceUpkeep(GameState.army.troop));
     if (GameState.army.rice <= 0) GameState.changeMorale(-1); // 군량 고갈시 매턴 사기 하락
   }
   // 적 군세도 아군과 같은 기준(1인당 월 2석)으로 군량을 소모한다 - 로스터
   // 데이터에 미리 값을 넣어두는 대신, 이 전장에서 처음 맞닥뜨리는 순간
   // 자기 병력 기준 10달치를 스스로 챙겨온 것으로 본다.
-  if (inCampaign) enemiesInScene().forEach((eid) => {
+  if (inCampaign || inChanganBattle) enemiesInScene().forEach((eid) => {
     const rd = ROSTER[eid];
     ensureEnemyRice(rd);
     rd.rice = Math.max(0, rd.rice - monthlyRiceUpkeep(rd.troop));
+    if (inChanganBattle) (GameState.flags.changanEnemyRice ??= {})[eid] = rd.rice;
     if (rd.rice <= 0) StatusEffects.drainMorale(eid, 1); // 아군과 동일하게 고갈시 매턴 사기 하락
   });
   // 책략 상태이상(혼란/공포/도발)의 "턴"은 이 1달 휴식 하나를 가리킨다 -
@@ -5685,6 +5759,7 @@ document.getElementById('btn-ending-continue').onclick = () => {
     gold: GameState.resources.gold,
     rice: GameState.resources.rice,
     fame: GameState.fame,
+    heroGrowth: GameState.heroGrowth,
     recruited: [...GameState.recruited],
   };
   enterChapter2(GameState.mainHero, carry);
