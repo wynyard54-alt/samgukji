@@ -1205,6 +1205,34 @@ const MapView = (function () {
   // range: 이 유닛(n0)이 목표까지 몇 칸 안에 들어오면 멈추고 공격 태세로
   // 전환할지 - 보병/기병은 1(인접), 궁병은 2(main.js armyAttackRange가 정함).
   // 생략하면 기존처럼 인접(1)까지 다가간다.
+  function shortestAiRoute(start, target, range) {
+    const occupied = new Set(liveNpcs.filter((npc) => npc !== start).map(({ x, y }) => y * map.width + x));
+    const startKey = start.y * map.width + start.x;
+    const best = new Map([[startKey, 0]]);
+    const buckets = [[{ x:start.x, y:start.y, previous:null }]];
+    for (let cost = 0; cost < buckets.length; cost++) {
+      for (const point of buckets[cost] || []) {
+        const key = point.y * map.width + point.x;
+        if (best.get(key) !== cost) continue;
+        if (inAttackRange(point, target, range)) {
+          const route = [];
+          for (let step = point; step.previous; step = step.previous) route.push({ x:step.x, y:step.y });
+          return route.reverse();
+        }
+        for (const [dx, dy] of [[1,0], [-1,0], [0,1], [0,-1]]) {
+          const x = point.x + dx, y = point.y + dy;
+          const nextKey = y * map.width + x;
+          if (!isWalkable(x,y) || occupied.has(nextKey) || (x === target.x && y === target.y)) continue;
+          const nextCost = cost + tileMoveCost(x,y);
+          if ((best.get(nextKey) ?? Infinity) <= nextCost) continue;
+          best.set(nextKey, nextCost);
+          (buckets[nextCost] ??= []).push({ x, y, previous:point });
+        }
+      }
+    }
+    return [];
+  }
+
   function computeAiPath(n0, target, moveBudget, range) {
     target = target || player;
     range = range || 1;
@@ -1214,6 +1242,15 @@ const MapView = (function () {
     const costScale = StatusEffects.moveCostMult(n0.id) * unitCostMult;
     const budget = moveBudget != null ? moveBudget : AI_MOVE_BUDGET;
     let cx = n0.x, cy = n0.y, steps = Math.max(0, Math.floor(budget * apScale));
+    if (map.aiPathfinding === 'shortest') {
+      for (const point of shortestAiRoute(n0, target, range)) {
+        const cost = tileMoveCost(point.x, point.y) * costScale;
+        if (cost > steps) break;
+        steps -= cost;
+        path.push(point);
+      }
+      return path;
+    }
     // 사거리 판정은 inAttackRange를 쓴다 - 대각선으로 붙은 8칸은 병종
     // 상관없이 항상 사거리 안(맨해튼 거리만 쓰면 대각선 인접칸이 실제로는
     // 가까운데도 사거리 밖으로 잘못 계산된다)이고, 그 밖은 맨해튼 거리로

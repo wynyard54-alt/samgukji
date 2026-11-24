@@ -172,6 +172,7 @@ function scholarGoldIncome() {
 // 여러 flag를 시간순으로 검사해 "지금 시점"의 영지 목록만 돌려주므로
 // 새로 얻은 땅이 예전 땅을 대신하는 식(합산이 아님)으로 자연히 처리된다.
 function currentTerritoryIds() {
+  if (stage === 'changan') return GameState.flags.changanAlarm ? [] : ['jangan'];
   if (GameState.flags.sopaeLost) return [];
   if (GameState.flags.sopaeGranted) return ['sopae'];
   if (GameState.flags.wonsulRetreated) return []; // 원술과 얽힌 사이 여포에게 서주를 빼앗겨 수확할 땅이 없다
@@ -245,6 +246,7 @@ function getObjectives() {
   if (stage === 'changan') {
     const objectives = {
       rumors:`장안 탐색 · 주민들의 이야기를 들어보자 ${CHANGAN_RESIDENTS.length - unheardChanganResidents().length}/${CHANGAN_RESIDENTS.length}`,
+      report:'장안 탐색 · 동쪽 병영 근처의 이숙에게 민심을 전하자',
       orders:'장안 탈출 · 동쪽 병영에서 고순과 합류하자',
       muster:`장안 탈출 · 수비대 구출 ${CHANGAN_GUARDS.length - remainingChanganGuards().length}/${CHANGAN_GUARDS.length}`,
       battle:'장안 탈출 · 동문의 곽사를 물리치자',
@@ -410,7 +412,7 @@ function renderMinimap() {
   if (mapId === 'changan') {
     const phase = GameState.flags.changanPhase;
     const ids = {
-      rumors: unheardChanganResidents(), orders:['gosun'], muster:remainingChanganGuards(), battle:[CHANGAN_ENEMY_ID],
+      rumors: unheardChanganResidents(), report:['isuk'], orders:['gosun'], muster:remainingChanganGuards(), battle:[CHANGAN_ENEMY_ID],
     }[phase] || [];
     const points = ids.map((id) => MapView.npcPos(id)).filter(Boolean);
     const gate = map.exit;
@@ -1746,7 +1748,7 @@ function applyStrategyEffect(sid, targetId, deputyId, casterId) {
   return STRATEGY_EFFECTS[sid](targetId, deputyId, casterId);
 }
 
-function castNamedStrategy(sid, targetId, deputyId, casterCommanderId) {
+function castNamedStrategy(sid, targetId, deputyId, casterCommanderId, engagementId = targetId) {
   const desc = applyStrategyEffect(sid, targetId, deputyId, casterCommanderId);
   markStrategyUsed(sid);
   Dialogue.show([{ speaker: ROSTER[deputyId].name, text: `${STRATEGIES[sid].name}!` }, { speaker: '내레이션', text: desc }], () => {
@@ -1761,8 +1763,8 @@ function castNamedStrategy(sid, targetId, deputyId, casterCommanderId) {
     // resolveArmyBattle이 activeCommanderId(=유비 자신)로 유비군끼리
     // 싸우게 만드는 버그가 생긴다. 이 재오픈은 원래 "방금 책략을 쓴 그
     // 적과의 교전을 계속하라"는 뜻이므로 targetId가 실제 적일 때만 연다.
-    if (targetId !== casterCommanderId && MapView.liveNpcIds.includes(targetId) && ROSTER[targetId].kind === 'enemy') {
-      openWarCommandMenu(targetId);
+    if (engagementId !== casterCommanderId && MapView.liveNpcIds.includes(engagementId) && ROSTER[engagementId].kind === 'enemy') {
+      openWarCommandMenu(engagementId);
     }
   });
 }
@@ -1783,16 +1785,22 @@ function attemptStrategy(id) {
     openWarCommandMenu(id);
     return;
   }
-  if (!spendCombatAP(STRATEGY_AP_COST)) return;
   // 실제 효과가 구현된 책략 중, 지금 쓸 수 있는(전투당/월 1회 제한에 걸리지
   // 않은) 것만 골라 선택지로 보여준다 - 없으면 기존 범용 책략으로 바로 나간다.
   const castable = strategiesFor(deputyId).filter((sid) => STRATEGY_EFFECTS[sid] && strategyIsUsable(sid));
-  if (!castable.length) { castGenericStrategy(id, ctx, deputy); return; }
+  const basic = () => {
+    if (spendCombatAP(STRATEGY_AP_COST)) castGenericStrategy(id, ctx, deputy);
+  };
+  if (!castable.length) { basic(); return; }
   const options = castable.map((sid) => ({
     label: `${STRATEGIES[sid].name}(${STRATEGIES[sid].grade}급)`,
-    cb: () => castNamedStrategy(sid, id, deputyId, ctx.commanderId),
+    cb: () => {
+      if (!spendCombatAP(STRATEGY_AP_COST)) return;
+      const target = STRATEGIES[sid].needsEnemy ? id : ctx.commanderId;
+      castNamedStrategy(sid, target, deputyId, ctx.commanderId, id);
+    },
   }));
-  options.push({ label: '기본 계책 (적 공격력 약화)', cb: () => castGenericStrategy(id, ctx, deputy) });
+  options.push({ label: '기본 계책 (적 공격력 약화)', cb: basic });
   options.push({ label: '그만두기', cb: () => {} });
   showChoice(`${deputy.name}의 책략 - 무엇을 쓰시겠습니까?`, options);
 }
@@ -3838,6 +3846,7 @@ const CHANGAN_RESIDENTS = Object.keys(STORY.changan_residents);
 const CHANGAN_GUARDS = ['changan_market_guard', 'changan_east_guard'];
 const CHANGAN_ENEMY_ID = 'gwaksa';
 const CHANGAN_PURSUER = 'igak';
+const CHANGAN_PURSUER_START = { x:12, y:36 };
 const CHANGAN_ADVISER_ID = 'dugi';
 const CHANGAN_ENEMIES = { jangje:200, beonjo:200, igak:5000, gwaksa:2000 };
 const CHANGAN_ORIGINAL_TROOPS = Object.fromEntries(
@@ -3876,34 +3885,25 @@ function migrateChanganEscape() {
 }
 
 function addChanganPursuer() {
-  const x = GameState.flags.changanPursuerX ?? 34;
+  const point = GameState.flags.changanPursuerPos ?? CHANGAN_PURSUER_START;
   MapView.removeNpc(CHANGAN_PURSUER);
   if (GameState.flags.changanSkirmishReady && GameState.npcStatus.igak !== 'routed') {
-    MapView.addNpc(CHANGAN_PURSUER, { x, y:36 });
+    MapView.addNpc(CHANGAN_PURSUER, point);
   }
 }
 
 function marchChanganPursuer() {
-  const pursuer = MapView.npcPos(CHANGAN_PURSUER);
-  if (!pursuer) return;
-  const player = MapView.playerPos;
-  const path = [];
-  for (let x = pursuer.x + 1; x <= Math.min(89, pursuer.x + 6); x++) {
-    if (Math.abs(x - player.x) + Math.abs(36 - player.y) < 1) break;
-    path.push({ x, y:36 });
-    if (inAttackRange(player, path.at(-1), 1)) break;
-  }
+  if (!MapView.npcPos(CHANGAN_PURSUER)) return;
   changanPursuerMarching = true;
   MapView.lockMovement(true);
-  MapView.walkNpcPath(CHANGAN_PURSUER, path, 85, () => {
-    const position = MapView.npcPos(CHANGAN_PURSUER);
+  MapView.runAiTurn((engaged) => {
     changanPursuerMarching = false;
-    if (!position || stage !== 'changan') return;
-    GameState.flags.changanPursuerX = position.x;
+    if (stage !== 'changan') return;
+    GameState.flags.changanPursuerPos = MapView.npcPos(CHANGAN_PURSUER);
     MapView.lockMovement(false);
     updateHUD();
-    if (inAttackRange(MapView.playerPos, position, 1)) fightChanganEnemy(CHANGAN_PURSUER);
-  });
+    if (engaged) openChanganBattleMenu(CHANGAN_PURSUER, { intercepted:true });
+  }, [CHANGAN_PURSUER], 6);
 }
 
 function igniteChangan() {
@@ -3926,7 +3926,8 @@ function loadChangan() {
   if (GameState.flags.changanPhase === 'palace') GameState.flags.changanPhase = 'rumors';
   // 이전 장안 저장본은 고순 합류 이후에도 장터에 도착하기 전까지 군세가 없었다.
   if (GameState.flags.changanPhase === 'muster' && !GameState.army) prepareChanganArmy();
-  GameState.flags.changanAlarm = GameState.flags.changanPhase !== 'rumors';
+  GameState.flags.changanAlarm = !['rumors', 'report'].includes(GameState.flags.changanPhase);
+  GameState.flags.changanReportReady = GameState.flags.changanPhase === 'report';
   GameState.flags.changanGuardReady = ['orders', 'muster'].includes(GameState.flags.changanPhase);
   GameState.flags.changanSkirmishReady = ['orders', 'muster', 'battle'].includes(GameState.flags.changanPhase);
   if (GameState.army && !GameState.flags.changanCavalry) equipChanganCavalry();
@@ -3951,7 +3952,7 @@ function loadChangan() {
   });
   addChanganPursuer();
   MapView.setSceneGateClosed('east', GameState.flags.changanPhase !== 'escape');
-  if (GameState.flags.changanPhase !== 'rumors') closeChanganExploration();
+  if (GameState.flags.changanAlarm) closeChanganExploration();
   for (const id of Object.keys(CHANGAN_ENEMIES)) {
     if (GameState.npcStatus[id] === 'routed') MapView.removeNpc(id);
   }
@@ -3999,19 +4000,33 @@ function interactChangan(id, context) {
       GameState.npcStatus[id] = 'met';
       updateHUD();
       if (unheardChanganResidents().length === 0) {
-        Dialogue.show(STORY.changan_coup, () => {
-          flags.changanPhase = 'orders';
-          flags.changanOrdersReady = true;
-          flags.changanAlarm = true;
-          flags.changanGuardReady = true;
-          flags.changanSkirmishReady = true;
-          igniteChangan();
-          closeChanganExploration();
-          for (const id of ['gosun', ...CHANGAN_GUARDS, ...Object.keys(CHANGAN_ENEMIES)]) MapView.addNpc(id);
-          updateHUD();
-          showChanganBriefing();
-        });
+        flags.changanPhase = 'report';
+        flags.changanReportReady = true;
+        MapView.addNpc('isuk');
+        updateHUD();
+        Dialogue.show([{ speaker:'장료', text:'이야기를 다 들었으니, 동쪽 병영 근처의 이숙에게 알리자.' }]);
       }
+    });
+    return;
+  }
+  if (id === GameState.mainHero && context?.selfClick && GameState.army) {
+    attemptStrategySelf(id);
+    return;
+  }
+  if (id === 'isuk' && flags.changanPhase === 'report') {
+    Dialogue.show(STORY.changan_coup, () => {
+      flags.changanPhase = 'orders';
+      flags.changanReportReady = false;
+      flags.changanOrdersReady = true;
+      flags.changanAlarm = true;
+      flags.changanGuardReady = true;
+      flags.changanSkirmishReady = true;
+      MapView.removeNpc('isuk');
+      igniteChangan();
+      closeChanganExploration();
+      for (const target of ['gosun', ...CHANGAN_GUARDS, ...Object.keys(CHANGAN_ENEMIES)]) MapView.addNpc(target);
+      updateHUD();
+      showChanganBriefing();
     });
     return;
   }
@@ -4131,14 +4146,14 @@ function prepareChanganArmy() {
   equipChanganCavalry();
 }
 
-function openChanganBattleMenu(id) {
+function openChanganBattleMenu(id, { intercepted = false } = {}) {
   if (id === CHANGAN_ENEMY_ID && remainingChanganGuards().length) {
     toast('수비대 두 곳을 모두 구한 뒤 동문을 돌파하자.');
     return;
   }
-  showChoice(`${ROSTER[id].name}와 마주쳤다.`, [
+  showChoice(intercepted ? '이각의 주력군이 따라붙었다!' : `${ROSTER[id].name}와 마주쳤다.`, [
     { label:'전투', cb:() => fightChanganEnemy(id) },
-    { label:'책략', cb:() => attemptStrategy(id) },
+    { label:'책략 (행동력 1)', cb:() => attemptStrategy(id) },
     { label:'물러서기', cb:() => {} },
   ]);
 }
@@ -4165,7 +4180,7 @@ function fightChanganEnemy(id) {
         GameState.army.troop = retryTroops[id];
         ROSTER[id].troop = enemyTroops[id] = CHANGAN_ENEMIES[id];
         if (id === CHANGAN_PURSUER) {
-          flags.changanPursuerX = 34;
+          flags.changanPursuerPos = CHANGAN_PURSUER_START;
           addChanganPursuer();
           MapView.setPlayerPos(80, 20);
           toast('이각에게 밀려 동쪽 병영으로 후퇴했다.');
@@ -4349,12 +4364,18 @@ function formatStatLine(stats) {
 function renderRosterPanel() {
   const wrap = document.getElementById('roster-list');
   wrap.innerHTML = '';
-  const entries = [
-    { id: 'yubi', role: '군주', lord: true },
-    { id: 'gwanwoo', role: '장수' },
-    { id: 'jangbi', role: '장수' },
-    ...GameState.recruited.map((id) => ({ id, role: null })),
-  ];
+  const hero = GameState.heroData();
+  const core = Object.values(ROSTER)
+    .filter((rd) => rd.affiliation === hero.affiliation && (rd.role === '주군' || rd.kind === 'playable'))
+    .map((rd) => ({ id:rd.id, role:rd.role === '주군' ? '군주' : '장수', lord:rd.role === '주군' }));
+  const lordId = hero.routeLord;
+  if (lordId && !core.some(({ id }) => id === lordId)) core.unshift({ id:lordId, role:'군주', lord:true });
+  const entries = [...new Map([
+    ...core,
+    { id:hero.id, role:'장수' },
+    ...GameState.recruited.map((id) => ({ id, role:null })),
+    ...playerArmies().filter((army) => army.deputy).map((army) => ({ id:army.deputy, role:'책사' })),
+  ].map((entry) => [entry.id, entry])).values()];
   entries.forEach(({ id, role, lord }) => {
     const rd = ROSTER[id];
     if (!rd) return;
@@ -4404,15 +4425,13 @@ function openHeroDetail(id, label) {
 // ---- 가방(인벤토리) ----
 const BAG_SLOTS = 10;
 // TODO: 실제 청룡언월도 아이콘 이미지를 받으면 icon을 이모지 대신 <img> 경로로 교체한다.
-const BAG_ITEMS = [
-  { name: '청룡언월도', icon: '🗡️', desc: '관우의 애병(愛兵).' },
-];
-
 function renderBagPanel() {
   const grid = document.getElementById('bag-grid');
   grid.innerHTML = '';
+  const hero = GameState.heroData();
+  const items = hero.weapon ? [{ name:hero.weapon, icon:'🗡️', desc:`${hero.name}의 무기.` }] : [];
   for (let i = 0; i < BAG_SLOTS; i++) {
-    const item = BAG_ITEMS[i];
+    const item = items[i];
     const slot = document.createElement('div');
     slot.className = 'bag-slot' + (item ? ' filled' : '');
     if (item) {
@@ -5538,15 +5557,7 @@ function runAmbientEvent(kind) {
 // activateWarUnit이 라운드 끝에서 직접 호출한다.
 function monthAdvanceClick() {
   if (isScriptedScenePlaying()) return;
-  if (stage === 'changan') {
-    if (Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
-    GameState.ap = GameState.apMax;
-    GameState.heroHp = null;
-    updateHUD();
-    toast('잠시 숨을 돌렸다. 체력과 행동력을 회복했다.');
-    if (GameState.army) marchChanganPursuer();
-    return;
-  }
+  if (stage === 'changan' && (Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden'))) return;
   GameState.nextMonth();
   GameState.merchantBought = { rice: 0, bow: 0, horse: 0 }; // 상인의 월간 판매 한도 초기화
   // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).
@@ -5628,6 +5639,9 @@ function monthAdvanceClick() {
     // 전쟁 지도 어디에도 쓰지 않는다. 각 유닛의 "~의 차례다" 토스트가
     // 턴 진행 피드백을 대신하므로, 예전의 "이 달이 되었다" 안내는 여기서는 생략한다.
     startWarRound();
+  } else if (stage === 'changan') {
+    finishTurn();
+    if (GameState.army) marchChanganPursuer();
   } else if (inTown) {
     MapView.rollAmbientEvent(availableAmbientKinds());
     if (!maybeRandomEvent()) finishTurn();
