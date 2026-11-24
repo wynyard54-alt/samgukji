@@ -314,7 +314,7 @@ const ROSTER = {
     stats:{atk:90, def:93, spd:81, int:58, cha:38, lead:95}, sprite:SPRITE_DONGTAK,
     bio:'여포의 맹장으로 정예부대 함진영을 이끌었으며, 하비성 함락 후 진궁과 함께 처형되었다.', intro:'…함진영은 항복을 모른다. 덤벼라.' },
   jangryo: { id:'jangryo', name:'장료', birth:169, deathReal:222, deathVirtual:259, kind:'enemy', forced:null, affiliation:'여포군',
-    stats:{atk:94, def:91, spd:93, int:78, cha:74, lead:96}, weapon:'장창', routeLord:'yeopo',
+    stats:{atk:94, def:91, spd:93, int:78, cha:74, lead:96}, weapon:'장창', routeLord:'yeopo', routeAdviser:'isuk',
     sprite:{ key:'officer_jangryo', fw:136, fh:144, sx:.40, sy:.415, directional:true },
     battleArt:{ glyph:'張', weapon:'長槍', className:'enemy-red', src:'assets/battle/duel_jangryo_v2.png' },
     bio:'본래 여포를 섬겼으나 하비성 함락 후 조조에게 귀순해, 훗날 합비에서 손권의 대군을 물리친 명장이 되었다.', intro:'…주공이 어리석었을 뿐, 나는 아직 죽을 자리를 찾지 못했다.' },

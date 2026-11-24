@@ -156,9 +156,14 @@ function effectiveApMax() {
 function heroMaxHp() { return Battle.maxHP(GameState.heroData().stats); }
 function heroCurrentHp() { return GameState.heroHp != null ? GameState.heroHp : heroMaxHp(); }
 
+function availableOfficerIds() {
+  const adviser = GameState.heroData()?.routeAdviser;
+  return [...new Set([adviser, ...GameState.recruited].filter(Boolean))];
+}
+
 // 책사 1명당 매달 금 5 + 지력/5 수입
 function scholarGoldIncome() {
-  return GameState.recruited.reduce((sum, id) => {
+  return availableOfficerIds().reduce((sum, id) => {
     const rd = ROSTER[id];
     if (!rd || !isScholarType(rd)) return sum;
     return sum + 5 + Math.round(rd.stats.int / 5);
@@ -3847,7 +3852,6 @@ const CHANGAN_GUARDS = ['changan_market_guard', 'changan_east_guard'];
 const CHANGAN_ENEMY_ID = 'gwaksa';
 const CHANGAN_PURSUER = 'igak';
 const CHANGAN_PURSUER_START = { x:12, y:36 };
-const CHANGAN_ADVISER_ID = 'dugi';
 const CHANGAN_ENEMIES = { jangje:200, beonjo:200, igak:5000, gwaksa:2000 };
 const CHANGAN_ORIGINAL_TROOPS = Object.fromEntries(
   Object.keys(CHANGAN_ENEMIES).map((id) => [id, ROSTER[id].troop]),
@@ -3931,7 +3935,9 @@ function loadChangan() {
   GameState.flags.changanGuardReady = ['orders', 'muster'].includes(GameState.flags.changanPhase);
   GameState.flags.changanSkirmishReady = ['orders', 'muster', 'battle'].includes(GameState.flags.changanPhase);
   if (GameState.army && !GameState.flags.changanCavalry) equipChanganCavalry();
-  if (GameState.army?.deputy === 'changan_adviser') GameState.army.deputy = CHANGAN_ADVISER_ID;
+  if (['changan_adviser', 'dugi'].includes(GameState.army?.deputy)) {
+    GameState.army.deputy = GameState.heroData().routeAdviser;
+  }
   if (GameState.flags.changanAlarm) igniteChangan();
   MAPS.changan.apMovement = !!GameState.army;
   MapView.lockMovement(false);
@@ -4075,7 +4081,7 @@ function musterChanganArmy() {
     GameState.flags.changanPhase = 'muster';
     for (const id of CHANGAN_GUARDS) MapView.addNpc(id);
     updateHUD();
-    toast('고순과 두기가 합류했습니다. 기병은 행동력 2로 길 3칸을 이동합니다.');
+    toast('고순이 합류하고 이숙이 책사를 맡았습니다. 기병은 행동력 2로 길 3칸을 이동합니다.');
   });
 }
 
@@ -4130,7 +4136,7 @@ function meetChanganRecruit(id, context) {
 function equipChanganCavalry() {
   const army = GameState.army;
   army.unitType = 'cavalry';
-  army.deputy = CHANGAN_ADVISER_ID;
+  army.deputy = GameState.heroData().routeAdviser;
   army.troop += 660;
   GameState.flags.changanCavalry = true;
   GameState.ap = GameState.apMax;
@@ -4140,7 +4146,7 @@ function prepareChanganArmy() {
   const troop = GameState.resources.troop;
   GameState.resources.troop = 0;
   GameState.army = {
-    commanderId:'jangryo', generals:GameState.recruited.filter((id) => id !== CHANGAN_ADVISER_ID && !isScholarType(ROSTER[id])),
+    commanderId:'jangryo', generals:GameState.recruited.filter((id) => !isScholarType(ROSTER[id])),
     troop, rice:0,
   };
   equipChanganCavalry();
@@ -4373,7 +4379,7 @@ function renderRosterPanel() {
   const entries = [...new Map([
     ...core,
     { id:hero.id, role:'장수' },
-    ...GameState.recruited.map((id) => ({ id, role:null })),
+    ...availableOfficerIds().map((id) => ({ id, role:null })),
     ...playerArmies().filter((army) => army.deputy).map((army) => ({ id:army.deputy, role:'책사' })),
   ].map((entry) => [entry.id, entry])).values()];
   entries.forEach(({ id, role, lord }) => {
@@ -4650,7 +4656,7 @@ function openArmyBox(onConfirm, opts) {
 
   const select = document.getElementById('army-deputy');
   select.innerHTML = '<option value="">없음</option>';
-  GameState.recruited.forEach((id) => {
+  availableOfficerIds().forEach((id) => {
     const rd = ROSTER[id];
     if (!rd || !isScholarType(rd) || excludeIds.includes(id)) return;
     const opt = document.createElement('option');
