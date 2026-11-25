@@ -916,6 +916,8 @@ const CHANGAN_GUARD_TROOPS = { changan_market_guard:800, changan_east_guard:450 
       { type:'mapLabel', x:91, y:33.3, label:'동문', gateId:'east', closedLabel:'동문 · 통제 중' },
     ],
     npcs:[
+      { id:'wisok', x:46, y:36, label:'', fixed:true, discoverable:true, discoveryRange:1, chance:1,
+        discoveryText:'장터 대로에서 여포군 장수 위속이 걸음을 멈추고 장료를 바라본다.' },
       { id:'changan_merchant', x:43, y:34, label:'낙양에서 온 상인', fixed:true },
       { id:'changan_refugee', x:24, y:54, label:'피란민', fixed:true },
       { id:'changan_soldier', x:74, y:20, label:'여포군 병사', fixed:true },

@@ -166,6 +166,16 @@ const ROSTER = {
   wisok: { id:'wisok', name:'위속', birth:162, deathReal:215, deathVirtual:252, kind:'enemy', forced:null, affiliation:'여포군', troop:1800,
     stats:{atk:75, def:73, spd:71, int:42, cha:50, lead:73}, bio:'여포의 부장이었으나, 송헌과 함께 여포를 배신하고 조조에게 투항했다.', intro:'…나도 송헌과 같은 생각이오.', sprite:SPRITE_DONGTAK },
 
+  wiwol: { id:'wiwol', name:'위월', kind:'recruit', affiliation:'여포군',
+    stats:{atk:78, def:72, spd:78, int:43, cha:51, lead:68},
+    bio:'여포가 원소를 도와 흑산적 장연과 싸울 때 여포와 함께 돌격한 장수다.', intro:'여포 장군과 함께 장연의 진을 돌파한 위월이오.', sprite:SPRITE_DONGTAK },
+  yangchu_hanae: { id:'yangchu_hanae', name:'양추', kind:'flavor', affiliation:'장양군',
+    stats:{atk:67, def:65, spd:61, int:40, cha:44, lead:64},
+    bio:'장양을 섬긴 하내 장수 양추(楊醜)다.', intro:'장양 장군의 부장 양추요.', sprite:SPRITE_COALITION },
+  sugo: { id:'sugo', name:'수고', kind:'flavor', affiliation:'장양군',
+    stats:{atk:73, def:68, spd:70, int:43, cha:46, lead:66},
+    bio:'장양 휘하에서 활동한 하내 장수 수고(眭固)다.', intro:'장양 장군을 섬기는 수고요.', sprite:SPRITE_COALITION },
+
   // 함곡관 (챕터1 결선)
   igak: { id:'igak', name:'이각', birth:150, deathReal:198, deathVirtual:240, kind:'enemy', forced:'escape', affiliation:'동탁군',
     stats:{atk:82, def:80, spd:73, int:42, cha:50, lead:75}, bio:'동탁의 부장으로, 동탁 사후 곽사와 함께 장안을 장악해 한동안 조정을 뒤흔들었다.', intro:'동탁 어른은 가셨지만, 우리까지 무너질 성싶으냐!', sprite:SPRITE_DONGTAK },

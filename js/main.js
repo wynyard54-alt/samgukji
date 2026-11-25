@@ -900,7 +900,7 @@ function proposeScholar(id) {
 // discoverable(이름없이 있다가 근처에 가면 발견되는) 무장은 context로 discoveryText가
 // 넘어온다 - 책사형(visitScholar)은 이미 이걸 보여주고 있었지만, 무장형은 그동안
 // context 자체를 받지 않아 discoveryText가 설정돼 있어도 화면에 뜨지 않던 사각지대였다.
-function challengeWarrior(id, context) {
+function challengeWarrior(id, context, { guaranteedRecruit = false } = {}) {
   const rd = ROSTER[id];
   const firstTime = !GameState.npcStatus[id];
   if (!firstTime && !spend(3)) return;
@@ -920,7 +920,7 @@ function challengeWarrior(id, context) {
         updateHUD();
         if (result.outcome === 'win') {
           const hero = GameState.heroData();
-          const chance = clamp(60 + (hero.stats.cha - rd.stats.cha) * 0.5, 20, 95);
+          const chance = guaranteedRecruit ? 100 : clamp(60 + (hero.stats.cha - rd.stats.cha) * 0.5, 20, 95);
           const roll = Math.random() * 100;
           if (roll < chance) {
             Dialogue.show([{ speaker: rd.name, text: '…드디어 눈을 떴습니다. 함께하죠.' }], () => {
@@ -4000,7 +4000,7 @@ function loadChangan() {
 }
 
 function closeChanganExploration() {
-  for (const id of [...CHANGAN_RESIDENTS, 'seongryeom', ...Object.keys(CHANGAN_RECRUITS)]) MapView.removeNpc(id);
+  for (const id of [...CHANGAN_RESIDENTS, 'seongryeom', 'wisok', ...Object.keys(CHANGAN_RECRUITS)]) MapView.removeNpc(id);
 }
 
 function startChangan() {
@@ -4109,6 +4109,10 @@ function interactChangan(id, context) {
   switch (id) {
     case 'gosun':
       if (flags.changanPhase === 'orders') musterChanganArmy();
+      return;
+    case 'wisok':
+      if (heroCurrentHp() <= 0) { toast('휴식으로 체력을 회복한 뒤 다시 도전하자.'); return; }
+      challengeWarrior(id, context, { guaranteedRecruit:true });
       return;
     case 'seongryeom':
       Dialogue.show(STORY.changan_seongryeom, () => recruitChangan('seongryeom', 100));
