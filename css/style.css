@@ -1262,16 +1262,30 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   box-shadow: 0 4px 18px #0009;
 }
 #strategy-banner[data-grade="A"] span {
-  border-color: #e9b759;
-  box-shadow: 0 0 20px #e8aa5277;
-  animation: strategy-gold .52s ease-out both;
+  border: 3px solid #ffd27d;
+  box-shadow: 0 0 28px #e8aa52b3;
+  animation: strategy-gold .58s ease-out both;
 }
 #strategy-banner[data-grade="S"] span {
-  border-color: #ffda8a;
-  background: linear-gradient(105deg, #3b140c, #743116, #3b140c);
+  position: relative;
+  border: 5px solid #ffe3a0;
+  background: linear-gradient(105deg, #3b140c, #8d3618, #3b140c);
   text-shadow: 0 0 12px #ffc66d;
-  box-shadow: 0 0 26px #ff873eaa, 0 0 0 4px #ffdb7755;
-  animation: strategy-flare .66s ease-out both;
+  box-shadow: 0 0 32px #ff873e, 0 0 0 5px #ffdb7777, inset 0 0 18px #ffb3479c;
+  animation: strategy-flare .78s ease-out both;
+}
+#strategy-banner[data-grade="S"] span::after {
+  content: "";
+  position: absolute;
+  inset: -9px -16px;
+  border: 2px solid #ffd273;
+  border-radius: 13px;
+  box-shadow: 0 0 26px #ffc565;
+  animation: strategy-burst .85s ease-out both;
+}
+@keyframes strategy-burst {
+  from { opacity: 1; transform: scale(.92); }
+  to { opacity: 0; transform: scale(1.6,1.9); }
 }
 #strategy-banner:not(.hidden) + #center-alert { top: calc(50% + 88px); }
 @keyframes strategy-gold {
@@ -1285,4 +1299,5 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
   #strategy-banner[data-grade] span { animation: none; }
+  #strategy-banner[data-grade="S"] span::after { display: none; }
 }

@@ -464,6 +464,10 @@ const MapView = (function () {
       drawGround();
       drawBackDecor();
     }
+    if (map.battleShade) {
+      ctx.fillStyle = 'rgba(25,20,42,.24)';
+      ctx.fillRect(0,0,camera.w,camera.h);
+    }
     drawClosedSceneGates();
     drawFireTiles();
     drawSceneEffects();
@@ -487,7 +491,12 @@ const MapView = (function () {
       else drawHero();
     }
 
-    if (map.backgroundKey) drawMapForegroundCrops();
+    if (map.backgroundKey) {
+      ctx.save();
+      if (map.battleShade) ctx.filter = 'brightness(.78)';
+      drawMapForegroundCrops();
+      ctx.restore();
+    }
     else drawFrontDecor();
     drawArmyStatuses(actors);
     drawLocationRibbon();
@@ -1261,12 +1270,16 @@ const MapView = (function () {
   // 정해진 좌표들을 따라 한 칸씩 걸어가는 모습을 보여준 뒤 콜백한다(예: 원술이
   // 순간이동으로 사라지는 대신 성문 안쪽으로 실제로 걸어 들어가는 연출). AI
   // 추적과 달리 경로를 스스로 계산하지 않고 그대로 재생만 하는 단순 스크립트용이다.
-  function walkNpcPath(id, path, stepMs, callback) {
+  function walkNpcPath(id, path, stepMs, callback, follow = false) {
     const npc = liveNpcs.find((n) => n.id === id);
     if (!npc || !path || !path.length) { if (callback) callback(); return; }
     let step = 0;
     const tick = () => {
       moveFieldActor(npc, id, path[step].x, path[step].y);
+      if (follow) {
+        cameraFocus = {x:npc.x,y:npc.y};
+        updateCamera();
+      }
       render();
       step++;
       if (step < path.length) setTimeout(tick, stepMs);
@@ -1394,12 +1407,12 @@ const MapView = (function () {
     return [];
   }
 
-  function marchToward(id, target, budget) {
+  function marchToward(id, target, budget, stepMs = 85, follow = false) {
     const npc = liveNpcs.find((n) => n.id === id);
     if (!npc || !target || StatusEffects.isConfused(id)) return Promise.resolve(false);
     const range = armyAttackRange(id, armyFor(id));
     const path = computeAiPath(npc,target,budget,range);
-    return new Promise((resolve) => walkNpcPath(id,path,85,() => resolve(inAttackRange(npc,target,range))));
+    return new Promise((resolve) => walkNpcPath(id,path,stepMs,() => resolve(inAttackRange(npc,target,range)),follow));
   }
 
   function computeAiPath(n0, target, moveBudget, range) {

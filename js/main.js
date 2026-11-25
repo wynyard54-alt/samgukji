@@ -219,7 +219,8 @@ function spendCombatAP(n) {
   const useAlly = activeCommanderId != null && activeCommanderId === GameState.allyArmy?.commanderId;
   const ok = useAlly ? GameState.spendAllyAP(n) : GameState.spendAP(n);
   if (!ok) {
-    centerAlert(useAlly && warRoundActive ? '유비군의 행동력이 부족합니다. "군세 행동종료"를 눌러보세요.' : '행동력이 부족합니다. "휴식"을 눌러보세요.');
+    const commander = ROSTER[activeCommanderId || GameState.mainHero].name;
+    centerAlert(warRoundActive ? `${commander}군의 행동력이 부족합니다. 군세 행동종료를 눌러보세요.` : '행동력이 부족합니다. 휴식을 눌러보세요.');
     return false;
   }
   updateHUD();
@@ -795,7 +796,7 @@ function interactNPC(id, context) {
       return;
     }
     const afterCb = stage === 'warmap' ? checkWarmapClear : undefined;
-    startFreeBattle(id, afterCb, true, context);
+    if (spend(DUEL_AP_COST)) startFreeBattle(id, afterCb, true, context);
     return;
   }
 }
@@ -807,6 +808,10 @@ function offerBarracksTraining(greetingText, speaker) {
     { label: '훈련하기 (AP2)', cb: () => trainWithHero() },
     { label: '그냥 안부만 묻는다', cb: () => {} },
   ]);
+}
+
+function offerYeopoTraining() {
+  offerBarracksTraining('문원, 창을 들어라. 함께 무예를 가다듬자.', ROSTER.yeopo.name);
 }
 
 function handleYubi() {
@@ -953,7 +958,7 @@ function proposeScholar(id) {
 function challengeWarrior(id, context, { guaranteedRecruit = false } = {}) {
   const rd = ROSTER[id];
   const firstTime = !GameState.npcStatus[id];
-  if (!firstTime && !spend(3)) return;
+  if (!spend(DUEL_AP_COST)) return;
   GameState.npcStatus[id] = 'met';
   const openingLines = [];
   if (firstTime && context && context.discoveryText) {
@@ -1091,7 +1096,6 @@ function getWarLock(id, ctx, enemyMoraleOverride) {
   const rd = ROSTER[id];
   lock = makeWarLock(id, ctx, enemyMoraleOverride);
   GameState.warLocks[key] = lock;
-  maybeEnemyCastsStrategy(rd, ctx);
   return lock;
 }
 
@@ -1120,6 +1124,7 @@ function maybeEnemyCastsStrategy(rd, ctx) {
   const desc = applyStrategyEffect(sid, ctx.commanderId, rd.deputy, rd.id);
   markStrategyUsed(sid);
   toast(`${rd.name} 진영의 ${advisor.name}이(가) ${STRATEGIES[sid].name}을(를) 시전했다! ${desc}`);
+  return true;
 }
 
 // 이 적을 어느 편의 군세가 상대하는지 정한다.
@@ -1166,7 +1171,7 @@ function openWarCommandMenu(id) {
   const rd = ROSTER[id];
   const ctx = resolveWarArmy(rd);
   if (!ctx) {
-    toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`);
+    toast(`${rd.name}과(와) 싸우려면 먼저 맞설 군세를 편성해야 합니다.`);
     return;
   }
   const options = [];
@@ -1849,7 +1854,7 @@ function castNamedStrategy(sid, targetId, deputyId, casterCommanderId, engagemen
 function attemptStrategy(id) {
   const rd = ROSTER[id];
   const ctx = resolveWarArmy(rd);
-  if (!ctx) { toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`); return; }
+  if (!ctx) { toast(`${rd.name}과(와) 싸우려면 먼저 맞설 군세를 편성해야 합니다.`); return; }
   const deputyId = ctx.army.deputy;
   const deputy = deputyId ? ROSTER[deputyId] : null;
   if (!deputy) {
@@ -1949,7 +1954,7 @@ function attemptStrategySelf(commanderId) {
 
 function warDuelOption(commanderId, id) {
   if (inAttackRange(mapPosOf(commanderId), mapPosOf(id), 1)) {
-    return { label:'일기토', cb:() => attemptDuelChallenge(id) };
+    return { label:`일기토 (행동력 ${DUEL_AP_COST})`, cb:() => attemptDuelChallenge(id) };
   }
   return null;
 }
@@ -2069,8 +2074,11 @@ function resolveArmyBattle(id, opts) {
   const onComplete = opts.onComplete || (() => {});
   const rd = ROSTER[id];
   const ctx = opts.commanderId ? {army:armyFor(opts.commanderId),commanderId:opts.commanderId} : resolveWarArmy(rd);
-  if (!ctx?.army?.troop) { toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`); return; }
+  if (!ctx?.army?.troop) { toast(`${rd.name}과(와) 싸우려면 먼저 맞설 군세를 편성해야 합니다.`); return; }
   if (!opts.freeAction && !spendCombatAP(ARMY_BATTLE_AP_COST)) return;
+  if (opts.initiator === 'enemy' && engagementBudget >= STRATEGY_AP_COST && maybeEnemyCastsStrategy(rd,ctx)) {
+    engagementBudget -= STRATEGY_AP_COST;
+  }
   const army = ctx.army;
   opts.onStart?.(army);
   const commanderName = ROSTER[ctx.commanderId].name;
@@ -3091,6 +3099,11 @@ function handleAllyEngage(allyId, targetId, remainingBudget) {
       },
     });
   };
+  const army = armyFor(allyId);
+  if (army?.troop > 0 && remainingBudget >= ARMY_BATTLE_AP_COST + STRATEGY_AP_COST &&
+      maybeEnemyCastsStrategy(ROSTER[targetId], {army,commanderId:allyId})) {
+    remainingBudget -= STRATEGY_AP_COST;
+  }
   attemptOnce(remainingBudget);
 }
 
@@ -4278,7 +4291,8 @@ function meetChanganRecruit(id, context) {
   }
   Dialogue.show(lines, () => {
     showChoice('왕릉과 가볍게 겨뤄볼까요?', [
-      { label:'일기토', cb:() => {
+      { label:`일기토 (행동력 ${DUEL_AP_COST})`, cb:() => {
+        if (!spend(DUEL_AP_COST)) return;
         Battle.start({
           player:GameState.heroData(), enemy:candidate, maxRounds:3,
           onEnd:({ outcome }) => {
@@ -4441,6 +4455,7 @@ function checkHanaeRecruitment() {
 function interactHanae(id, context) {
   if (isScriptedScenePlaying() || Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
   if (ROSTER[id]?.kind === 'merchant') { openMerchantShop(id); return; }
+  if (id === 'yeopo') { offerYeopoTraining(); return; }
   const flags = GameState.flags;
   if (id === 'jangyang' && flags.hanaePhase === 'welcome') {
     Dialogue.show(STORY.hanae_welcome, () => {
