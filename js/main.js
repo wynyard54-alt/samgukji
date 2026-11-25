@@ -491,7 +491,7 @@ function updateHUD() {
   const showAllyAp = warRoundActive && warOrder[warIndex] === 'yubi';
   const apCur = showAllyAp ? gs.allyAp : gs.ap;
   const apMax = showAllyAp ? gs.allyApMax : effectiveApMax();
-  document.getElementById('hud-ap').textContent = `행동력 ${Math.round(Math.min(apCur, apMax))}/${apMax}`;
+  document.getElementById('hud-ap').textContent = `행동력 ${Math.floor(Math.min(apCur, apMax))}/${apMax}`;
   document.getElementById('hud-gold').textContent = `금 ${gs.resources.gold}(+${scholarGoldIncome()})`;
   document.getElementById('hud-rice').textContent = `쌀 ${gs.resources.rice.toLocaleString()}(+${territoryRiceIncome()})`;
   const shownTroops = stage === 'changan' && gs.army ? gs.army.troop : gs.resources.troop;
