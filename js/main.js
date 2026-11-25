@@ -3925,14 +3925,19 @@ function marchChanganPursuer() {
   if (!MapView.npcPos(CHANGAN_PURSUER)) return;
   changanPursuerMarching = true;
   MapView.lockMovement(true);
-  MapView.runAiTurn((engaged) => {
+  const moveBudget = 6;
+  engagementBudget = null;
+  MapView.runAiTurn((engaged, meta) => {
     changanPursuerMarching = false;
     if (stage !== 'changan') return;
     GameState.flags.changanPursuerPos = MapView.npcPos(CHANGAN_PURSUER);
     MapView.lockMovement(false);
     updateHUD();
-    if (engaged) openChanganBattleMenu(CHANGAN_PURSUER, { intercepted:true });
-  }, [CHANGAN_PURSUER], 6);
+    if (engaged && meta) {
+      engagementBudget = Math.max(0, moveBudget - meta.apUsed);
+      openChanganBattleMenu(CHANGAN_PURSUER);
+    }
+  }, [CHANGAN_PURSUER], moveBudget);
 }
 
 function igniteChangan() {
@@ -3951,6 +3956,7 @@ function unheardChanganResidents() {
 }
 
 function loadChangan() {
+  engagementBudget = null;
   migrateChanganEscape();
   if (GameState.flags.changanPhase === 'palace') GameState.flags.changanPhase = 'rumors';
   // 이전 장안 저장본은 고순 합류 이후에도 장터에 도착하기 전까지 군세가 없었다.
@@ -4029,6 +4035,7 @@ function showChanganBriefing() {
 
 function interactChangan(id, context) {
   if (changanBriefingActive || changanPursuerMarching || Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
+  engagementBudget = null;
   const flags = GameState.flags;
   if (flags.changanPhase === 'rumors' && CHANGAN_RESIDENTS.includes(id)) {
     Dialogue.show(STORY.changan_residents[id], () => {
@@ -4195,13 +4202,14 @@ function prepareChanganArmy() {
   supplyChanganArmy();
 }
 
-function openChanganBattleMenu(id, { intercepted = false } = {}) {
+function openChanganBattleMenu(id) {
+  const intercepted = engagementBudget != null;
   const duel = warDuelOption(GameState.mainHero, id);
-  showChoice(intercepted ? '이각의 주력군이 따라붙었다!' : `${ROSTER[id].name}와 마주쳤다.`, [
+  showChoice(intercepted ? `이각의 주력군이 따라붙었다! (적 행동력 ${Math.floor(engagementBudget)})` : `${ROSTER[id].name}와 마주쳤다.`, [
     ...(duel ? [duel] : []),
     { label:`전투 (행동력 ${ARMY_BATTLE_AP_COST})`, cb:() => fightChanganEnemy(id) },
     { label:'책략 (행동력 1)', cb:() => attemptStrategy(id) },
-    { label:'물러서기', cb:() => {} },
+    { label:'물러서기', cb:() => { engagementBudget = null; } },
   ]);
 }
 
@@ -4210,9 +4218,11 @@ function fightChanganEnemy(id) {
   const enemyTroops = flags.changanEnemyTroops ??= {};
   const retryTroops = flags.changanRetryTroops ??= {};
   resolveArmyBattle(id, {
+    initiator: engagementBudget != null ? 'enemy' : 'player',
     onStart: (army) => { retryTroops[id] ??= army.troop; },
     defeatMessage: id === CHANGAN_ENEMY_ID ? '장안 탈출에 실패했습니다.' : undefined,
     onComplete:({ enemyDown, playerDown }) => {
+      engagementBudget = null;
       enemyTroops[id] = ROSTER[id].troop;
       if (enemyDown) {
         GameState.ap = GameState.apMax;
