@@ -4038,8 +4038,17 @@ function interactChangan(id, context) {
   engagementBudget = null;
   const flags = GameState.flags;
   if (flags.changanPhase === 'rumors' && CHANGAN_RESIDENTS.includes(id)) {
+    const firstMeeting = !GameState.npcStatus[id];
     Dialogue.show(STORY.changan_residents[id], () => {
       GameState.npcStatus[id] = 'met';
+      if (firstMeeting && id === 'changan_merchant') {
+        GameState.addResource({ gold:50 });
+        toast('낙양에서 온 상인에게 금 50을 받았다.');
+      }
+      if (firstMeeting && id === 'changan_refugee') {
+        GameState.addFame(10);
+        toast('피란민을 도와 명성이 10 올랐다.');
+      }
       updateHUD();
       if (unheardChanganResidents().length === 0) {
         flags.changanPhase = 'report';
