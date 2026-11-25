@@ -33,6 +33,7 @@ const MapView = (function () {
   let controlledId = null;
   let liveNpcs = [];
   let sceneExtras = [];
+  let sceneEffectsTimer;
   const closedSceneGates = new Set();
   let crowd = [];
   let crowdTimer = null;
@@ -177,6 +178,9 @@ const MapView = (function () {
     spawnDeadlineAbs = (opts && opts.spawnDeadlineAbsMonth) || null;
     ambientEvents = [];
     sceneExtras = [];
+    controlledId = null;
+    clearInterval(sceneEffectsTimer);
+    sceneEffectsTimer = null;
     closedSceneGates.clear();
 
     liveNpcs = map.npcs.filter((n) => {
@@ -198,7 +202,7 @@ const MapView = (function () {
         (id === 'takhyeon' && (n.id === 'yubi' || n.id === 'yuwongi')) ||
         (id === 'pyeongwon' && n.id === 'yubi') ||
         id === 'habi' || // 관청 안의 인물들은 등용/처치 상태와 무관하게 늘 그 자리에 있다
-        id === 'sopae';
+        id === 'sopae' || (id === 'bogyang' && n.id === 'jingung');
       if (status === 'dead' || status === 'fled') return false;
       if ((status === 'recruited' || status === 'resolved') && !fixedInTown && !n.residence) return false;
       if (n.randomSpawn && !GameState.npcSpawnPos[n.id]) return false; // 아직 등장 시점이 되지 않음
@@ -437,6 +441,7 @@ const MapView = (function () {
     }
     drawClosedSceneGates();
     drawFireTiles();
+    drawSceneEffects();
     drawAreaLabels();
     if (map.backgroundKey) drawMapLandmarkLabels();
     drawAttackRangeOverlay();
@@ -591,6 +596,35 @@ const MapView = (function () {
   // 화염 타일 연출 - 전용 이미지(tile_fire)가 field-assets.js 매니페스트에
   // 등록되면 그걸 그대로 쓰고, 아직 없으면 절차적으로 그린 불꽃으로 대신한다
   // (다른 배경 그래픽들이 PNG 우선/도형 대체로 그려지는 방식과 동일하다).
+  function drawSceneEffects() {
+    const effect = map.sceneEffect;
+    if (!effect) return;
+    const time = performance.now() / 1000;
+    for (const [index, [x, y]] of effect.points.entries()) {
+      const px = worldX(x), py = worldY(y);
+      if (px < -100 || py < -100 || px > camera.w + 100 || py > camera.h + 150) continue;
+      const frame = index % 3;
+      const flicker = Math.sin(time * 7 + index) * 4;
+      ctx.save();
+      ctx.globalAlpha = .49;
+      FieldAssets.draw(ctx,effect.key,px-43,py-118+Math.sin(time*2+index)*5,92,126,
+        frame*512,512,512,512,true);
+      ctx.globalAlpha = .92 + Math.sin(time*11+index)*.08;
+      FieldAssets.draw(ctx,effect.key,px-43,py-77-flicker,88,91+flicker,
+        frame*512,0,512,512,true);
+      ctx.restore();
+    }
+  }
+
+  function setSceneEffect(effect) {
+    clearInterval(sceneEffectsTimer);
+    map.sceneEffect = effect;
+    sceneEffectsTimer = effect ? setInterval(() => {
+      if (document.getElementById('screen-explore').classList.contains('active')) render();
+    }, 90) : null;
+    render();
+  }
+
   function drawFireTiles() {
     if (!mapId) return;
     const tiles = StatusEffects.fireTilesForMap(mapId);
@@ -761,7 +795,7 @@ const MapView = (function () {
       // 유비 본인(ROSTER.yubi)에는 troop 필드가 없으므로 rd.troop 분기로는 못 잡는다.
       // 특정 지도로 한정하지 않는다 - 유비군이 등장하는 지도라면 어디서든 보여야 한다.
       const baseLabel = n.label || rd.name;
-      const label = n.formation ? baseLabel : (rd.kind === 'enemy' && rd.troop != null)
+      const label = n.labelFromArmy ? n.labelFromArmy() : n.formation ? baseLabel : (rd.kind === 'enemy' && rd.troop != null)
         ? `${baseLabel} · 병${rd.troop} · 무${enemyArmyGrade(rd)} · 지${gradeFor(rd.stats.int, JIRYEOK_GRADES)}`
         : (n.id === 'yubi' && GameState.allyArmy)
           ? `${baseLabel} · 병${GameState.allyArmy.troop} · 무${warArmyGrade({ commanderId:'yubi', army:GameState.allyArmy })} · 지${gradeFor(GameState.allyArmy.deputy && ROSTER[GameState.allyArmy.deputy] ? ROSTER[GameState.allyArmy.deputy].stats.int : 0, JIRYEOK_GRADES)}`
@@ -994,22 +1028,24 @@ const MapView = (function () {
 
   function interactFacing() {
     if (movementLocked) return;
-    const dirs = player.dir==='up' ? [[0,-1],[-1,0],[1,0],[0,1]] :
-      player.dir==='down' ? [[0,1],[-1,0],[1,0],[0,-1]] :
-      player.dir==='left' ? [[-1,0],[0,-1],[0,1],[1,0]] : [[1,0],[0,-1],[0,1],[-1,0]];
+    const mover = activeMover();
+    if (!mover) return;
+    const dirs = mover.dir==='up' ? [[0,-1],[-1,0],[1,0],[0,1]] :
+      mover.dir==='down' ? [[0,1],[-1,0],[1,0],[0,-1]] :
+      mover.dir==='left' ? [[-1,0],[0,-1],[0,1],[1,0]] : [[1,0],[0,-1],[0,1],[-1,0]];
     // 행동 버튼(정면 상호작용)은 항상 인접 1칸만 본다 - 궁병처럼 사거리가
     // 2 이상인 군세로 먼 적을 공격하는 건 "어느 방향을 보고 있는지"에 기대는
     // 이 버튼보다, 지도에서 적을 직접 클릭하는 쪽이 더 직관적이라 그쪽으로만
     // 열어준다(canvas 클릭 핸들러가 controlledArmyRange()를 그대로 쓴다).
     for (const [dx,dy] of dirs) {
-      const npc = npcAt(player.x+dx, player.y+dy);
+      const npc = npcAt(mover.x+dx, mover.y+dy);
       if (npc) { interact(npc,false); return; }
     }
     for (const ev of ambientEvents) {
       const p = crowd[ev.index];
       if (!p) continue;
       for (const [dx,dy] of dirs) {
-        if (p.x === player.x+dx && p.y === player.y+dy) {
+        if (p.x === mover.x+dx && p.y === mover.y+dy) {
           const kind = ev.kind;
           ambientEvents = ambientEvents.filter((e) => e !== ev);
           render();
@@ -1212,6 +1248,7 @@ const MapView = (function () {
   // 생략하면 기존처럼 인접(1)까지 다가간다.
   function shortestAiRoute(start, target, range) {
     const occupied = new Set(liveNpcs.filter((npc) => npc !== start).map(({ x, y }) => y * map.width + x));
+    if (mapId === 'bogyang') occupied.add(player.y * map.width + player.x);
     const startKey = start.y * map.width + start.x;
     const best = new Map([[startKey, 0]]);
     const buckets = [[{ x:start.x, y:start.y, previous:null }]];
@@ -1236,6 +1273,14 @@ const MapView = (function () {
       }
     }
     return [];
+  }
+
+  function marchToward(id, target, budget) {
+    const npc = liveNpcs.find((n) => n.id === id);
+    if (!npc || !target || StatusEffects.isConfused(id)) return Promise.resolve(false);
+    const range = armyAttackRange(id, armyFor(id));
+    const path = computeAiPath(npc,target,budget,range);
+    return new Promise((resolve) => walkNpcPath(id,path,85,() => resolve(inAttackRange(npc,target,range))));
   }
 
   function computeAiPath(n0, target, moveBudget, range) {
@@ -1501,6 +1546,7 @@ const MapView = (function () {
     if (GameState.npcStatus[n.id] === 'recruited') return `${rd.name} · ${isScholarType(rd) ? '모병' : '훈련'}`;
     if (n._atResidence) return n._label || `${rd.name}의 집`;
     if (hidden) return null;
+    if (n.labelFromArmy) return n.labelFromArmy();
     const baseLabel = n.label || rd.name;
     if (rd.kind === 'enemy' && rd.troop != null) {
       return `${baseLabel} · 병${rd.troop} · 무${enemyArmyGrade(rd)} · 지${gradeFor(rd.stats.int, JIRYEOK_GRADES)}`;
@@ -1620,7 +1666,7 @@ const MapView = (function () {
   }
 
   return {
-    isRotatedPresentation,load,render,removeNpc,addNpc,walkNpcPath,setSceneExtras,setSceneGateClosed,shelterResidents,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,clearAmbientEvents,lockMovement,setPlayerPos,
+    isRotatedPresentation,load,render,removeNpc,addNpc,walkNpcPath,setSceneExtras,setSceneEffect,marchToward,setSceneGateClosed,shelterResidents,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,clearAmbientEvents,lockMovement,setPlayerPos,
     panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,showDamageFloat,showAttackBump,setControlledUnit,npcPos,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},

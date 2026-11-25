@@ -15,6 +15,7 @@ const Battle = (function () {
   const eHpText = document.getElementById('battle-e-hptext');
   const eGaugeFill = document.getElementById('battle-e-gaugefill');
 
+  let safeRetreatAt, safeRetreating;
   let p, e, round, maxRounds, retreatAt, onEnd, locked, exhibition, resultLabel;
 
   function maxHP(stats) { return Math.round(60 + stats.def * 2); }
@@ -143,6 +144,13 @@ const Battle = (function () {
       dmg = Math.round(dmg * (1 - defender.dmgReduceBuff));
       defender.dmgReduceBuff = 0;
     }
+    if (safeRetreatAt && defender.hp - dmg <= defender.maxHp * safeRetreatAt) {
+      safeRetreating = defender === p ? 'lose' : 'win';
+      log(`${defender.data.name}이(가) 마지막 일격을 피하고 퇴각했다!`);
+      BattleEvents.emit('dodge', {attackerSide:side, defenderSide:oppSide,
+        attackerId:attacker.data.id, defenderId:defender.data.id});
+      return;
+    }
     defender.hp -= dmg;
 
     let extra = '';
@@ -250,17 +258,18 @@ const Battle = (function () {
     for (const who of order) {
       if (who === 'p') { if (p.hp > 0) actGeneric(p, e, playerAction, skillId); }
       else { if (e.hp > 0) actGeneric(e, p, eAction, eSkillId); }
-      if (p.hp <= 0 || e.hp <= 0) break;
+      if (safeRetreating || p.hp <= 0 || e.hp <= 0) break;
     }
 
     round++;
     const retreatReady = retreatAt != null && e.hp > 0 && e.hp <= e.maxHp * retreatAt;
-    const battleEnding = p.hp <= 0 || e.hp <= 0 || retreatReady || (maxRounds && round >= maxRounds);
+    const battleEnding = safeRetreating || p.hp <= 0 || e.hp <= 0 || retreatReady || (maxRounds && round >= maxRounds);
     if (!battleEnding) locked = false; // render()가 disabled 상태를 계산하기 전에 풀어야 필살공격 버튼이 실제로 눌린다
     render();
     emitStatus();
     BattleEvents.emit('roundEnd', { round });
 
+    if (safeRetreating) { finish(safeRetreating); return; }
     if (p.hp <= 0) { finish('lose'); return; }
     if (e.hp <= 0) { finish('win'); return; }
     if (retreatReady) { finish('retreat'); return; }
@@ -292,6 +301,8 @@ const Battle = (function () {
     round = 0;
     maxRounds = opts.maxRounds || null;
     retreatAt = opts.retreatAt || null;
+    safeRetreatAt = opts.safeRetreatAt || null;
+    safeRetreating = null;
     onEnd = opts.onEnd;
     exhibition = !!opts.exhibition;
     resultLabel = opts.resultLabel;

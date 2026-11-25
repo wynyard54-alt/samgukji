@@ -10,6 +10,7 @@
     'assets/illust/dowon_market.jpg', 'assets/illust/dowon_oath.jpg', 'assets/illust/pyeongwon_urgent.jpg',
     'assets/illust/anhee_dokwoo.jpg', 'assets/illust/sasugwan_pledge.jpg', 'assets/illust/sasugwan_victory.jpg',
     'assets/illust/hogwan_yeopo_retreat.jpg', 'assets/illust/worldmap.jpg',
+    BOGYANG_ILLUST,
     ...new Set([...STORY.changan_coup, ...STORY.hanae_intro, ...STORY.hanae_family].map((line) => line.scene).filter(Boolean)),
     'assets/ui/portrait_gwanwoo.png', 'assets/battle/duel_generic_officer_v2.png',
     ...new Set(Object.values(ROSTER).map((officer) => officer.battleArt?.src).filter(Boolean)),
@@ -179,6 +180,7 @@ function scholarGoldIncome() {
 function currentTerritoryIds() {
   if (stage === 'changan') return GameState.flags.changanAlarm ? [] : ['jangan'];
   if (stage === 'hanae') return GameState.flags.hanaeRecruitOpen ? ['hanae'] : [];
+  if (stage === 'bogyang') return GameState.flags.bogyangOccupied ? ['bogyang'] : [];
   if (GameState.flags.sopaeLost) return [];
   if (GameState.flags.sopaeGranted) return ['sopae'];
   if (GameState.flags.wonsulRetreated) return []; // 원술과 얽힌 사이 여포에게 서주를 빼앗겨 수확할 땅이 없다
@@ -214,10 +216,10 @@ function spendCombatAP(n) {
     engagementBudget -= n;
     return true;
   }
-  const useAlly = activeCommanderId === 'yubi';
+  const useAlly = activeCommanderId != null && activeCommanderId === GameState.allyArmy?.commanderId;
   const ok = useAlly ? GameState.spendAllyAP(n) : GameState.spendAP(n);
   if (!ok) {
-    centerAlert(useAlly ? '유비군의 행동력이 부족합니다. "군세 행동종료"를 눌러보세요.' : '행동력이 부족합니다. "휴식"을 눌러보세요.');
+    centerAlert(useAlly && warRoundActive ? '유비군의 행동력이 부족합니다. "군세 행동종료"를 눌러보세요.' : '행동력이 부족합니다. "휴식"을 눌러보세요.');
     return false;
   }
   updateHUD();
@@ -245,12 +247,15 @@ const LOCATION_NAMES = {
   sopae: '소패성',
   changan: '장안 · 도성',
   hanae: '하내성',
+  bogyang: '복양성',
 };
 
 function getObjectives() {
   const gs = GameState;
   const list = [];
-  if (stage === 'changan') {
+  if (stage === 'bogyang') {
+    list.push(bogyangObjective());
+  } else if (stage === 'changan') {
     const objectives = {
       rumors:`장안 탐색 · 주민들의 이야기를 들어보자 ${CHANGAN_RESIDENTS.length - unheardChanganResidents().length}/${CHANGAN_RESIDENTS.length}`,
       report:'장안 탐색 · 동쪽 병영 근처의 이숙에게 민심을 전하자',
@@ -449,6 +454,17 @@ function renderMinimap() {
     }
   }
 
+  if (mapId === 'bogyang') {
+    for (const id of [bogyangId('jangmak'), bogyangId('jangpae'), 'jingung']) {
+      const pos = MapView.npcPos(id);
+      if (pos) {
+        ctx.fillStyle = '#6fcdfa';
+        ctx.beginPath();
+        ctx.arc(pos.x / size.w * w, pos.y / size.h * h, 3.4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
   if (mapId === 'hanae' && ['welcome', 'council'].includes(GameState.flags.hanaePhase)) {
     const point = MapView.npcPos('jangyang');
     if (point) {
@@ -510,7 +526,7 @@ function updateHUD() {
   if (stage === 'sopae_free') checkSopaeInvasionTrigger();
   document.getElementById('hud-date').textContent = gs.dateLabel();
   // 전쟁 지도의 속도순 전투에서 유비군 차례일 때는 관우군과 별개인 allyAp를 보여준다.
-  const showAllyAp = warRoundActive && warOrder[warIndex] === 'yubi';
+  const showAllyAp = !!MapView.controlledUnitId;
   const apCur = showAllyAp ? gs.allyAp : gs.ap;
   const apMax = showAllyAp ? gs.allyApMax : effectiveApMax();
   document.getElementById('hud-ap').textContent = `행동력 ${Math.floor(Math.min(apCur, apMax))}/${apMax}`;
@@ -575,11 +591,18 @@ function updateHUD() {
     } else {
       progressBtn.classList.add('hidden');
     }
+  } else if (stage === 'bogyang') {
+    const phase = gs.flags.bogyangPhase;
+    const canSwitch = ['join','assault','defense'].includes(phase) && playerArmies().filter((army)=>army.troop>0).length === 2;
+    progressBtn.classList.toggle('hidden', !canSwitch && phase !== 'prepare');
+    progressBtn.textContent = phase === 'prepare' ? '군세 편성' : MapView.controlledUnitId ? '장료군 조작' : '여포군 조작';
+    progressBtn.onclick = phase === 'prepare' ? prepareBogyangArmies : switchBogyangArmy;
+    checkBogyangMuster();
   } else if (stage === 'hanae') {
     const phase = gs.flags.hanaePhase;
     progressBtn.classList.toggle('hidden', !['prepare', 'ready'].includes(phase));
     progressBtn.textContent = phase === 'ready' ? '복양으로 이동' : '군세 편성';
-    progressBtn.onclick = phase === 'ready' ? departHanae : prepareHanaeArmies;
+    progressBtn.onclick = phase === 'ready' ? departHanae : () => prepareHanaeArmies();
     checkHanaeRecruitment();
   } else if (stage === 'warmap' && MapView.currentMapId === 'hoesu') {
     if (gs.flags.hoesuCleared) {
@@ -596,7 +619,7 @@ function updateHUD() {
 
 // ---------------- NPC interaction ----------------
 function isScriptedScenePlaying() {
-  return changanPursuerMarching || mapBriefingActive || stage === 'changan_failed' || stage === 'changan_departed' || stage === 'hanae_departed' || stage === 'hogwan_epilogue' || stage === 'sopae_finale' || stage === 'heodo_departure' ||
+  return (stage === 'bogyang' && bogyangBusy) || changanPursuerMarching || mapBriefingActive || stage === 'changan_failed' || stage === 'changan_departed' || stage === 'hanae_departed' || stage === 'hogwan_epilogue' || stage === 'sopae_finale' || stage === 'heodo_departure' ||
     (stage === 'sopae_free' && GameState.flags.sopaeInvasionStarted && !GameState.flags.sopaeInvasionResolved);
 }
 
@@ -1063,16 +1086,22 @@ function fixedHitDamage(troops, grade, morale, defenderOnGate) {
 // 번을 더 때리든 이 값을 그대로 쓴다. 병력이 줄어들 때마다 다시 계산하면
 // 대등한 싸움이 영영 안 끝나는 예전 산식의 문제가 그대로 재현되기 때문이다.
 function getWarLock(id, ctx, enemyMoraleOverride) {
-  let lock = GameState.warLocks[id];
+  const key = stage === 'bogyang' && ctx.commanderId !== GameState.mainHero ? id + ':' + ctx.commanderId : id;
+  let lock = GameState.warLocks[key];
   if (lock) return lock;
   const rd = ROSTER[id];
-  lock = {
-    playerHit: fixedHitDamage(ctx.army.troop, warArmyGrade(ctx), GameState.morale, npcOnGateTile(id)),
+  lock = makeWarLock(id, ctx, enemyMoraleOverride);
+  GameState.warLocks[key] = lock;
+  maybeEnemyCastsStrategy(rd, ctx);
+  return lock;
+}
+
+function makeWarLock(id, ctx, enemyMoraleOverride) {
+  const rd = ROSTER[id];
+  return {
+    playerHit: fixedHitDamage(ctx.army.troop, warArmyGrade(ctx), moraleOf(ctx.commanderId), npcOnGateTile(id)),
     enemyHit: fixedHitDamage(rd.troop || 1000, enemyArmyGrade(rd), enemyMoraleOverride != null ? enemyMoraleOverride : (rd.morale != null ? rd.morale : 100), false),
   };
-  GameState.warLocks[id] = lock;
-  maybeEnemyCastsStrategy(rd, ctx); // 이 적과 처음 맞닥뜨리는 순간(교전 개시)에 한 번 확인한다
-  return lock;
 }
 
 // 적 책사(deputy)가 있고, 아직 못 쓴 책략을 갖고 있으면 자동으로 한 번
@@ -1151,7 +1180,8 @@ function openWarCommandMenu(id) {
   // engagementBudget이 설정돼 있으면(적이 자동으로 다가와 붙어 이 메뉴가
   // 뜬 경우) 이 교전은 적이 다가와 붙인 것이라, 궁병 사거리 판정에서
   // "누가 다가갔는지"를 정확히 반영해야 한다.
-  options.push({ label: '전투', cb: () => resolveArmyBattle(id, { initiator: engagementBudget != null ? 'enemy' : 'player' }) });
+  options.push({ label: '전투', cb: () => resolveArmyBattle(id, { initiator: engagementBudget != null ? 'enemy' : 'player',
+    onComplete:stage === 'bogyang' ? finishBogyangBattle : undefined }) });
   options.push({ label: '책략', cb: () => attemptStrategy(id) });
   // 플레이어가 직접 적에게 다가가 붙여 연 메뉴이므로(적이 자동으로 다가온
   // 경우는 이 메뉴를 열지 않고 handleEnemyInitiatedEngagement로 처리된다),
@@ -1280,6 +1310,7 @@ function composeEnemyArmy(rd) {
   ensureEnemyRice(rd);
   return {
     commanderId: rd.id,
+    get unitType() { return rd.unitType; },
     get deputy() { return rd.deputy || null; },
     set deputy(v) { rd.deputy = v; },
     get generals() { return rd.generals || []; },
@@ -1342,7 +1373,7 @@ function alliedCasterIds() {
   return [...new Set(ids)];
 }
 function enemiesInScene() {
-  return MapView.liveNpcIds.filter((nid) => { const r = ROSTER[nid]; return r && r.kind === 'enemy'; });
+  return MapView.liveNpcIds.filter((nid) => { const r = ROSTER[nid]; return r?.kind === 'enemy' && (stage !== 'bogyang' || !!bogyangUnits()[nid]); });
 }
 function enemyCasterIds() {
   const ids = [];
@@ -1381,7 +1412,7 @@ function inAttackRange(a, b, range) {
 // 사거리 판정(resolveArmyBattle)처럼 "관우군이든 유비군이든" 위치가
 // 필요한 곳에서 이 함수 하나로 both를 처리한다.
 function mapPosOf(id) {
-  return id === GameState.mainHero ? MapView.playerPos : npcMapPos(id);
+  return id === GameState.mainHero ? MapView.playerPos : stage === 'bogyang' ? MapView.npcPos(id) : npcMapPos(id);
 }
 function shuffled(arr) {
   const a = arr.slice();
@@ -1910,7 +1941,8 @@ function warDuelOption(commanderId, id) {
 }
 
 function attemptDuelChallenge(id) {
-  if (heroCurrentHp() <= 0) { toast('휴식으로 체력을 회복한 뒤 다시 도전하자.'); return; }
+  const isYeopoDuel = stage === 'bogyang' && activeCommanderId === 'yeopo';
+  if ((isYeopoDuel ? GameState.flags.bogyangYeopoHp ?? 1 : heroCurrentHp()) <= 0) { toast('휴식으로 체력을 회복한 뒤 다시 도전하자.'); return; }
   const rd = ROSTER[id];
   if (!spendCombatAP(DUEL_AP_COST)) return;
   if (id === 'jangsun') { // 장순은 절대 일기토에 응하지 않는다 - 반드시 군세전투로 넘어간다
@@ -1929,8 +1961,9 @@ function attemptDuelChallenge(id) {
   if (roll < chance) {
     startFreeBattle(id, () => {
       if (stage === 'warmap') checkWarmapClear();
+      if (stage === 'bogyang') finishBogyangBattle();
       if (stage === 'changan' && MapView.liveNpcIds.includes(id)) openWarCommandMenu(id);
-    }, true);
+    }, true, null, isYeopoDuel ? 'yeopo' : GameState.mainHero);
   } else {
     Dialogue.show([{ speaker: rd.name, text: '흥, 그런 도발에 넘어갈 성싶으냐! 정정당당히 전군으로 붙어보자!' }], () => {
       toast(`${rd.name}이(가) 일기토를 거절했다. (수락 확률 ${Math.round(chance)}%)`);
@@ -2024,15 +2057,15 @@ function resolveArmyBattle(id, opts) {
   opts = opts || {};
   const onComplete = opts.onComplete || (() => {});
   const rd = ROSTER[id];
-  const ctx = resolveWarArmy(rd);
-  if (!ctx) { toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`); return; }
+  const ctx = opts.commanderId ? {army:armyFor(opts.commanderId),commanderId:opts.commanderId} : resolveWarArmy(rd);
+  if (!ctx?.army?.troop) { toast(`${rd.name}과(와) 싸우려면 먼저 유비군을 편성해야 합니다.`); return; }
   if (!opts.freeAction && !spendCombatAP(ARMY_BATTLE_AP_COST)) return;
   const army = ctx.army;
   opts.onStart?.(army);
   const commanderName = ROSTER[ctx.commanderId].name;
   const playerKey = ctx.commanderId; // 유비군 전투는 유비 마커에, 관우군 전투는 관우 본인에 공격/피격 연출을 건다.
 
-  const lock = getWarLock(id, ctx);
+  const lock = opts.silent ? makeWarLock(id, ctx) : getWarLock(id, ctx);
   // 기습(forceFirstStrike)이 걸려 있으면 속도와 무관하게 반드시 선타를 친다.
   const playerFirst = StatusEffects.hasStatus(playerKey, 'forceFirstStrike') || warArmySpeed(ctx) >= rd.stats.spd;
   const lines = [{
@@ -2134,6 +2167,17 @@ function resolveArmyBattle(id, opts) {
     }
   }
 
+  if (opts.silent) {
+    if (enemyDown) {
+      MapView.removeNpc(id);
+      delete GameState.warLocks[id];
+      StatusEffects.clearArmyStatus(id);
+      StatusEffects.unlinkChain(id);
+    }
+    if (playerDown) MapView.removeNpc(playerKey);
+    MapView.render();
+    return;
+  }
   updateHUD();
   MapView.render();
 
@@ -2184,8 +2228,10 @@ function resolveArmyBattle(id, opts) {
 // discoverable(이름없이 있다가 근처에 가면 발견되는) 적장은 context로 discoveryText가
 // 넘어온다 - challengeWarrior와 같은 이유로, 예전엔 이 함수가 context 자체를 받지
 // 않아 kind:'enemy'인 태산군 오돈 등은 discoveryText를 설정해둬도 화면에 안 떴다.
-function startFreeBattle(id, afterCb, persistHp, context) {
-  if (persistHp && heroCurrentHp() <= 0) {
+function startFreeBattle(id, afterCb, persistHp, context, commanderId = GameState.mainHero) {
+  const isMainHero = commanderId === GameState.mainHero;
+  const hp = isMainHero ? heroCurrentHp() : GameState.flags.bogyangYeopoHp;
+  if (persistHp && hp <= 0) {
     toast('휴식으로 체력을 회복한 뒤 다시 도전하자.');
     if (afterCb) afterCb();
     return;
@@ -2199,10 +2245,13 @@ function startFreeBattle(id, afterCb, persistHp, context) {
   openingLines.push({ speaker: rd.name, text: `${rd.name}이(가) 앞을 막아섰다!` });
   Dialogue.show(openingLines, () => {
     Battle.start({
-      player: GameState.heroData(),
+      player: isMainHero ? GameState.heroData() : GameState.officerData(commanderId),
       enemy: rd,
-      startHp: persistHp ? heroCurrentHp() : undefined,
-      onEnd: (result) => onFreeBattleEnd(id, result, afterCb, persistHp),
+      startHp: persistHp ? hp : undefined,
+      onEnd: (result) => {
+        if (!isMainHero && persistHp) GameState.flags.bogyangYeopoHp = result.playerHp;
+        onFreeBattleEnd(id, result, afterCb, persistHp && isMainHero);
+      },
     });
   });
 }
@@ -2213,7 +2262,7 @@ function startFreeBattle(id, afterCb, persistHp, context) {
 const CAPTURE_HP_RATIO = 0.7;
 
 function canCaptureDuelCommander() {
-  return stage === 'warmap' || (stage === 'changan' && !!GameState.army);
+  return stage === 'warmap' || (['changan','bogyang'].includes(stage) && !!GameState.army);
 }
 
 function isOverwhelmingWin(rd, result) {
@@ -2296,7 +2345,7 @@ function onFreeBattleEnd(id, result, afterCb, persistHp) {
       });
       return;
     }
-    if (['warmap', 'changan'].includes(stage) && rd.kind === 'enemy') {
+    if (['warmap', 'changan', 'bogyang'].includes(stage) && rd.kind === 'enemy') {
       // 일반 승리(포획엔 못 미침) - 적장은 개인전에서 밀려 진영으로 돌아갈
       // 뿐, 병력 손실 없이 군세는 그대로 남는다. 대신 사기가 크게 꺾여
       // 이후 [전투] 피해 계산에 그대로 반영된다(fixedHitDamage의 사기 보정).
@@ -4393,17 +4442,18 @@ function interactHanae(id, context) {
   Dialogue.show([{ speaker:ROSTER[id].name, text:ROSTER[id].intro }]);
 }
 
-function prepareHanaeArmies() {
+function prepareHanaeArmies(scene = 'hanae') {
   if (Dialogue.isActive() || isScriptedScenePlaying()) return;
   const flags = GameState.flags;
-  if (flags.hanaePhase !== 'prepare') return;
+  const phaseKey = scene === 'bogyang' ? 'bogyangPhase' : 'hanaePhase';
+  if (flags[phaseKey] !== 'prepare') return;
   const need = GameState.army ? ARMY_MIN_TROOP : ARMY_MIN_TROOP * 2;
   if (GameState.resources.troop < need) {
     toast('두 부대를 편성하려면 부대마다 병사 500명이 필요합니다. 하내에 남은 무장을 찾아보세요.');
     return;
   }
   if (!GameState.army) {
-    openArmyBox(prepareHanaeArmies, {
+    openArmyBox(() => prepareHanaeArmies(scene), {
       reserveTroops:ARMY_MIN_TROOP,
       reserveRice:monthlyRiceUpkeep(ARMY_MIN_TROOP) * 5,
       desc:'장료군을 꾸리세요. 여포군에 병사 500명과 기본 군량을 남겨 둡니다.',
@@ -4412,7 +4462,7 @@ function prepareHanaeArmies() {
   }
   const army = GameState.army;
   openArmyBox(() => {
-    flags.hanaePhase = 'ready';
+    flags[phaseKey] = 'ready';
     updateHUD();
   }, {
     commanderId:'yeopo', field:'allyArmy',
@@ -4423,7 +4473,7 @@ function prepareHanaeArmies() {
         dissolveArmy('army');
         document.getElementById('army-box').classList.add('hidden');
         updateHUD();
-        prepareHanaeArmies();
+        prepareHanaeArmies(scene);
       },
     },
   });
@@ -4431,13 +4481,15 @@ function prepareHanaeArmies() {
 
 function departHanae() {
   if (Dialogue.isActive() || GameState.flags.hanaePhase !== 'ready' || !GameState.army || !GameState.allyArmy) return;
+  delete GameState.flags.bogyangRetry;
+  GameState.flags.bogyangRetry = buildSaveSnapshot();
   stage = 'hanae_departed';
   MapView.lockMovement(true);
   if (GameState.year < 194) { GameState.year = 194; GameState.month = 1; }
   updateHUD();
   Dialogue.show(STORY.hanae_departure, () => {
     MapView.lockMovement(false);
-    goEnding(2);
+    startBogyang();
   });
 }
 
@@ -4590,7 +4642,7 @@ function interactRecruitedGeneral(id) {
 
 // 등용 완료 시 호출 - 마을(탁현/평원/서주)에서는 그 자리에 남아 훈련/모병역을 맡고, 그 외(전장 등)에서는 기존처럼 퇴장한다.
 function stationRecruitOrRemove(id) {
-  if (stage === 'takhyeon_free' || stage === 'pyeongwon_free' || stage === 'seoju_free' || stage === 'sopae_free') { MapView.render(); return; }
+  if (stage === 'takhyeon_free' || stage === 'pyeongwon_free' || stage === 'seoju_free' || stage === 'sopae_free' || stage === 'bogyang') { MapView.render(); return; }
   MapView.removeNpc(id);
 }
 
@@ -4976,7 +5028,7 @@ window.addEventListener('keydown', (ev) => {
 // 대사, 장순의 난 행군(군세 이동모드) 중에는 되돌릴 상태가 애매해 제외한다.
 const SAVE_KEY = 'samgukji_saves_v1';
 const SAVE_SLOT_COUNT = 10;
-const SAVE_RESUMABLE_STAGES = ['takhyeon_free', 'pyeongwon_free', 'camp', 'warmap', 'seoju_free', 'habi_camp', 'sopae_free', 'changan', 'hanae'];
+const SAVE_RESUMABLE_STAGES = ['takhyeon_free', 'pyeongwon_free', 'camp', 'warmap', 'seoju_free', 'habi_camp', 'sopae_free', 'changan', 'hanae', 'bogyang'];
 // seoju_free는 도겸이 소환한 서주 대치(seoju_siege) 또는 그 뒤의 서주 자유탐방(seoju)
 // 둘 중 하나라 고정 매핑이 안 된다 - buildSaveSnapshot에서 MapView.currentMapId로 대신 구한다.
 const STAGE_MAP_ID = { takhyeon_free: 'takhyeon', pyeongwon_free: 'pyeongwon', camp: 'camp', warmap: 'warmap', habi_camp: 'habi' };
@@ -5013,6 +5065,7 @@ function canSaveNow() {
   if (!document.getElementById('battle-screen').classList.contains('hidden')) return false;
   // 장순의 난 행군 중(군세 이동모드)에는 지도 자체의 특수 상태(apMovement)가
   // 저장 데이터에 담기지 않으므로 제외한다.
+  if (stage === 'bogyang' && GameState.flags.bogyangPhase === 'failed') return false;
   if (stage === 'pyeongwon_free' && MAPS.pyeongwon.apMovement && !!GameState.army) return false;
   return true;
 }
@@ -5022,6 +5075,7 @@ function canSaveNow() {
 // 그래서 STAGE_MAP_ID 대신 항상 MapView.currentMapId(실제 로드돼 있는 지도)를
 // 그대로 저장해뒀다가 불러올 때 그 지도로 정확히 복원한다.
 function buildSaveSnapshot() {
+  if (stage === 'bogyang') bogyangSync();
   const mapId = MapView.currentMapId;
   const pos = MapView.playerPos;
   return {
@@ -5056,7 +5110,9 @@ function resumeExploreStage(targetStage, playerPos, mapId) {
   stage = targetStage;
   showScreen('screen-explore');
   const opts = { onInteract: interactNPC, onApSpent: updateHUD, onApBlocked, onStep: renderMinimap };
-  if (targetStage === 'hanae') {
+  if (targetStage === 'bogyang') {
+    loadBogyang();
+  } else if (targetStage === 'hanae') {
     loadHanae();
   } else if (targetStage === 'changan') {
     loadChangan();
@@ -5840,17 +5896,19 @@ function runAmbientEvent(kind) {
 // activateWarUnit이 라운드 끝에서 직접 호출한다.
 function monthAdvanceClick() {
   if (isScriptedScenePlaying()) return;
-  if (['changan', 'hanae'].includes(stage) && (Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden'))) return;
+  if (['changan', 'hanae', 'bogyang'].includes(stage) && (Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden'))) return;
   GameState.nextMonth();
   GameState.merchantBought = { rice: 0, bow: 0, horse: 0 }; // 상인의 월간 판매 한도 초기화
   // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).
   // 같은 달 안에서 연달아 전투를 치를 때만 체력이 그대로 이어진다 - 휴식(다음달)을 거치면 항상 완전 회복.
   const inCampaign = stage === 'warmap';
+  if (stage === 'bogyang') GameState.flags.bogyangYeopoHp = null;
+  const inBogyangBattle = stage === 'bogyang' && ['join','assault','defense'].includes(GameState.flags.bogyangPhase);
   const inChanganBattle = stage === 'changan' && !!GameState.army;
   // 장순의 난: 군세로 전환된 뒤에는 어양이라도 warmap처럼 매달 행동력을 재보급받는다.
   const inJangsunMarch = stage === 'pyeongwon_free' && MAPS.pyeongwon.apMovement && !!GameState.army;
   GameState.heroHp = null;
-  if (inCampaign || inJangsunMarch || inChanganBattle) {
+  if (inCampaign || inJangsunMarch || inChanganBattle || inBogyangBattle) {
     // 십면매복/이사결류 같은 행동력 디버프가 걸려 있으면(apMult) 이번 달
     // 재보급량 자체가 그만큼 줄어든다 - 적 AI의 이동 예산(mapview.js
     // computeAiPath)과 완전히 동일한 배율 방식이다.
@@ -5864,7 +5922,11 @@ function monthAdvanceClick() {
   // 적 군세도 아군과 같은 기준(1인당 월 2석)으로 군량을 소모한다 - 로스터
   // 데이터에 미리 값을 넣어두는 대신, 이 전장에서 처음 맞닥뜨리는 순간
   // 자기 병력 기준 10달치를 스스로 챙겨온 것으로 본다.
-  if (inCampaign || inChanganBattle) enemiesInScene().forEach((eid) => {
+  if (inBogyangBattle) for (const army of playerArmies()) {
+    army.rice = Math.max(0, army.rice - monthlyRiceUpkeep(army.troop));
+    if (army.rice <= 0) StatusEffects.drainMorale(army.commanderId, 1);
+  }
+  if (inCampaign || inChanganBattle || inBogyangBattle) enemiesInScene().forEach((eid) => {
     const rd = ROSTER[eid];
     ensureEnemyRice(rd);
     rd.rice = Math.max(0, rd.rice - monthlyRiceUpkeep(rd.troop));
@@ -5875,7 +5937,7 @@ function monthAdvanceClick() {
   // 공포의 사기 드레인도 여기서 함께 처리된다. 화염 타일은 지금 지도가
   // 전쟁맵일 때만(그 타일 위 군세가 실제로 존재할 때만) 의미가 있다.
   StatusEffects.tickAllArmyStatus();
-  if (inCampaign) {
+  if (inCampaign || inBogyangBattle) {
     StatusEffects.tickFireTiles(MapView.currentMapId, fireTileOccupantsAt, applyFireTileDamage);
     MapView.render();
   }
@@ -5928,6 +5990,12 @@ function monthAdvanceClick() {
     finishTurn();
     if (GameState.army) marchChanganPursuer();
     else if (!GameState.flags.changanAlarm) MapView.rollAmbientEvent(availableAmbientKinds());
+  } else if (stage === 'bogyang') {
+    const phase = GameState.flags.bogyangPhase;
+    if (phase === 'ready') bogyangApproach();
+    else if (inBogyangBattle) bogyangArmyTurn();
+    else MapView.rollAmbientEvent(availableAmbientKinds());
+    finishTurn();
   } else if (stage === 'hanae') {
     MapView.rollAmbientEvent(availableAmbientKinds());
     finishTurn();

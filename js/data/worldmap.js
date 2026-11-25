@@ -171,7 +171,7 @@ function worldMapTimeline(stage, mapId, flags) {
     return { factions, labels, notes, flag:'jangan' };
   }
 
-  if (stage === 'hanae' || stage === 'hanae_departed') {
+  if (['hanae', 'hanae_departed', 'bogyang'].includes(stage)) {
     Object.assign(factions, WORLDMAP_COALITION, {
       jangan:'ijgwak', hamgokgwan:'ijgwak', hogwan:'hanna',
       nampi:'wonso', jungsan:'wonso', georok:'wonso', eop:'wonso',
@@ -184,7 +184,11 @@ function worldMapTimeline(stage, mapId, flags) {
     notes.hanae = '장양의 거점 · 여포군 의탁';
     notes.jinchang = '진류 태수 장막';
     if (stage === 'hanae_departed') notes.bogyang = '여포군이 장막의 전갈을 받고 출발';
-    return { factions, labels, notes, flag:stage === 'hanae_departed' ? 'bogyang' : 'hanae' };
+    if (stage === 'bogyang' && flags.bogyangOccupied) {
+      factions.bogyang = 'yeopo';
+      notes.bogyang = '여포군이 복양을 점령';
+    }
+    return { factions, labels, notes, flag:stage === 'hanae' ? 'hanae' : 'bogyang' };
   }
 
   const chapterTwo = ['seoju_free', 'habi_camp', 'sopae_free', 'sopae_finale', 'heodo_departure'].includes(stage)
