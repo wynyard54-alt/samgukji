@@ -178,6 +178,7 @@ function scholarGoldIncome() {
 // 새로 얻은 땅이 예전 땅을 대신하는 식(합산이 아님)으로 자연히 처리된다.
 function currentTerritoryIds() {
   if (stage === 'changan') return GameState.flags.changanAlarm ? [] : ['jangan'];
+  if (stage === 'hanae') return GameState.flags.hanaeRecruitOpen ? ['hanae'] : [];
   if (GameState.flags.sopaeLost) return [];
   if (GameState.flags.sopaeGranted) return ['sopae'];
   if (GameState.flags.wonsulRetreated) return []; // 원술과 얽힌 사이 여포에게 서주를 빼앗겨 수확할 땅이 없다
@@ -5834,7 +5835,7 @@ function runAmbientEvent(kind) {
 // activateWarUnit이 라운드 끝에서 직접 호출한다.
 function monthAdvanceClick() {
   if (isScriptedScenePlaying()) return;
-  if (stage === 'changan' && (Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden'))) return;
+  if (['changan', 'hanae'].includes(stage) && (Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden'))) return;
   GameState.nextMonth();
   GameState.merchantBought = { rice: 0, bow: 0, horse: 0 }; // 상인의 월간 판매 한도 초기화
   // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).

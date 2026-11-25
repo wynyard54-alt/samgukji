@@ -172,8 +172,17 @@ function worldMapTimeline(stage, mapId, flags) {
   }
 
   if (stage === 'hanae' || stage === 'hanae_departed') {
-    Object.assign(factions, WORLDMAP_COALITION, { jangan:'ijgwak', hamgokgwan:'ijgwak', hanae:'hanna' });
+    Object.assign(factions, WORLDMAP_COALITION, {
+      jangan:'ijgwak', hamgokgwan:'ijgwak', hogwan:'hanna',
+      nampi:'wonso', jungsan:'wonso', georok:'wonso', eop:'wonso',
+      baengma:'jojo', bogyang:'jojo', bukhae:'gongyung',
+      hanae:'yeopo', wan:'yupyo', sujun:'wonsul', hanjung:'jangno', yangpyeonggwan:'jangno',
+      gyoji:'sasup',
+    });
+    for (const id of WORLDMAP_XU_ZHOU) factions[id] = 'dogyeom';
+    for (const id of WORLDMAP_YI_ZHOU) factions[id] = 'yueon';
     notes.hanae = '장양의 거점 · 여포군 의탁';
+    notes.jinchang = '진류 태수 장막';
     if (stage === 'hanae_departed') notes.bogyang = '여포군이 장막의 전갈을 받고 출발';
     return { factions, labels, notes, flag:stage === 'hanae_departed' ? 'bogyang' : 'hanae' };
   }
