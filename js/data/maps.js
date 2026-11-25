@@ -947,6 +947,10 @@ const CHANGAN_GUARD_TROOPS = { changan_market_guard:800, changan_east_guard:450 
       ['merchant',22,21,'earth'], ['woman',30,21,'dust'], ['porter',50,21,'ash'],
       ['guard',72,21,'iron'], ['merchant',40,36,'earth'], ['child',38,38,'ash'],
       ['porter',56,36,'dust'], ['elder',24,36,'ash'], ['woman',54,38,'dust'],
+      ['elder',32,12,'earth'], ['porter',48,14,'ash'], ['woman',69,10,'dust'],
+      ['child',15,46,'dust'], ['farmer',12,54,'earth'], ['woman',35,53,'ash'],
+      ['porter',48,54,'earth'], ['merchant',78,53,'earth'], ['elder',19,60,'ash'],
+      ['woman',42,65,'dust'], ['child',53,60,'earth'], ['farmer',82,66,'ash'],
     ].map(([archetype,x,y,palette]) => ({ archetype,x,y,palette,wander:3,roadOnly:true })),
   };
 })();
