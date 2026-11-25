@@ -171,6 +171,13 @@ function worldMapTimeline(stage, mapId, flags) {
     return { factions, labels, notes, flag:'jangan' };
   }
 
+  if (stage === 'hanae' || stage === 'hanae_departed') {
+    Object.assign(factions, WORLDMAP_COALITION, { jangan:'ijgwak', hamgokgwan:'ijgwak', hanae:'hanna' });
+    notes.hanae = '장양의 거점 · 여포군 의탁';
+    if (stage === 'hanae_departed') notes.bogyang = '여포군이 장막의 전갈을 받고 출발';
+    return { factions, labels, notes, flag:stage === 'hanae_departed' ? 'bogyang' : 'hanae' };
+  }
+
   const chapterTwo = ['seoju_free', 'habi_camp', 'sopae_free', 'sopae_finale', 'heodo_departure'].includes(stage)
     || (stage === 'warmap' && ['hoenam', 'hoesu'].includes(mapId));
   if (!chapterTwo) {

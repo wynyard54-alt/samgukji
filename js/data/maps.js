@@ -945,3 +945,48 @@ const CHANGAN_GUARD_TROOPS = { changan_market_guard:800, changan_east_guard:450 
     ].map(([archetype,x,y,palette]) => ({ archetype,x,y,palette,wander:3,roadOnly:true })),
   };
 })();
+
+// ---------------- 하내 · 장료 편 ----------------
+(function () {
+  const w = 36, h = 25;
+  const grid = makeGrid(w, h, 2);
+  rectFill(grid, 17, 8, 18, 24, 1); // 남문에서 관청까지
+  rectFill(grid, 9, 5, 19, 7, 1); // 관청 앞마당
+  rectFill(grid, 16, 7, 18, 8, 1);
+  rectFill(grid, 5, 8, 31, 8, 1);
+  rectFill(grid, 5, 12, 31, 13, 1); // 주택가와 장터 사이
+  rectFill(grid, 5, 8, 6, 16, 1);
+  rectFill(grid, 30, 8, 31, 16, 1);
+  rectFill(grid, 21, 2, 22, 8, 1); // 병영 서쪽 골목
+  rectFill(grid, 26, 7, 27, 8, 1); // 병영 입구
+  rectFill(grid, 5, 17, 31, 17, 1);
+  rectFill(grid, 5, 16, 6, 17, 1);
+  rectFill(grid, 30, 16, 31, 17, 1);
+  rectFill(grid, 13, 21, 22, 24, 1); // 성 밖 접근로
+
+  MAPS.hanae = {
+    name:'하내성', width:w, height:h, tiles:grid, backgroundKey:'hanae_overview',
+    playerStart:{ x:17, y:22 }, camera:{ viewportW:800, viewportH:480 },
+    foregroundCrops:[{ x:.452, y:.647, w:.105, h:.081 }],
+    decor:[
+      { type:'mapLabel', x:15, y:4, label:'관청' },
+      { type:'mapLabel', x:27, y:5, label:'병영' },
+      { type:'mapLabel', x:25, y:11, label:'장터' },
+      { type:'mapLabel', x:19, y:18, label:'남문' },
+    ],
+    npcs:[
+      { id:'jangyang', x:15, y:5, label:'장양', fixed:true },
+      { id:'yangchu_hanae', x:12, y:6, label:'양추', fixed:true },
+      { id:'sugo', x:18, y:6, label:'수고', fixed:true },
+      { id:'yeopo', x:15, y:7, label:'여포', fixed:true },
+      { id:'hakmaeng', x:26, y:7, label:'', fixed:true, discoverable:true, storyGate:'hanaeRecruitOpen',
+        discoveryText:'병영 앞에서 군사들의 훈련을 지켜보는 장수가 있다.' },
+      { id:'joseong', x:6, y:15, label:'', fixed:true, discoverable:true, storyGate:'hanaeRecruitOpen',
+        discoveryText:'왼쪽 주택가 골목에서 활을 손질하는 장수가 보인다.' },
+      { id:'wiwol', x:28, y:17, label:'', fixed:true, discoverable:true, storyGate:'hanaeRecruitOpen',
+        discoveryText:'남문 안쪽에서 상산 전투 때 본 기병 장수가 기다리고 있다.' },
+      { id:'dongso', x:24, y:12, label:'', fixed:true, discoverable:true, storyGate:'hanaeRecruitOpen', chance:.5,
+        discoveryText:'장터 뒷길에서 장안 소식을 조용히 살피는 문관이 보인다.' },
+    ],
+  };
+})();

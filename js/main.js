@@ -10,7 +10,7 @@
     'assets/illust/dowon_market.jpg', 'assets/illust/dowon_oath.jpg', 'assets/illust/pyeongwon_urgent.jpg',
     'assets/illust/anhee_dokwoo.jpg', 'assets/illust/sasugwan_pledge.jpg', 'assets/illust/sasugwan_victory.jpg',
     'assets/illust/hogwan_yeopo_retreat.jpg', 'assets/illust/worldmap.jpg',
-    ...new Set(STORY.changan_coup.map((line) => line.scene).filter(Boolean)),
+    ...new Set([...STORY.changan_coup, ...STORY.hanae_intro, ...STORY.hanae_family].map((line) => line.scene).filter(Boolean)),
     'assets/ui/portrait_gwanwoo.png', 'assets/battle/duel_generic_officer_v2.png',
     ...new Set(Object.values(ROSTER).map((officer) => officer.battleArt?.src).filter(Boolean)),
   ];
@@ -63,7 +63,7 @@
 
 let stage = 'title';
 let changanPursuerMarching = false;
-let changanBriefingActive = false;
+let mapBriefingActive = false;
 let centerAlertTimer = null;
 let pyeongwonCheckpoint = null; // 어양(구 평원현 지도) 도착 시점 GameState 스냅샷 (장순전 패배시 이 시점으로 복귀)
 let coalitionDepartCheckpoint = null; // 반동탁연합 출정(군세 편성) 직전 GameState 스냅샷 (여포전 등 호로관 이후 패배시 이 시점으로 복귀)
@@ -243,6 +243,7 @@ const LOCATION_NAMES = {
   hoesu: '회수평야',
   sopae: '소패성',
   changan: '장안 · 도성',
+  hanae: '하내성',
 };
 
 function getObjectives() {
@@ -258,6 +259,16 @@ function getObjectives() {
       escape:'장안 탈출 · 동문을 지나 성 밖으로 나가자',
     };
     list.push(objectives[gs.flags.changanPhase]);
+  } else if (stage === 'hanae') {
+    const objectives = {
+      welcome:'하내성 · 관청 앞의 장양을 찾아가자',
+      recruit:`하내성 · 재야 장수 등용 ${hanaeRecruitCount()}/${HANAE_RECRUIT_GOAL}`,
+      family:'하내성 · 여포의 가족이 돌아왔다',
+      council:'하내성 · 장양에게 서신에 관해 물어보자',
+      prepare:'하내성 · 장료군과 여포군을 편성하자',
+      ready:'하내성 · 복양으로 이동하자',
+    };
+    list.push(objectives[gs.flags.hanaePhase]);
   } else if (stage === 'takhyeon_free') {
     const jeongwonjiDone = ['recruited', 'resolved'].includes(gs.npcStatus['jeongwonji']);
     const goseungDone = ['recruited', 'resolved'].includes(gs.npcStatus['goseung']);
@@ -437,6 +448,16 @@ function renderMinimap() {
     }
   }
 
+  if (mapId === 'hanae' && ['welcome', 'council'].includes(GameState.flags.hanaePhase)) {
+    const point = MapView.npcPos('jangyang');
+    if (point) {
+      ctx.fillStyle = '#5bbaf5';
+      ctx.beginPath();
+      ctx.arc(point.x / size.w * w, point.y / size.h * h, 3.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
   const px = (pos.x / Math.max(1, size.w)) * w;
   const py = (pos.y / Math.max(1, size.h)) * h;
   ctx.fillStyle = '#f2c94c';
@@ -553,6 +574,12 @@ function updateHUD() {
     } else {
       progressBtn.classList.add('hidden');
     }
+  } else if (stage === 'hanae') {
+    const phase = gs.flags.hanaePhase;
+    progressBtn.classList.toggle('hidden', !['prepare', 'ready'].includes(phase));
+    progressBtn.textContent = phase === 'ready' ? '복양으로 이동' : '군세 편성';
+    progressBtn.onclick = phase === 'ready' ? departHanae : prepareHanaeArmies;
+    checkHanaeRecruitment();
   } else if (stage === 'warmap' && MapView.currentMapId === 'hoesu') {
     if (gs.flags.hoesuCleared) {
       progressBtn.classList.remove('hidden');
@@ -568,7 +595,7 @@ function updateHUD() {
 
 // ---------------- NPC interaction ----------------
 function isScriptedScenePlaying() {
-  return changanPursuerMarching || changanBriefingActive || stage === 'changan_failed' || stage === 'changan_departed' || stage === 'hogwan_epilogue' || stage === 'sopae_finale' || stage === 'heodo_departure' ||
+  return changanPursuerMarching || mapBriefingActive || stage === 'changan_failed' || stage === 'changan_departed' || stage === 'hanae_departed' || stage === 'hogwan_epilogue' || stage === 'sopae_finale' || stage === 'heodo_departure' ||
     (stage === 'sopae_free' && GameState.flags.sopaeInvasionStarted && !GameState.flags.sopaeInvasionResolved);
 }
 
@@ -3810,7 +3837,8 @@ function startYeopoAssistScene() {
 
 function goEnding(chapter = 1) {
   document.getElementById('ending-title').textContent =
-    stage === 'changan_departed' ? '장료 편 · 장안 탈출 완료'
+    stage === 'hanae_departed' ? '장료 편 · 하내 완료'
+      : stage === 'changan_departed' ? '장료 편 · 장안 탈출 완료'
       : chapter === 2 ? '챕터 2 · 군웅할거 완료' : '챕터1 클리어';
   document.getElementById('btn-ending-continue').classList.toggle('hidden', chapter === 2);
   document.getElementById('btn-ending-map').hidden = chapter !== 2;
@@ -4014,15 +4042,16 @@ function startChangan() {
   Dialogue.show(STORY.changan_arrival);
 }
 
-function showChanganBriefing() {
-  changanBriefingActive = true;
+function showFocusedMapDialogue(lines, onDone) {
+  mapBriefingActive = true;
   MapView.lockMovement(true);
   function showShot(index) {
-    const line = STORY.changan_briefing[index];
+    const line = lines[index];
     if (!line) {
       MapView.clearCameraFocus();
-      changanBriefingActive = false;
+      mapBriefingActive = false;
       MapView.lockMovement(false);
+      onDone?.();
       return;
     }
     const showLine = () => Dialogue.show([line], () => showShot(index + 1));
@@ -4030,11 +4059,11 @@ function showChanganBriefing() {
     if (point) MapView.panCameraTo(point.x, point.y, 480, showLine);
     else showLine();
   }
-  Dialogue.show(STORY.changan_alarm, () => showShot(0));
+  showShot(0);
 }
 
 function interactChangan(id, context) {
-  if (changanBriefingActive || changanPursuerMarching || Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
+  if (mapBriefingActive || changanPursuerMarching || Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
   engagementBudget = null;
   const flags = GameState.flags;
   if (flags.changanPhase === 'rumors' && CHANGAN_RESIDENTS.includes(id)) {
@@ -4077,7 +4106,7 @@ function interactChangan(id, context) {
       closeChanganExploration();
       for (const target of ['gosun', ...CHANGAN_GUARDS, ...Object.keys(CHANGAN_ENEMIES)]) MapView.addNpc(target);
       updateHUD();
-      showChanganBriefing();
+      Dialogue.show(STORY.changan_alarm, () => showFocusedMapDialogue(STORY.changan_briefing));
     });
     return;
   }
@@ -4283,9 +4312,127 @@ function finishChangan() {
   GameState.addFame(30);
   updateHUD();
   Dialogue.show(STORY.changan_departure, () => offerCapturedRecruits(() => {
+    startHanae();
+  }));
+}
+
+// ---------------- 챕터 2 (장료) · 하내 ----------------
+const HANAE_RECRUITS = ['hakmaeng', 'joseong', 'wiwol', 'dongso'];
+const HANAE_RECRUIT_GOAL = 3;
+
+function hanaeRecruitCount() {
+  return HANAE_RECRUITS.filter((id) => GameState.recruited.includes(id)).length;
+}
+
+function loadHanae() {
+  MapView.lockMovement(false);
+  MapView.load('hanae', {
+    onInteract: interactHanae,
+    onApSpent: updateHUD,
+    onApBlocked,
+    onStep: renderMinimap,
+  });
+}
+
+function startHanae() {
+  stage = 'hanae';
+  if (GameState.year < 193) { GameState.year = 193; GameState.month = 1; }
+  GameState.heroHp = null;
+  GameState.ap = GameState.apMax;
+  GameState.flags.hanaePhase = 'welcome';
+  loadHanae();
+  updateHUD();
+  MapView.lockMovement(true);
+  Dialogue.show(STORY.hanae_intro, () => MapView.lockMovement(false));
+}
+
+function checkHanaeRecruitment() {
+  if (GameState.flags.hanaePhase !== 'recruit' || hanaeRecruitCount() < HANAE_RECRUIT_GOAL) return;
+  GameState.flags.hanaePhase = 'family';
+  MapView.lockMovement(true);
+  Dialogue.show(STORY.hanae_family, () => {
+    GameState.flags.hanaePhase = 'council';
+    MapView.lockMovement(false);
+    updateHUD();
+  });
+}
+
+function interactHanae(id, context) {
+  if (isScriptedScenePlaying() || Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
+  const flags = GameState.flags;
+  if (id === 'jangyang' && flags.hanaePhase === 'welcome') {
+    Dialogue.show(STORY.hanae_welcome, () => {
+      flags.hanaePhase = 'recruit';
+      flags.hanaeRecruitOpen = true;
+      for (const candidate of HANAE_RECRUITS) {
+        if (!GameState.recruited.includes(candidate) && GameState.npcVisible[candidate] !== false) MapView.addNpc(candidate);
+      }
+      updateHUD();
+    });
+    return;
+  }
+  if (id === 'jangyang' && flags.hanaePhase === 'council') {
+    showFocusedMapDialogue(STORY.hanae_council, () => {
+      flags.hanaePhase = 'prepare';
+      updateHUD();
+    });
+    return;
+  }
+  if (flags.hanaeRecruitOpen && HANAE_RECRUITS.includes(id) && !GameState.recruited.includes(id)) {
+    if (isScholarType(ROSTER[id])) visitScholar(id, context);
+    else if (heroCurrentHp() <= 0) toast('휴식으로 체력을 회복한 뒤 다시 도전하자.');
+    else challengeWarrior(id, context, { guaranteedRecruit:true });
+    return;
+  }
+  Dialogue.show([{ speaker:ROSTER[id].name, text:ROSTER[id].intro }]);
+}
+
+function prepareHanaeArmies() {
+  if (Dialogue.isActive() || isScriptedScenePlaying()) return;
+  const flags = GameState.flags;
+  if (flags.hanaePhase !== 'prepare') return;
+  const need = GameState.army ? ARMY_MIN_TROOP : ARMY_MIN_TROOP * 2;
+  if (GameState.resources.troop < need) {
+    toast('두 부대를 편성하려면 부대마다 병사 500명이 필요합니다. 하내에 남은 무장을 찾아보세요.');
+    return;
+  }
+  if (!GameState.army) {
+    openArmyBox(prepareHanaeArmies, {
+      reserveTroops:ARMY_MIN_TROOP,
+      reserveRice:monthlyRiceUpkeep(ARMY_MIN_TROOP) * 5,
+      desc:'장료군을 꾸리세요. 여포군에 병사 500명과 기본 군량을 남겨 둡니다.',
+    });
+    return;
+  }
+  const army = GameState.army;
+  openArmyBox(() => {
+    flags.hanaePhase = 'ready';
+    updateHUD();
+  }, {
+    commanderId:'yeopo', field:'allyArmy',
+    excludeIds:[army.deputy, ...army.generals].filter(Boolean),
+    priorArmy:{
+      label:'장료군', troop:army.troop, rice:army.rice,
+      onCancel:() => {
+        dissolveArmy('army');
+        document.getElementById('army-box').classList.add('hidden');
+        updateHUD();
+        prepareHanaeArmies();
+      },
+    },
+  });
+}
+
+function departHanae() {
+  if (Dialogue.isActive() || GameState.flags.hanaePhase !== 'ready' || !GameState.army || !GameState.allyArmy) return;
+  stage = 'hanae_departed';
+  MapView.lockMovement(true);
+  if (GameState.year < 194) { GameState.year = 194; GameState.month = 1; }
+  updateHUD();
+  Dialogue.show(STORY.hanae_departure, () => {
     MapView.lockMovement(false);
     goEnding(2);
-  }));
+  });
 }
 
 // 챕터2 시작 공통 처리 - 챕터 선택 화면에서 장수를 새로 고를 때(carry 없음)와
@@ -4759,16 +4906,18 @@ function openArmyBox(onConfirm, opts) {
     if (armySelectedUnitType === 'cavalry') return GameState.resources.horse;
     return Infinity;
   };
-  const troopMax = Math.min(maxTroopByLead, GameState.resources.troop);
+  const availableTroops = Math.max(0, GameState.resources.troop - (opts.reserveTroops || 0));
+  const availableRice = Math.max(0, GameState.resources.rice - (opts.reserveRice || 0));
+  const troopMax = Math.min(maxTroopByLead, availableTroops);
   document.getElementById('army-troop-max').textContent = troopMax;
   document.getElementById('army-rice-max').textContent = GameState.resources.rice.toLocaleString();
   armySliders = {
-    'army-troop': makeArmySlider('army-troop', () => Math.min(maxTroopByLead, GameState.resources.troop, troopCapByUnitType()), 100),
-    'army-rice': makeArmySlider('army-rice', () => GameState.resources.rice, 1000),
+    'army-troop': makeArmySlider('army-troop', () => Math.min(troopMax, troopCapByUnitType()), 100),
+    'army-rice': makeArmySlider('army-rice', () => availableRice, 1000),
   };
   armySliders['army-troop'].set(troopMax);
   // 기본값은 지금 고른 병력 기준 5달치 군량(1인당 월 2석) - 보유량이 부족하면 그만큼만.
-  armySliders['army-rice'].set(Math.min(monthlyRiceUpkeep(troopMax) * 5, GameState.resources.rice));
+  armySliders['army-rice'].set(Math.min(monthlyRiceUpkeep(troopMax) * 5, availableRice));
   document.getElementById('army-hint').textContent = '';
   updateArmyPower();
 
@@ -4821,7 +4970,7 @@ window.addEventListener('keydown', (ev) => {
 // 대사, 장순의 난 행군(군세 이동모드) 중에는 되돌릴 상태가 애매해 제외한다.
 const SAVE_KEY = 'samgukji_saves_v1';
 const SAVE_SLOT_COUNT = 10;
-const SAVE_RESUMABLE_STAGES = ['takhyeon_free', 'pyeongwon_free', 'camp', 'warmap', 'seoju_free', 'habi_camp', 'sopae_free', 'changan'];
+const SAVE_RESUMABLE_STAGES = ['takhyeon_free', 'pyeongwon_free', 'camp', 'warmap', 'seoju_free', 'habi_camp', 'sopae_free', 'changan', 'hanae'];
 // seoju_free는 도겸이 소환한 서주 대치(seoju_siege) 또는 그 뒤의 서주 자유탐방(seoju)
 // 둘 중 하나라 고정 매핑이 안 된다 - buildSaveSnapshot에서 MapView.currentMapId로 대신 구한다.
 const STAGE_MAP_ID = { takhyeon_free: 'takhyeon', pyeongwon_free: 'pyeongwon', camp: 'camp', warmap: 'warmap', habi_camp: 'habi' };
@@ -4901,7 +5050,9 @@ function resumeExploreStage(targetStage, playerPos, mapId) {
   stage = targetStage;
   showScreen('screen-explore');
   const opts = { onInteract: interactNPC, onApSpent: updateHUD, onApBlocked, onStep: renderMinimap };
-  if (targetStage === 'changan') {
+  if (targetStage === 'hanae') {
+    loadHanae();
+  } else if (targetStage === 'changan') {
     loadChangan();
   } else if (targetStage === 'takhyeon_free') {
     MapView.load('takhyeon', { ...opts, spawnDeadlineAbsMonth: absMonth(DEADLINES.takhyeon, 12) + 1, onAmbientInteract: runAmbientEvent });

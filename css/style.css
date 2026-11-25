@@ -200,6 +200,7 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
    #hud-top을 가리지 않으면, 세로로 긴 모바일 화면을 90도 돌려썼을 때
    object-fit:contain으로 확대된 삽화의 위쪽 가장자리(인물 얼굴이 있는 경우가
    많다)가 이 상단 바에 그대로 가려지는 문제가 있었다. */
+#explore-viewport.scene-active #game-canvas{ visibility:hidden; }
 #explore-viewport.scene-active #location-banner,
 #explore-viewport.scene-active #minimap-panel,
 #explore-viewport.scene-active #hud-army,

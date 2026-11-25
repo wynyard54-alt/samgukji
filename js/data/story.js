@@ -533,4 +533,45 @@ const STORY = {
     { speaker:'내레이션', text:'이각과 곽사는 장안을 차지했다. 뒤늦게 왕윤이 죽었다는 소식이 여포군에 전해졌다.', scene:'assets/illust/worldmap.jpg' },
     { speaker:'장료', text:'부상병부터 살펴라. 흩어진 사람들도 끝까지 찾는다.', scene:'assets/illust/worldmap.jpg', holdMs:3600 },
   ],
+  hanae_intro: [
+    ...[
+      { speaker:'내레이션', text:'무관을 빠져나온 여포는 완성의 원술에게 몸을 의탁하려 했다.' },
+      { speaker:'문지기', text:'원술 장군께서 그대를 받아들일 수 없다고 하셨소.' },
+      { speaker:'내레이션', text:'원술은 여포가 섬기던 주군에게 거듭 등을 돌린 일을 들어, 그를 믿기 어렵다고 보았다.' },
+    ].map((line) => ({ ...line, scene:'assets/illust/hanae_wan.jpg' })),
+    ...[
+      { speaker:'내레이션', text:'원술에게 거절당한 여포는 기주의 원소를 찾아갔다. 원소는 여포를 받아들였다.' },
+      { speaker:'내레이션', text:'여포는 상산에서 기병을 이끌고 흑산적 장연을 크게 물리쳤다.' },
+      { speaker:'내레이션', text:'그러나 승리한 여포가 원소의 장수와 병사들을 업신여기자, 원소는 여포를 없애려 했다.' },
+      { speaker:'내레이션', text:'이를 알아챈 여포는 원소를 떠나 하내의 장양에게 향했다.' },
+    ].map((line) => ({ ...line, scene:'assets/illust/hanae_changshan.jpg' })),
+  ],
+  hanae_welcome: [
+    { speaker:'장양', text:'봉선, 잘 오셨소. 먼 길에 고생이 많았겠구려.' },
+    { speaker:'장양', text:'병사들과 함께 이곳에서 편히 쉬시오.' },
+    { speaker:'여포', text:'갈 곳을 찾지 못하던 참에 받아주시니 고맙소. 신세를 잊지 않겠소.' },
+    { speaker:'장료', text:'성 안을 돌아보고 함께할 장수들을 찾아보겠습니다.' },
+  ],
+  hanae_family: [
+    ...[
+      { speaker:'여포의 아내', text:'장안에 남았을 때 방서 어른이 저희를 숨겨 주셨어요.' },
+      { speaker:'여포의 아내', text:'장군이 하내에 계신다는 소식을 듣고, 저희를 이곳으로 보내 주셨습니다.' },
+      { speaker:'여포', text:'무사했구려. 방서에게 큰 빚을 졌소.' },
+    ].map((line) => ({ ...line, scene:'assets/illust/hanae_family.jpg' })),
+    { speaker:'전령', text:'장군, 이각과 곽사가 방서 어른을 처형했습니다.' },
+    { speaker:'전령', text:'장양 장군에게도 서신을 보냈습니다. 여포 장군을 죽이라는 요구입니다.' },
+    { speaker:'장료', text:'장양 장군의 뜻을 들어봐야겠군. 관청으로 가자.' },
+  ],
+  hanae_council: [
+    { focus:'yangchu_hanae', speaker:'양추', text:'여포 한 사람 때문에 장안 조정과 적이 되시겠습니까?' },
+    { speaker:'양추', text:'서신의 요구를 들어 화를 피해야 합니다.' },
+    { focus:'sugo', speaker:'수고', text:'의탁해 온 사람을 해친다면, 천하의 누가 다시 주공을 믿겠습니까?' },
+    { focus:'jangyang', speaker:'장양', text:'봉선은 나의 오랜 벗이다. 결코 그를 해치지 않겠다.' },
+    { focus:'yeopo', speaker:'여포', text:'나를 지켜 주겠다는 말, 잊지 않겠소. 마침 진류의 장막에게서 연락이 왔소.' },
+    { speaker:'여포', text:'더 머물면 그대에게 화가 미칠 것이오. 병사들을 거두어 떠나겠소.' },
+    { speaker:'장료', text:'그럼 병사들을 모으겠습니다. 두 부대로 나누어 움직이시지요.' },
+  ],
+  hanae_departure: [
+    { speaker:'내레이션', text:'여포군과 장료군은 하내를 떠나 장막이 기다리는 연주로 향했다.', scene:'assets/illust/worldmap.jpg' },
+  ],
 };

@@ -31,6 +31,7 @@ const FieldAssets = (function () {
     camp_overview:'camp_map_v1.jpg',
     warmap_overview:'warmap_map_v1.jpg',
     seoju_siege_overview:'seoju_siege_map_v1.jpg',
+    hanae_overview:'hanae_map_v1.jpg',
     seoju_overview:'seoju_map_v1.jpg',
     habi_gwannae_overview:'habi_gwannae_map_v1.jpg',
     suchun_overview:'suchun_map_v1.jpg',
