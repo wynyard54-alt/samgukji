@@ -3872,7 +3872,7 @@ document.querySelectorAll('.hero-card').forEach((card) => {
 
 // ---------------- 챕터 2 (장료) · 장안 ----------------
 const CHANGAN_RESIDENTS = Object.keys(STORY.changan_residents);
-const CHANGAN_GUARDS = ['changan_market_guard', 'changan_east_guard'];
+const CHANGAN_GUARDS = Object.keys(CHANGAN_GUARD_TROOPS);
 const CHANGAN_ENEMY_ID = 'gwaksa';
 const CHANGAN_PURSUER = 'igak';
 const CHANGAN_PURSUER_START = { x:12, y:36 };
@@ -4071,9 +4071,13 @@ function interactChangan(id, context) {
   if (CHANGAN_GUARDS.includes(id)) {
     if (flags.changanPhase !== 'muster' || GameState.npcStatus[id] === 'resolved') return;
     const last = remainingChanganGuards().length === 1;
-    const lines = last ? STORY.changan_muster : [{ speaker:ROSTER[id].name, text:'장군, 수비대 450명이 합류합니다! 남은 수비대도 구해 주십시오.' }];
+    const troop = CHANGAN_GUARD_TROOPS[id];
+    const text = last
+      ? `장군! 기다리고 있었습니다. 수비대 ${troop}명이 합류합니다!`
+      : `장군, 수비대 ${troop}명이 합류합니다! 남은 수비대도 구해 주십시오.`;
+    const lines = [{ speaker:ROSTER[id].name, text }, ...(last ? STORY.changan_muster : [])];
     Dialogue.show(lines, () => {
-      GameState.army.troop += 450;
+      GameState.army.troop += troop;
       GameState.ap = GameState.apMax;
       GameState.npcStatus[id] = 'resolved';
       MapView.removeNpc(id);

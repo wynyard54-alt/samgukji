@@ -877,6 +877,7 @@ const SEOJU_AREA_LABELS = [
 })();
 
 // ---------------- 장안 도성 · 장료 편 ----------------
+const CHANGAN_GUARD_TROOPS = { changan_market_guard:800, changan_east_guard:450 };
 (function () {
   // 좁은 골목도 그림 속 포장 구간 안에서 두 사람이 비켜 갈 수 있도록
   // 이 도성은 원본 15픽셀마다 한 칸을 둔다.
@@ -922,8 +923,8 @@ const SEOJU_AREA_LABELS = [
       { id:'gosun', x:80, y:20, label:'고순', fixed:true, storyGate:'changanOrdersReady' },
       { id:'seongryeom', x:83, y:20, label:'', discoverable:true, discoveryRange:1, chance:.85,
         discoveryText:'병영 쪽에 낯익은 깃발을 든 장수가 보인다.' },
-      { id:'changan_market_guard', x:63, y:54, label:'남쪽 수비대 · 450명', fixed:true, storyGate:'changanGuardReady' },
-      { id:'changan_east_guard', x:60, y:30, label:'동쪽 수비대 · 450명', fixed:true, storyGate:'changanGuardReady' },
+      { id:'changan_market_guard', x:63, y:54, label:`남쪽 수비대 · ${CHANGAN_GUARD_TROOPS.changan_market_guard}명`, fixed:true, storyGate:'changanGuardReady' },
+      { id:'changan_east_guard', x:60, y:30, label:`동쪽 수비대 · ${CHANGAN_GUARD_TROOPS.changan_east_guard}명`, fixed:true, storyGate:'changanGuardReady' },
       { id:'jangje', x:60, y:28, label:'장제 군세', fixed:true, storyGate:'changanSkirmishReady' },
       { id:'beonjo', x:61, y:43, label:'번조 군세', fixed:true, storyGate:'changanSkirmishReady' },
       { id:'igak', x:12, y:36, label:'이각 주력군', fixed:true, storyGate:'changanSkirmishReady' },

@@ -500,8 +500,8 @@ const STORY = {
     { focus:'gosun', speaker:'전령', text:'먼저 동쪽 병영으로 가십시오. 고순 장군이 기병 천 명을 모아 기다리고 있습니다.' },
     { speaker:'전령', text:'따르는 자와 식솔들을 데리고 동문으로 퇴각하셔야 합니다.' },
     { speaker:'전령', text:'동문을 지키는 곽사를 상대하시려면 장안 수비대들과 합류하시지요.' },
-    { focus:'changan_market_guard', speaker:'전령', text:'남쪽 골목의 수비대 450명이 갇혔습니다.' },
-    { focus:'changan_east_guard', speaker:'전령', text:'동쪽 골목에도 수비대 450명이 남았습니다.' },
+    { focus:'changan_market_guard', speaker:'전령', text:`남쪽 골목의 수비대 ${CHANGAN_GUARD_TROOPS.changan_market_guard}명이 갇혔습니다.` },
+    { focus:'changan_east_guard', speaker:'전령', text:`동쪽 골목에도 수비대 ${CHANGAN_GUARD_TROOPS.changan_east_guard}명이 남았습니다.` },
     { focus:'igak', speaker:'전령', text:'서쪽 대로의 이각은 오천입니다! 대군이라 정면 승부는 불가능합니다.' },
     { focus:'gwaksa', speaker:'전령', text:'동문은 곽사의 이천 병력이 막고 있습니다. 두 수비대를 구하시면 능히 곽사의 군세를 뚫으실 수 있을 것입니다.' },
   ],
@@ -512,7 +512,6 @@ const STORY = {
     { speaker:'이숙', text:'제가 장군 곁에서 길을 살피겠소. 싸워야 한다면 적의 허점을 노립시다.' },
   ],
   changan_muster: [
-    { speaker:'장터 수비대', text:'장군! 기다리고 있었습니다. 수비대 450명이 합류합니다!' },
     { speaker:'장료', text:'대열을 맞추고 나를 따르라. 목적지는 동문이다.' },
     { speaker:'고순', text:'두 수비대가 모두 모였소. 동문을 막고 있는 곽사를 물리칩시다.' },
   ],
