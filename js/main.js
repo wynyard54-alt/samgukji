@@ -1563,7 +1563,7 @@ const STRATEGY_EFFECTS = {
     const BUFF_TYPES = ['dmgDealtMult', 'dmgTakenMult', 'gradeBoost', 'evade', 'immune', 'apMult', 'moveCostMult', 'stratSuccessMult', 'moveMoraleCost'];
     const stolen = StatusEffects.activeStatuses(targetId).filter((s) => BUFF_TYPES.includes(s.type));
     stolen.forEach((s) => {
-      StatusEffects.applyArmyStatus(casterId, s.type, { turns: s.turnsLeft, magnitude: s.magnitude });
+      StatusEffects.applyArmyStatus(casterId, s.type, { turns: s.turnsLeft, magnitude: s.magnitude, untilUsed: s.untilUsed });
       StatusEffects.clearArmyStatus(targetId, s.type);
     });
     return stolen.length
@@ -1669,7 +1669,7 @@ const STRATEGY_EFFECTS = {
   // 매복: "다음 턴 공격"은 다음달이 아니라 다음 [전투] 교전 1회를 뜻해서,
   // resolveArmyBattle에서 실제로 반격을 막은 순간 즉시 소모(clear)된다.
   maebok(targetId) {
-    StatusEffects.applyArmyStatus(targetId, 'noCounter', { turns: 1 });
+    StatusEffects.applyArmyStatus(targetId, 'noCounter', { turns: 1, untilUsed:true });
     return `${ROSTER[targetId].name}의 군세 배후에 매복했다. 다음 공격에는 반격당하지 않을 것이다.`;
   },
   gyeongryeo(targetId, deputyId, casterId) {

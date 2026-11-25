@@ -58,7 +58,7 @@ const StatusEffects = (function () {
     return GameState.armyStatus[id] || (GameState.armyStatus[id] = []);
   }
 
-  // opts: { turns, sourceId, magnitude } - magnitude는 dmgDealtMult/
+  // opts: { turns, sourceId, magnitude, untilUsed } - magnitude는 dmgDealtMult/
   // dmgTakenMult(배율)·gradeBoost(등급 수)·evade(확률 0~1)에서만 쓰인다.
   function applyArmyStatus(id, type, opts) {
     if (!ALL_LABELS[type]) return;
@@ -66,10 +66,11 @@ const StatusEffects = (function () {
     const turns = (opts && opts.turns) || 3;
     const sourceId = opts && opts.sourceId;
     const magnitude = opts && opts.magnitude;
+    const untilUsed = opts?.untilUsed;
     const arr = list(id);
     const existing = arr.find((s) => s.type === type);
-    if (existing) { existing.turnsLeft = turns; existing.sourceId = sourceId; existing.magnitude = magnitude; }
-    else arr.push({ type, turnsLeft: turns, sourceId, magnitude });
+    if (existing) { existing.turnsLeft = turns; existing.sourceId = sourceId; existing.magnitude = magnitude; existing.untilUsed = untilUsed; }
+    else arr.push({ type, turnsLeft: turns, sourceId, magnitude, untilUsed });
   }
 
   function clearArmyStatus(id, type) {
@@ -158,7 +159,7 @@ const StatusEffects = (function () {
 
   // "턴"은 [전투] 교전 단위가 아니라 1달 휴식(다음달로 넘어가는 것) 하나를
   // 뜻한다 - main.js의 "다음달" 버튼 핸들러가 매달 한 번 tickAllArmyStatus를
-  // 불러준다. 공포는 틱마다 사기를 10 깎고, 모든 효과는 지속시간을 1씩 줄여
+  // 불러준다. 공포는 틱마다 사기를 10 깎고, 기간제 효과는 지속시간을 1씩 줄여
   // 만료되면 제거한다. 이번 틱에 걸려 있던 효과 라벨 목록을 돌려준다(연출용).
   function tickArmyStatus(id) {
     const arr = GameState.armyStatus[id];
@@ -166,9 +167,9 @@ const StatusEffects = (function () {
     const activeLabels = arr.map((s) => ARMY_STATUS_LABELS[s.type]);
     for (const s of arr) {
       if (s.type === 'fear') drainMorale(id, 10);
-      s.turnsLeft--;
+      if (!s.untilUsed) s.turnsLeft--;
     }
-    GameState.armyStatus[id] = arr.filter((s) => s.turnsLeft > 0);
+    GameState.armyStatus[id] = arr.filter((s) => s.untilUsed || s.turnsLeft > 0);
     return activeLabels;
   }
   // 상태이상이 걸려 있는 모든 대상을 한 번에 틱한다 - 매달 휴식마다 한 번씩만 부르면 된다.
