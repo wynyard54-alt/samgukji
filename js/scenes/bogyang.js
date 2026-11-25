@@ -1,15 +1,15 @@
 const BOGYANG_GOAL = 8000;
 const BOGYANG_ILLUST = 'assets/illust/bogyang_fire.jpg';
 const BOGYANG_GARRISON = {
-  habudon_seoju: { troop:2000, deputy:'sunwook', x:9, y:12 },
-  hanho: { troop:500, deputy:'jeongwook', x:10, y:15 },
+  habudon_seoju: { troop:2000, deputy:'sunwook', x:5, y:7 },
+  hanho: { troop:500, deputy:'jeongwook', x:6, y:9 },
 };
 const BOGYANG_COUNTERATTACK = {
-  habudon_seoju: { troop:1500, x:43, y:19, marchX:39 },
-  join_seoju: { troop:1500, x:37, y:18, marchX:37 },
-  habuyeon_seoju: { troop:1200, x:41, y:22, marchX:42 },
-  johong_seoju: { troop:1000, x:41, y:17, marchX:43 },
-  jeonwi: { troop:3000, x:40, y:23, marchX:40 },
+  habudon_seoju: { troop:1500, x:24, y:11, marchX:21 },
+  join_seoju: { troop:1500, x:20, y:11, marchX:20 },
+  habuyeon_seoju: { troop:1200, x:23, y:13, marchX:23 },
+  johong_seoju: { troop:1000, x:22, y:10, marchX:24 },
+  jeonwi: { troop:3000, x:22, y:14, marchX:22 },
 };
 const BOGYANG_RECRUITS = ['songheon', 'huseong'];
 const bogyangId = (id) => 'bogyang_' + id;
@@ -26,39 +26,40 @@ for (const baseId of new Set([...Object.keys(BOGYANG_GARRISON), ...Object.keys(B
 }
 
 {
-  const w = 64, h = 42;
+  const {width:w, height:h} = MAPS.seoju;
   const tiles = Array.from({length:h}, (_, y) => Array.from({length:w}, (_, x) => {
-    const west = y < 23 ? 12 : Math.min(23, 12 + (y - 23) * 3);
-    const east = y < 25 ? 63 : 62 - (y - 25) * 2;
-    const city = y >= 2 && y <= 29 && x >= west && x <= east;
-    const wooded = (x < 5 && (y < 8 || y > 35)) || (x > 57 && y > 35);
+    const west = y < 13 ? 7 : Math.min(13, 7 + (y - 13) * 2);
+    const east = y < 14 ? 35 : 35 - (y - 14);
+    const city = y >= 1 && y <= 16 && x >= west && x <= east;
+    const wooded = (x < 3 && (y < 5 || y > 20)) || (x > 32 && y > 21);
     return city || wooded ? 2 : 0;
   }));
   for (const [x1,y1,x2,y2] of [
-    [0,13,53,14], [39,9,41,41], [24,19,41,20], [30,13,31,20],
-    [27,19,28,25], [27,24,39,25], [23,11,24,14],
-    [41,10,57,11], [56,9,57,13], [42,18,53,19], [38,26,42,27],
+    [0,7,33,8], [21,5,23,24], [13,11,23,12], [16,8,17,12],
+    [15,11,16,14], [15,14,22,15], [13,6,14,8],
+    [23,6,31,7], [31,5,32,8], [23,10,31,11], [21,15,23,17],
   ]) {
     for (let y = y1; y <= y2; y++) for (let x = x1; x <= x2; x++) tiles[y][x] = 1;
   }
   MAPS.bogyang = {
     name:'복양성', width:w, height:h, tiles, backgroundKey:'bogyang_overview',
-    playerStart:{x:5,y:28}, camera:{viewportW:800,viewportH:480}, aiPathfinding:'shortest',
+    onConfusedMove:id => centerAlert(bogyangConfusionNotice(id)),
+    playerStart:{x:3,y:16}, camera:{viewportW:800,viewportH:480}, aiPathfinding:'shortest',
     foregroundCrops:[{x:.173,y:.232,w:.073,h:.073},{x:.584,y:.566,w:.094,h:.066}],
     npcs:[
-      {id:'jingung',x:39,y:10,label:'진궁',fixed:true,storyGate:'bogyangTown'},
-      {id:'sangin',x:52,y:19,label:'상인',fixed:true,storyGate:'bogyangTown'},
-      {id:'songheon',x:23,y:12,label:'',fixed:true,discoverable:true,storyGate:'bogyangTown',
+      {id:'jingung',x:22,y:5,label:'진궁',fixed:true,storyGate:'bogyangTown'},
+      {id:'sangin',x:29,y:11,label:'상인',fixed:true,storyGate:'bogyangTown'},
+      {id:'songheon',x:13,y:6,label:'',fixed:true,discoverable:true,storyGate:'bogyangTown',
         discoveryText:'병영 아래 돌길에서 한 장수가 군사들의 움직임을 살피고 있다.'},
-      {id:'huseong',x:57,y:10,label:'',fixed:true,discoverable:true,storyGate:'bogyangTown',
+      {id:'huseong',x:32,y:6,label:'',fixed:true,discoverable:true,storyGate:'bogyangTown',
         discoveryText:'마구간 옆에서 한 장수가 말고삐를 손보고 있다.'},
     ],
     ambient:[
-      ['guard',28,13], ['merchant',50,19], ['porter',34,20], ['woman',42,14],
+      ['guard',15,8], ['merchant',28,11], ['porter',19,12], ['woman',24,8],
     ].map(([archetype,x,y])=>({archetype,x,y,wander:1,roadOnly:true})),
     decor:[
-      {type:'mapLabel',x:13,y:13,label:'서문'}, {type:'mapLabel',x:40,y:29,label:'남문'},
-      {type:'mapLabel',x:40,y:9,label:'관청'}, {type:'mapLabel',x:47,y:19,label:'장터'},
+      {type:'mapLabel',x:7,y:7,label:'서문'}, {type:'mapLabel',x:22,y:16,label:'남문'},
+      {type:'mapLabel',x:22,y:5,label:'관청'}, {type:'mapLabel',x:27,y:11,label:'장터'},
     ],
   };
 }
@@ -96,7 +97,11 @@ function loadBogyang() {
   const flags = GameState.flags;
   MAPS.bogyang.apMovement = !!GameState.army && !flags.bogyangTown;
   MapView.load('bogyang',{onInteract:interactBogyang,onAmbientInteract:runAmbientEvent,
-    onApSpent:updateHUD,onApBlocked,onStep:renderMinimap});
+    onApSpent:updateHUD,onApBlocked:() => {
+      if (warRoundActive) centerAlert('행동력이 부족합니다. 군세 행동종료를 눌러 다음 차례를 진행하세요.');
+      else onApBlocked();
+    },onStep:renderMinimap,
+    onAllyEngage:(ally,id,budget) => handleAllyEngage(ally,id,budget)});
   for (const [id, unit] of Object.entries(bogyangUnits())) {
     if (unit.gone) continue;
     const {troop,rice,morale,deputy,commanderCaptured} = unit;
@@ -108,7 +113,7 @@ function loadBogyang() {
     bogyangAddUnit('yeopo',x,y);
   }
   MapView.setSceneEffect(flags.bogyangPhase === 'defense' ? {
-    key:'bogyang_fire', points:[[37,17],[42,17],[36,23],[43,24],[35,25]],
+    key:'bogyang_fire', points:[[20,10],[24,10],[20,14],[24,14],[19,15]],
   } : null);
   MapView.setControlledUnit(flags.bogyangControlled === 'yeopo' && GameState.allyArmy?.troop > 0 ? 'yeopo' : null);
   activeCommanderId = MapView.controlledUnitId || null;
@@ -120,8 +125,9 @@ function startBogyang() {
   const flags = GameState.flags;
   flags.bogyangPhase = 'join';
   flags.bogyangOccupied = false;
-  flags.bogyangYeopo = {x:7,y:28};
-  bogyangSetUnit('jangmak',{troop:3000,x:5,y:24});
+  flags.bogyangGridV2 = true;
+  flags.bogyangYeopo = {x:4,y:16};
+  bogyangSetUnit('jangmak',{troop:3000,x:3,y:13});
   for (const [id,spec] of Object.entries(BOGYANG_GARRISON)) bogyangSetUnit(id,spec);
   GameState.ap = effectiveApMax();
   GameState.allyAp = GameState.allyApMax = effectiveApMax();
@@ -156,16 +162,17 @@ function interactBogyang(id,context) {
       flags.bogyangPhase = 'assault';
       bogyangBusy = true;
       MapView.lockMovement(true);
-      bogyangAddUnit('join_seoju',8,12);
-      MapView.panCameraTo(8,12);
+      bogyangAddUnit('join_seoju',4,7);
+      MapView.panCameraTo(5,7);
       Dialogue.show(bogyangLines(['하후돈','조인! 서주로 가서 주공께 알리시오. 성은 내가 지키겠소!'],
         ['조인','알겠소. 주공께 반드시 전하리다!']), () => {
-        MapView.walkNpcPath('join_seoju', Array.from({length:8},(_,i)=>({x:7-i,y:12})),100,() => {
+        MapView.walkNpcPath('join_seoju', Array.from({length:4},(_,i)=>({x:3-i,y:7})),100,() => {
           MapView.removeNpc('join_seoju');
           bogyangBusy = false;
           MapView.lockMovement(false);
           MapView.clearCameraFocus();
           updateHUD();
+          startWarRound();
         });
       });
     });
@@ -182,7 +189,8 @@ function interactBogyang(id,context) {
   if ([GameState.mainHero,'yeopo'].includes(id) && id === (activeCommanderId || GameState.mainHero)) {
     attemptStrategySelf(id);
   } else if (bogyangUnits()[id] && ROSTER[id].kind === 'enemy') {
-    openWarCommandMenu(id);
+    if (context?.engagedCommanderId) handleAllyEngage(context.engagedCommanderId,id,context.remainingBudget);
+    else openWarCommandMenu(id);
   }
 }
 
@@ -200,19 +208,16 @@ function prepareBogyangArmies() {
 
 function finishBogyangBattle() {
   if (stage !== 'bogyang') return;
-  bogyangSync();
   const flags = GameState.flags;
   const phase = flags.bogyangPhase;
   if (!['assault','defense'].includes(phase)) return;
-  if (GameState.army?.troop <= 0 && GameState.allyArmy?.troop > 0) {
-    flags.bogyangControlled = activeCommanderId = 'yeopo';
-    MapView.setControlledUnit('yeopo');
-  } else if (GameState.allyArmy?.troop <= 0) {
-    flags.bogyangControlled = activeCommanderId = null;
-    MapView.setControlledUnit(null);
-    MapView.removeNpc('yeopo');
+  for (const id of [...enemiesInScene(), ...bogyangIndependentArmies()]) {
+    if (armyFor(id).troop <= 0) MapView.removeNpc(id);
   }
+  if (GameState.allyArmy?.troop <= 0) MapView.removeNpc('yeopo');
+  bogyangSync();
   if (!playerArmies().some((army) => army.troop > 0)) {
+    endWarInitiative();
     flags.bogyangPhase = 'failed';
     MapView.lockMovement(true);
     showChoice('군세가 무너져 복양 전투에 실패했습니다.',[
@@ -221,7 +226,12 @@ function finishBogyangBattle() {
     ]);
     return;
   }
-  if (enemiesInScene().length) { updateHUD(); return; }
+  if (enemiesInScene().length) {
+    updateHUD();
+    if (warRoundActive && playerArmies().some(army => army.commanderId === warOrder[warIndex] && army.troop <= 0)) endWarUnitTurn();
+    return;
+  }
+  endWarInitiative();
 
   const capturedCity = phase === 'assault';
   flags.bogyangPhase = capturedCity ? 'recruit' : 'won';
@@ -234,7 +244,7 @@ function finishBogyangBattle() {
   dissolveArmy('allyArmy');
   if (capturedCity) GameState.addResource({troop:3000,horse:3000});
   loadBogyang();
-  MapView.setPlayerPos(36,13,'right');
+  MapView.setPlayerPos(20,8,'right');
   GameState.ap = effectiveApMax();
   const lines = capturedCity
     ? bogyangLines(['장막','복양은 이제 우리 손에 있소. 내 기병 삼천을 맡기겠소.'],
@@ -256,23 +266,23 @@ async function bogyangApproach() {
   const flags = GameState.flags;
   flags.bogyangPhase = 'approach';
   flags.bogyangTown = false;
-  flags.bogyangYeopo = {x:39,y:26};
+  flags.bogyangYeopo = {x:21,y:15};
   flags.bogyangControlled = null;
   for (const [id,spec] of Object.entries(BOGYANG_COUNTERATTACK)) {
-    bogyangSetUnit(id,{x:spec.marchX,y:42,troop:5000});
+    bogyangSetUnit(id,{x:spec.marchX,y:25,troop:5000});
   }
   loadBogyang();
-  MapView.setPlayerPos(41,26);
+  MapView.setPlayerPos(23,15);
   MapView.lockMovement(true);
   bogyangBusy = true;
   updateHUD();
-  MapView.panCameraTo(40,28);
+  MapView.panCameraTo(22,16);
   await new Promise((resolve) => setTimeout(resolve,700));
-  MapView.panCameraTo(40,39);
+  MapView.panCameraTo(22,23);
   await Promise.all(Object.entries(BOGYANG_COUNTERATTACK).map(([id,{marchX}], index) =>
     new Promise((resolve) => MapView.walkNpcPath(bogyangId(id),
-      Array.from({length:11+(index%2)},(_,step)=>({x:marchX,y:41-step})),130,resolve))));
-  MapView.panCameraTo(40,29);
+      Array.from({length:7+(index%2)},(_,step)=>({x:marchX,y:24-step})),130,resolve))));
+  MapView.panCameraTo(22,17);
   await new Promise((resolve) => setTimeout(resolve,500));
   Dialogue.show(bogyangLines(
     ['하후돈','장료! 지난번엔 성을 내주었지만, 오늘은 기습할 틈이 없을 게다!'],
@@ -306,62 +316,75 @@ function showBogyangFirePlan(outcome) {
 function beginBogyangDefense() {
   const flags = GameState.flags;
   flags.bogyangPhase = 'defense';
-  flags.bogyangYeopo = {x:25,y:20};
+  flags.bogyangYeopo = {x:14,y:12};
   for (const [id,spec] of Object.entries(BOGYANG_COUNTERATTACK)) bogyangSetUnit(id,spec);
-  bogyangSetUnit('jangpae',{troop:1800,x:45,y:32});
+  bogyangSetUnit('jangpae',{troop:1800,x:26,y:19});
   loadBogyang();
-  MapView.setPlayerPos(40,14,'down');
+  MapView.setPlayerPos(22,8,'down');
   bogyangBusy = false;
   updateHUD();
+  startWarRound();
 }
 
-function switchBogyangArmy() {
-  const ally = MapView.controlledUnitId !== 'yeopo';
-  if (isScriptedScenePlaying() || Dialogue.isActive() ||
-      !document.getElementById('choice-box').classList.contains('hidden')) return;
-  if ((ally ? GameState.allyArmy : GameState.army)?.troop <= 0) return;
-  activeCommanderId = ally ? 'yeopo' : null;
-  GameState.flags.bogyangControlled = activeCommanderId;
-  MapView.setControlledUnit(activeCommanderId);
-  updateHUD();
+function bogyangConfusionNotice(id) {
+  const next = warRoundActive ? '군세 행동종료로 다음 차례를 진행하세요.' : '휴식으로 다음 달을 진행하세요.';
+  return `${ROSTER[id].name}군은 혼란 상태라 이동할 수 없습니다. ${next}`;
 }
 
-async function bogyangArmyTurn() {
-  const phase = GameState.flags.bogyangPhase;
-  GameState.allyAp = GameState.allyApMax = Math.floor(effectiveApMax() * StatusEffects.apMult('yeopo'));
-  if (!['assault','defense'].includes(phase)) return;
-  bogyangBusy = true;
-  MapView.lockMovement(true);
-  const assault = phase === 'assault';
-  const ally = bogyangId(assault ? 'jangmak' : 'jangpae');
-  const guard = bogyangId('jeonwi');
-  const enemies = enemiesInScene();
-  const target = assault ? enemies[0] : enemies.find((id) => id !== guard);
-  if (MapView.npcPos(ally)) {
-    const army = armyFor(ally);
+function isBogyangBattle() {
+  return ['assault','defense'].includes(GameState.flags.bogyangPhase);
+}
+
+function bogyangIndependentArmies() {
+  return ['jangmak','jangpae'].map(bogyangId).filter(id => MapView.npcPos(id));
+}
+
+function upkeepBogyangAllies() {
+  for (const id of bogyangIndependentArmies()) {
+    const army = armyFor(id);
     army.rice = Math.max(0, army.rice - monthlyRiceUpkeep(army.troop));
-    if (!army.rice) StatusEffects.drainMorale(ally,1);
+    if (!army.rice) StatusEffects.drainMorale(id,1);
   }
-  if (target && MapView.npcPos(ally)) {
-    const near = await MapView.marchToward(ally, MapView.npcPos(target), effectiveApMax());
-    if (near) resolveArmyBattle(target,{commanderId:ally,freeAction:true,silent:true});
-  }
-  if (!assault) {
-    for (const id of enemiesInScene().filter((id)=>id !== guard)) {
-      if (await MapView.marchToward(id,{x:40,y:32},effectiveApMax())) MapView.removeNpc(id);
+}
+
+async function runBogyangUnitTurn(id, done) {
+  const assault = GameState.flags.bogyangPhase === 'assault';
+  const budget = WAR_AI_MOVE_BUDGET;
+  if (bogyangIndependentArmies().includes(id)) {
+    const target = enemiesInScene().find(enemy => assault || enemy !== bogyangId('jeonwi'));
+    if (target && await MapView.marchToward(id, MapView.npcPos(target), budget - ARMY_BATTLE_AP_COST)) {
+      resolveArmyBattle(target,{commanderId:id,freeAction:true,silent:true});
     }
-    if (MapView.npcPos(guard) && !StatusEffects.isConfused(guard)) {
-      const targetArmy = playerArmies().filter((army)=>army.troop > 0)
-        .find((army)=>inAttackRange(mapPosOf(army.commanderId),MapView.npcPos(guard),1));
-      if (targetArmy) {
-        resolveArmyBattle(guard,{commanderId:targetArmy.commanderId,freeAction:true,initiator:'enemy',onComplete:finishBogyangBattle});
-        bogyangBusy = false;
-        MapView.lockMovement(false);
-        return;
-      }
-    }
+  } else if (!assault && id !== bogyangId('jeonwi')) {
+    if (await MapView.marchToward(id,{x:22,y:19},budget)) MapView.removeNpc(id);
+  } else if (assault) {
+    MapView.runAiTurn(done,[id],budget);
+    return;
+  } else if (!StatusEffects.isConfused(id)) {
+    const target = playerArmies().find(army => army.troop > 0 &&
+      inAttackRange(mapPosOf(army.commanderId),MapView.npcPos(id),1));
+    if (target) handleAllyEngage(target.commanderId,id,budget);
   }
-  bogyangBusy = false;
-  MapView.lockMovement(false);
-  finishBogyangBattle();
+  if (!warUiBusy()) finishBogyangBattle();
+  done(warUiBusy());
+}
+
+function migrateBogyangSave(playerPos) {
+  const flags = GameState.flags;
+  if (flags.bogyangGridV2) return playerPos;
+  flags.bogyangGridV2 = true;
+  const convert = pos => ({ x:Math.floor(pos.x * 36 / 64), y:Math.floor(pos.y * 25 / 42) });
+  const walkable = pos => [0,1].includes(MAPS.bogyang.tiles[pos.y]?.[pos.x]);
+  const nearest = (pos, occupied) => {
+    const origin = convert(pos);
+    const valid = point => walkable(point) && !occupied.has(`${point.x},${point.y}`);
+    const points = MAPS.bogyang.tiles.flatMap((row,y) => row.map((_,x) => ({x,y})));
+    const best = points.filter(valid).sort((a,b) => tileDist(a,origin)-tileDist(b,origin))[0];
+    occupied.add(`${best.x},${best.y}`);
+    return best;
+  };
+  const occupied = new Set();
+  if (flags.bogyangYeopo) flags.bogyangYeopo = nearest(flags.bogyangYeopo,occupied);
+  for (const unit of Object.values(bogyangUnits())) if (!unit.gone) Object.assign(unit,nearest(unit,occupied));
+  return playerPos && nearest(playerPos,occupied);
 }

@@ -529,9 +529,9 @@ const STORY = {
     { speaker:'병사', text:'서량군이 물러났습니다! 이제 동문으로 갈 수 있습니다!' },
   ],
   changan_departure: [
-    { speaker:'내레이션', text:'장료는 병사들을 이끌고 동문을 빠져나갔다. 여포군은 무관 방면으로 장안을 떠났다.', scene:'assets/illust/worldmap.jpg' },
-    { speaker:'내레이션', text:'이각과 곽사는 장안을 차지했다. 뒤늦게 왕윤이 죽었다는 소식이 여포군에 전해졌다.', scene:'assets/illust/worldmap.jpg' },
-    { speaker:'장료', text:'부상병부터 살펴라. 흩어진 사람들도 끝까지 찾는다.', scene:'assets/illust/worldmap.jpg', holdMs:3600 },
+    { speaker:'내레이션', text:'장료는 병사들을 이끌고 동문을 빠져나갔다. 여포군은 무관 방면으로 장안을 떠났다.' },
+    { speaker:'내레이션', text:'이각과 곽사는 장안을 차지했다. 뒤늦게 왕윤이 죽었다는 소식이 여포군에 전해졌다.' },
+    { speaker:'장료', text:'부상병부터 살펴라. 흩어진 사람들도 끝까지 찾는다.' },
   ],
   hanae_intro: [
     ...[
@@ -573,6 +573,6 @@ const STORY = {
     { speaker:'장료', text:'그럼 병사들을 모으겠습니다. 두 부대로 나누어 움직이시지요.' },
   ],
   hanae_departure: [
-    { speaker:'내레이션', text:'여포군과 장료군은 하내를 떠나 장막이 기다리는 연주로 향했다.', scene:'assets/illust/worldmap.jpg' },
+    { speaker:'내레이션', text:'여포군과 장료군은 하내를 떠나 장막이 기다리는 연주로 향했다.' },
   ],
 };

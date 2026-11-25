@@ -956,7 +956,11 @@ const MapView = (function () {
     // 유비군 차례일 때는 controlledId를 통해 GameState.allyArmy가 된다.
     const activeArmy = controlledId ? (typeof armyFor === 'function' ? armyFor(controlledId) : null) : GameState.army;
     // 혼란에 빠진 군세는 이동할 수 없다.
-    if (activeArmy && StatusEffects.isConfused(activeArmy.commanderId)) { render(); return; }
+    if (activeArmy && StatusEffects.isConfused(activeArmy.commanderId)) {
+      if (map.onConfusedMove) map.onConfusedMove(activeArmy.commanderId);
+      render();
+      return;
+    }
     const nx=mover.x+dx, ny=mover.y+dy;
     mover.dir = dx<0?'left':dx>0?'right':dy<0?'up':'down';
     if (!isWalkable(nx,ny)) { render(); return; }

@@ -593,10 +593,9 @@ function updateHUD() {
     }
   } else if (stage === 'bogyang') {
     const phase = gs.flags.bogyangPhase;
-    const canSwitch = ['join','assault','defense'].includes(phase) && playerArmies().filter((army)=>army.troop>0).length === 2;
-    progressBtn.classList.toggle('hidden', !canSwitch && phase !== 'prepare');
-    progressBtn.textContent = phase === 'prepare' ? '군세 편성' : MapView.controlledUnitId ? '장료군 조작' : '여포군 조작';
-    progressBtn.onclick = phase === 'prepare' ? prepareBogyangArmies : switchBogyangArmy;
+    progressBtn.classList.toggle('hidden', phase !== 'prepare');
+    progressBtn.textContent = '군세 편성';
+    progressBtn.onclick = prepareBogyangArmies;
     checkBogyangMuster();
   } else if (stage === 'hanae') {
     const phase = gs.flags.hanaePhase;
@@ -2022,20 +2021,17 @@ function fireTileOccupantsAt(x, y) {
   const occ = [];
   const pos = MapView.playerPos;
   if (GameState.army && pos.x === x && pos.y === y) occ.push(GameState.army.commanderId);
-  const mapSpec = MAPS[MapView.currentMapId];
-  for (const n of (mapSpec ? mapSpec.npcs : [])) {
-    if (n.x === x && n.y === y && MapView.liveNpcIds.includes(n.id)) occ.push(n.id);
+  for (const id of MapView.liveNpcIds) {
+    const position = MapView.npcPos(id);
+    if (position?.x === x && position.y === y && armyFor(id)?.troop > 0) occ.push(id);
   }
   return occ;
 }
 function applyFireTileDamage(occId, dps) {
-  if (GameState.army && occId === GameState.army.commanderId) {
-    GameState.army.troop = Math.max(0, GameState.army.troop - dps);
-    MapView.showDamageFloat(occId, dps);
-  } else if (ROSTER[occId]) {
-    ROSTER[occId].troop = Math.max(0, ROSTER[occId].troop - dps);
-    MapView.showDamageFloat(occId, dps);
-  }
+  const army = armyFor(occId);
+  if (!army) return;
+  army.troop = Math.max(0, army.troop - dps);
+  MapView.showDamageFloat(occId, dps);
 }
 
 // [전투] 한 번 = 딱 한 교전. 속도가 빠른 쪽이 먼저 때리고, 그 한 방으로
@@ -3071,7 +3067,11 @@ function handleAllyEngage(allyId, targetId, remainingBudget) {
       // 것이고, 없으면(runAllyChases) 아군이 먼저 다가가 붙은 것이다.
       initiator: remainingBudget != null ? 'enemy' : 'player',
       onComplete: (outcome) => {
-        if (outcome.concluded) { activeCommanderId = prev; return; }
+        if (outcome.concluded) {
+          activeCommanderId = prev;
+          if (stage === 'bogyang') finishBogyangBattle();
+          return;
+        }
         attemptOnce(budgetLeft - ARMY_BATTLE_AP_COST);
       },
     });
@@ -3100,14 +3100,14 @@ const WAR_AI_MOVE_BUDGET = 8;
 
 function warCombatantSpeed(id) {
   if (id === GameState.mainHero) return armySpeedValue(GameState.heroData(), (GameState.army && GameState.army.generals) || []);
-  if (id === 'yubi') return armySpeedValue(ROSTER.yubi, (GameState.allyArmy && GameState.allyArmy.generals) || []);
+  if (id === GameState.allyArmy?.commanderId) return armySpeedValue(GameState.officerData(id), GameState.allyArmy.generals);
   return ROSTER[id].stats.spd;
 }
 
 function computeWarOrder() {
   const ids = [];
-  if (GameState.army) ids.push(GameState.mainHero);
-  if (GameState.allyArmy) ids.push('yubi');
+  ids.push(...playerArmies().filter(army => army.troop > 0).map(army => army.commanderId));
+  if (stage === 'bogyang') ids.push(...bogyangIndependentArmies());
   // enemiesInScene()은 지도에 상관없이 "지금 살아있는 적 전원"을 돌려주는
   // 범용 함수라, 지도별 고유 id를 하드코딩할 필요가 없다.
   ids.push(...enemiesInScene());
@@ -3142,22 +3142,25 @@ function activateWarUnit({ preserveAp = false } = {}) {
     // 회수평야에서 관우가 미끼로 쓰이다 군세가 무너지면(handleHoesuArmyDown)
     // 더 이상 차례를 받지 않는다 - 유비군만으로 계속 진행한다.
     if (id === GameState.mainHero && GameState.flags.hoesuGwanwooDown) { warIndex++; continue; }
-    if (id === GameState.mainHero || id === 'yubi' || MapView.liveNpcIds.includes(id)) break;
+    if (playerArmies().some(army => army.commanderId === id && army.troop > 0) ||
+        (id !== GameState.allyArmy?.commanderId && id !== GameState.mainHero && MapView.liveNpcIds.includes(id))) break;
     warIndex++; // 이번 라운드 도중 이미 격파/포획된 대상은 건너뛴다
   }
   if (warIndex >= warOrder.length) { monthAdvanceClick(); return; }
   const id = warOrder[warIndex];
-  if (id === GameState.mainHero || id === 'yubi') {
-    const isYubi = id === 'yubi';
+  if (id === GameState.mainHero || id === GameState.allyArmy?.commanderId) {
+    const isAlly = id !== GameState.mainHero;
     // 여기서 null 대신 항상 GameState.mainHero를 명시해야 한다 - null로
     // 두면 resolveWarArmy가 activeCommanderId를 못 본 걸로 취급해 정적인
     // rd.warArmy 플래그(교유 등)로 새버려서, 관우가 자기 차례에 직접 교유를
     // 공격해도 유비군의 전투로 잘못 판정되는 버그가 생긴다.
-    activeCommanderId = isYubi ? 'yubi' : GameState.mainHero;
-    MapView.setControlledUnit(isYubi ? 'yubi' : null);
+    activeCommanderId = id;
+    MapView.setControlledUnit(isAlly ? id : null);
+    MapView.lockMovement(false);
     if (!preserveAp) {
-      if (isYubi) GameState.allyAp = GameState.allyApMax = effectiveApMax();
-      else GameState.ap = effectiveApMax();
+      const ap = stage === 'bogyang' ? Math.floor(effectiveApMax() * StatusEffects.apMult(id)) : effectiveApMax();
+      if (isAlly) { GameState.allyApMax = effectiveApMax(); GameState.allyAp = ap; }
+      else GameState.ap = ap;
     }
     updateHUD();
     setWarTurnUi(id, true);
@@ -3167,14 +3170,22 @@ function activateWarUnit({ preserveAp = false } = {}) {
     activeCommanderId = null;
     MapView.setControlledUnit(null);
     setWarTurnUi(id, false);
-    MapView.runAiTurn((engaged) => {
+    const round = warOrder;
+    if (stage === 'bogyang') MapView.lockMovement(true);
+    const next = (engaged) => {
+      if (!warRoundActive || warOrder !== round) return;
       warIndex++;
-      const advance = () => setTimeout(activateWarUnit, engaged ? 450 : 150);
+      const advance = () => setTimeout(() => {
+        if (warRoundActive && warOrder === round) activateWarUnit();
+      }, engaged ? 450 : 150);
       (function waitThenAdvance() {
+        if (!warRoundActive || warOrder !== round) return;
         if (warUiBusy()) { setTimeout(waitThenAdvance, 200); return; }
         advance();
       })();
-    }, [id], WAR_AI_MOVE_BUDGET);
+    };
+    if (stage === 'bogyang') runBogyangUnitTurn(id, next);
+    else MapView.runAiTurn(next, [id], WAR_AI_MOVE_BUDGET);
   }
 }
 
@@ -3186,7 +3197,8 @@ function setWarTurnUi(id, controllable) {
   } else {
     btn.classList.add('hidden');
   }
-  toast(`${ROSTER[id].name}의 차례다.`);
+  const confused = stage === 'bogyang' && controllable && StatusEffects.isConfused(id);
+  toast(confused ? bogyangConfusionNotice(id) : `${ROSTER[id].name}의 차례다.`);
 }
 
 function endWarUnitTurn() {
@@ -5065,7 +5077,8 @@ function canSaveNow() {
   if (!document.getElementById('battle-screen').classList.contains('hidden')) return false;
   // 장순의 난 행군 중(군세 이동모드)에는 지도 자체의 특수 상태(apMovement)가
   // 저장 데이터에 담기지 않으므로 제외한다.
-  if (stage === 'bogyang' && GameState.flags.bogyangPhase === 'failed') return false;
+  if (stage === 'bogyang' && (GameState.flags.bogyangPhase === 'failed' ||
+      (warRoundActive && document.getElementById('btn-nextmonth').classList.contains('hidden')))) return false;
   if (stage === 'pyeongwon_free' && MAPS.pyeongwon.apMovement && !!GameState.army) return false;
   return true;
 }
@@ -5086,7 +5099,7 @@ function buildSaveSnapshot() {
     mapId,
     playerPos: { x: pos.x, y: pos.y },
     gameState: JSON.parse(JSON.stringify(GameState)),
-    warTurn: stage === 'warmap' && warRoundActive ? {
+    warTurn: stage === 'bogyang' && warRoundActive ? {order:[...warOrder],index:warIndex} : stage === 'warmap' && warRoundActive ? {
       order:[...warOrder], index:warIndex,
       npcs: MapView.liveNpcIds.map((id) => {
         const rd = ROSTER[id];
@@ -5144,7 +5157,12 @@ function resumeExploreStage(targetStage, playerPos, mapId) {
 }
 
 function restoreSavedWarTurn(turn) {
-  if (turn) {
+  if (turn && stage === 'bogyang') {
+    warRoundActive = true;
+    warOrder = turn.order;
+    warIndex = turn.index;
+    activateWarUnit({preserveAp:true});
+  } else if (turn) {
     for (const id of MapView.liveNpcIds) MapView.removeNpc(id);
     for (const { id, pos, army } of turn.npcs) {
       if (army) Object.assign(ROSTER[id], army);
@@ -5178,7 +5196,12 @@ function applySaveSnapshot(snap) {
   if (snap.stage === 'sopae_free' && GameState.flags.sopaeInvasionStarted && GameState.flags.sopaeInvasionResolved == null) {
     GameState.flags.sopaeInvasionResolved = true;
   }
-  resumeExploreStage(snap.stage, snap.playerPos, snap.mapId);
+  const playerPos = snap.stage === 'bogyang' ? migrateBogyangSave(snap.playerPos) : snap.playerPos;
+  resumeExploreStage(snap.stage, playerPos, snap.mapId);
+  if (stage === 'bogyang' && isBogyangBattle()) {
+    if (snap.warTurn) restoreSavedWarTurn(snap.warTurn);
+    else startWarRound();
+  }
   closeSaveBox();
   if (stage === 'warmap' && MapView.currentMapId === 'warmap' && GameState.npcStatus.yeopo === 'fled') {
     checkWarmapClear();
@@ -5903,7 +5926,7 @@ function monthAdvanceClick() {
   // 같은 달 안에서 연달아 전투를 치를 때만 체력이 그대로 이어진다 - 휴식(다음달)을 거치면 항상 완전 회복.
   const inCampaign = stage === 'warmap';
   if (stage === 'bogyang') GameState.flags.bogyangYeopoHp = null;
-  const inBogyangBattle = stage === 'bogyang' && ['join','assault','defense'].includes(GameState.flags.bogyangPhase);
+  const inBogyangBattle = stage === 'bogyang' && isBogyangBattle();
   const inChanganBattle = stage === 'changan' && !!GameState.army;
   // 장순의 난: 군세로 전환된 뒤에는 어양이라도 warmap처럼 매달 행동력을 재보급받는다.
   const inJangsunMarch = stage === 'pyeongwon_free' && MAPS.pyeongwon.apMovement && !!GameState.army;
@@ -5993,7 +6016,11 @@ function monthAdvanceClick() {
   } else if (stage === 'bogyang') {
     const phase = GameState.flags.bogyangPhase;
     if (phase === 'ready') bogyangApproach();
-    else if (inBogyangBattle) bogyangArmyTurn();
+    else if (inBogyangBattle) {
+      upkeepBogyangAllies();
+      finishBogyangBattle();
+      if (isBogyangBattle()) startWarRound();
+    }
     else MapView.rollAmbientEvent(availableAmbientKinds());
     finishTurn();
   } else if (stage === 'hanae') {
@@ -6012,7 +6039,10 @@ function monthAdvanceClick() {
 }
 
 document.getElementById('btn-nextmonth').onclick = () => {
-  if (warRoundActive) { endWarUnitTurn(); return; }
+  if (warRoundActive) {
+    if (!warUiBusy() && !document.getElementById('btn-nextmonth').classList.contains('hidden')) endWarUnitTurn();
+    return;
+  }
   monthAdvanceClick();
 };
 
