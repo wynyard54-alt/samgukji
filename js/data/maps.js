@@ -912,12 +912,17 @@ const CHANGAN_GUARD_TROOPS = { changan_market_guard:800, changan_east_guard:450 
     decor:[
       { type:'mapLabel', x:14, y:19.5, label:'궁성' },
       { type:'mapLabel', x:81, y:19.5, label:'병영' },
-      { type:'mapLabel', x:46, y:33.4, label:'장터' },
+      { type:'mapLabel', x:46, y:33.4, label:'장안 시장' },
+      { type:'mapLabel', x:23, y:31, label:'여포 저택' },
+      { type:'mapLabel', x:19, y:49, label:'동탁 저택' },
+      { type:'mapLabel', x:46, y:48.5, label:'주막' },
+      { type:'mapLabel', x:77, y:49, label:'군량 창고' },
       { type:'mapLabel', x:91, y:33.3, label:'동문', gateId:'east', closedLabel:'동문 · 통제 중' },
     ],
     npcs:[
       { id:'wisok', x:46, y:36, label:'', fixed:true, discoverable:true, discoveryRange:1, chance:1,
         discoveryText:'장터 대로에서 여포군 장수 위속이 걸음을 멈추고 장료를 바라본다.' },
+      { id:'sangin', x:52, y:34, label:'상인', fixed:true },
       { id:'changan_merchant', x:43, y:34, label:'낙양에서 온 상인', fixed:true },
       { id:'changan_refugee', x:24, y:54, label:'피란민', fixed:true },
       { id:'changan_soldier', x:74, y:20, label:'여포군 병사', fixed:true },
@@ -975,6 +980,7 @@ const CHANGAN_GUARD_TROOPS = { changan_market_guard:800, changan_east_guard:450 
       { type:'mapLabel', x:19, y:18, label:'남문' },
     ],
     npcs:[
+      { id:'sangin', x:25, y:13, label:'상인', fixed:true },
       { id:'jangyang', x:15, y:5, label:'장양', fixed:true },
       { id:'yangchu_hanae', x:12, y:6, label:'양추', fixed:true },
       { id:'sugo', x:18, y:6, label:'수고', fixed:true },
@@ -988,5 +994,10 @@ const CHANGAN_GUARD_TROOPS = { changan_market_guard:800, changan_east_guard:450 
       { id:'dongso', x:24, y:12, label:'', fixed:true, discoverable:true, storyGate:'hanaeRecruitOpen', chance:.5,
         discoveryText:'장터 뒷길에서 장안 소식을 조용히 살피는 문관이 보인다.' },
     ],
+    ambient:[
+      ['farmer',8,8,'earth'], ['woman',12,13,'dust'], ['porter',20,8,'ash'],
+      ['merchant',27,12,'earth'], ['child',10,17,'dust'], ['elder',23,17,'ash'],
+      ['guard',28,8,'iron'], ['porter',18,15,'earth'],
+    ].map(([archetype,x,y,palette]) => ({ archetype,x,y,palette,wander:2,roadOnly:true })),
   };
 })();

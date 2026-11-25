@@ -4029,7 +4029,7 @@ function loadChangan() {
 }
 
 function closeChanganExploration() {
-  for (const id of [...CHANGAN_RESIDENTS, 'seongryeom', 'wisok', ...Object.keys(CHANGAN_RECRUITS)]) MapView.removeNpc(id);
+  for (const id of [...CHANGAN_RESIDENTS, 'sangin', 'seongryeom', 'wisok', ...Object.keys(CHANGAN_RECRUITS)]) MapView.removeNpc(id);
 }
 
 function startChangan() {
@@ -4066,6 +4066,7 @@ function showFocusedMapDialogue(lines, onDone) {
 function interactChangan(id, context) {
   if (mapBriefingActive || changanPursuerMarching || Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
   engagementBudget = null;
+  if (ROSTER[id]?.kind === 'merchant') { openMerchantShop(id); return; }
   const flags = GameState.flags;
   if (flags.changanPhase === 'rumors' && CHANGAN_RESIDENTS.includes(id)) {
     const firstMeeting = !GameState.npcStatus[id];
@@ -4360,6 +4361,7 @@ function checkHanaeRecruitment() {
 
 function interactHanae(id, context) {
   if (isScriptedScenePlaying() || Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden')) return;
+  if (ROSTER[id]?.kind === 'merchant') { openMerchantShop(id); return; }
   const flags = GameState.flags;
   if (id === 'jangyang' && flags.hanaePhase === 'welcome') {
     Dialogue.show(STORY.hanae_welcome, () => {
