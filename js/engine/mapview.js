@@ -1022,6 +1022,11 @@ const MapView = (function () {
 
   // 마을 체류 중 가끔 지나가던 백성 중 한둘에게 짧은 대화거리를 걸어둔다
   // (최대 AMBIENT_EVENT_MAX명까지 동시에, 이미 걸려있는 사람은 다시 뽑지 않는다).
+  function clearAmbientEvents() {
+    ambientEvents = [];
+    render();
+  }
+
   function rollAmbientEvent(kinds) {
     if (ambientEvents.length >= AMBIENT_EVENT_MAX || !crowd.length || !kinds || !kinds.length) return;
     if (Math.random() >= AMBIENT_EVENT_CHANCE) return;
@@ -1615,7 +1620,7 @@ const MapView = (function () {
   }
 
   return {
-    isRotatedPresentation,load,render,removeNpc,addNpc,walkNpcPath,setSceneExtras,setSceneGateClosed,shelterResidents,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,lockMovement,setPlayerPos,
+    isRotatedPresentation,load,render,removeNpc,addNpc,walkNpcPath,setSceneExtras,setSceneGateClosed,shelterResidents,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,clearAmbientEvents,lockMovement,setPlayerPos,
     panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,showDamageFloat,showAttackBump,setControlledUnit,npcPos,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},

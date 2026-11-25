@@ -4009,6 +4009,7 @@ function loadChangan() {
   }
   MapView.load('changan', {
     onInteract: interactChangan,
+    onAmbientInteract: runAmbientEvent,
     onApSpent: updateHUD,
     onApBlocked: () => centerAlert('행동력이 부족하다. 휴식해서 회복하자.'),
     onStep: () => {
@@ -4104,6 +4105,7 @@ function interactChangan(id, context) {
       flags.changanGuardReady = true;
       flags.changanSkirmishReady = true;
       MapView.removeNpc('isuk');
+      MapView.clearAmbientEvents();
       igniteChangan();
       closeChanganExploration();
       for (const target of ['gosun', ...CHANGAN_GUARDS, ...Object.keys(CHANGAN_ENEMIES)]) MapView.addNpc(target);
@@ -4330,6 +4332,7 @@ function loadHanae() {
   MapView.lockMovement(false);
   MapView.load('hanae', {
     onInteract: interactHanae,
+    onAmbientInteract: runAmbientEvent,
     onApSpent: updateHUD,
     onApBlocked,
     onStep: renderMinimap,
@@ -5924,6 +5927,10 @@ function monthAdvanceClick() {
   } else if (stage === 'changan') {
     finishTurn();
     if (GameState.army) marchChanganPursuer();
+    else if (!GameState.flags.changanAlarm) MapView.rollAmbientEvent(availableAmbientKinds());
+  } else if (stage === 'hanae') {
+    MapView.rollAmbientEvent(availableAmbientKinds());
+    finishTurn();
   } else if (inTown) {
     MapView.rollAmbientEvent(availableAmbientKinds());
     if (!maybeRandomEvent()) finishTurn();
