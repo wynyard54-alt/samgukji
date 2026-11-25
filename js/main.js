@@ -1798,7 +1798,22 @@ const STRATEGY_EFFECTS = {
 // 어느 쪽이 캐스터든 대상의 방어 상태가 똑같이 확인된다. 책략봉쇄(stratBlocked)는
 // "시전 자체를 막는" 효과라 이 함수보다 앞선 단계(attemptStrategy/
 // maybeEnemyCastsStrategy가 애초에 시전을 시도하기 전)에서 따로 확인한다.
+let strategyBannerTimer;
+function showStrategyBanner({name, grade}) {
+  const banner = document.getElementById('strategy-banner');
+  const label = banner.firstElementChild;
+  clearTimeout(strategyBannerTimer);
+  banner.classList.add('hidden');
+  banner.dataset.grade = grade;
+  label.textContent = `[${name}]`;
+  // 연달아 시전되더라도 새 책략의 등장 효과를 처음부터 재생한다.
+  void banner.offsetWidth;
+  banner.classList.remove('hidden');
+  strategyBannerTimer = setTimeout(() => banner.classList.add('hidden'), 1500);
+}
+
 function applyStrategyEffect(sid, targetId, deputyId, casterId) {
+  showStrategyBanner(STRATEGIES[sid]);
   if (StatusEffects.hasStatus(targetId, 'ganpa')) {
     return `${ROSTER[targetId].name}이(가) 계책을 미리 꿰뚫어보고 무효화했다!`;
   }

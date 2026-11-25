@@ -1242,3 +1242,47 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   .sopae-duel .duel-actor[data-id="jangbi"] { bottom: 28%; }
   .sopae-duel .battle-log { bottom: 73px; width: 42%; }
 }
+
+#strategy-banner {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 120;
+}
+#strategy-banner.hidden { display: none; }
+#strategy-banner span {
+  padding: .42em 1em;
+  border: 1px solid #c8a173;
+  border-radius: 8px;
+  background: #221810f5;
+  color: #fff1d5;
+  font: 700 clamp(23px, 5vmin, 38px)/1.25 "Song Myung", serif;
+  box-shadow: 0 4px 18px #0009;
+}
+#strategy-banner[data-grade="A"] span {
+  border-color: #e9b759;
+  box-shadow: 0 0 20px #e8aa5277;
+  animation: strategy-gold .52s ease-out both;
+}
+#strategy-banner[data-grade="S"] span {
+  border-color: #ffda8a;
+  background: linear-gradient(105deg, #3b140c, #743116, #3b140c);
+  text-shadow: 0 0 12px #ffc66d;
+  box-shadow: 0 0 26px #ff873eaa, 0 0 0 4px #ffdb7755;
+  animation: strategy-flare .66s ease-out both;
+}
+#strategy-banner:not(.hidden) + #center-alert { top: calc(50% + 88px); }
+@keyframes strategy-gold {
+  from { opacity: .35; transform: scale(.82); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes strategy-flare {
+  0% { opacity: .6; transform: scale(.7); }
+  55% { opacity: 1; transform: scale(1.12); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #strategy-banner[data-grade] span { animation: none; }
+}
