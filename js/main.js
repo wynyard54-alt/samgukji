@@ -3877,6 +3877,7 @@ const CHANGAN_ENEMY_ID = 'gwaksa';
 const CHANGAN_PURSUER = 'igak';
 const CHANGAN_PURSUER_START = { x:12, y:36 };
 const CHANGAN_ENEMIES = { jangje:200, beonjo:200, igak:5000, gwaksa:2000 };
+const CHANGAN_VICTORY_RECRUITS = { jangje:50, beonjo:40 };
 const CHANGAN_ORIGINAL_ARMIES = Object.fromEntries(
   Object.keys(CHANGAN_ENEMIES).map((id) => [id, { troop:ROSTER[id].troop, morale:ROSTER[id].morale, rice:ROSTER[id].rice }]),
 );
@@ -4221,6 +4222,11 @@ function fightChanganEnemy(id) {
           for (const target of [...Object.keys(CHANGAN_ENEMIES), ...remainingChanganGuards()]) MapView.removeNpc(target);
           MapView.setSceneGateClosed('east', false);
           Dialogue.show(STORY.changan_gate_open);
+        }
+        const recruits = CHANGAN_VICTORY_RECRUITS[id];
+        if (recruits) {
+          GameState.army.troop += recruits;
+          Dialogue.show([{ speaker:'내레이션', text:`${ROSTER[id].name}의 패잔병 ${recruits}명이 장료군에 합류했다.` }]);
         }
       } else if (playerDown) {
         if (id === CHANGAN_ENEMY_ID) {
