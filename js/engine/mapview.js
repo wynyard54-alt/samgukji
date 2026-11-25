@@ -34,6 +34,30 @@ const MapView = (function () {
   let liveNpcs = [];
   let sceneExtras = [];
   let sceneEffectsTimer;
+  const statusMotions = new Map();
+  const STATUS_MOTION_MS = 850;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let effectFrame = 0;
+
+  window.addEventListener('army-status-applied', ({detail}) => {
+    if (!map || (detail.id !== GameState.mainHero && !npcPos(detail.id))) return;
+    if (!reducedMotion.matches && ['confuse','fear','taunt'].includes(detail.type)) {
+      statusMotions.set(detail.id, {...detail, started:performance.now()});
+    }
+    scheduleEffectFrame();
+  });
+
+  window.addEventListener('field-fire-ignited', ({detail}) => {
+    if (detail === mapId) scheduleEffectFrame();
+  });
+
+  function scheduleEffectFrame() {
+    if (effectFrame || !document.getElementById('screen-explore').classList.contains('active')) return;
+    effectFrame = requestAnimationFrame(() => {
+      effectFrame = 0;
+      if (document.getElementById('screen-explore').classList.contains('active')) render();
+    });
+  }
   const closedSceneGates = new Set();
   let crowd = [];
   let crowdTimer = null;
@@ -178,6 +202,7 @@ const MapView = (function () {
     spawnDeadlineAbs = (opts && opts.spawnDeadlineAbsMonth) || null;
     ambientEvents = [];
     sceneExtras = [];
+    statusMotions.clear();
     controlledId = null;
     clearInterval(sceneEffectsTimer);
     sceneEffectsTimer = null;
@@ -464,7 +489,9 @@ const MapView = (function () {
 
     if (map.backgroundKey) drawMapForegroundCrops();
     else drawFrontDecor();
+    drawArmyStatuses(actors);
     drawLocationRibbon();
+    if (!reducedMotion.matches && (statusMotions.size || StatusEffects.fireTilesForMap(mapId).length)) scheduleEffectFrame();
     updateHudFade();
   }
 
@@ -629,20 +656,21 @@ const MapView = (function () {
     if (!mapId) return;
     const tiles = StatusEffects.fireTilesForMap(mapId);
     if (!tiles.length) return;
-    const flicker = (animFrame % 2) === 0 ? 1 : 0.88;
+    const time = reducedMotion.matches ? 0 : performance.now() / 1000;
     for (const eff of tiles) {
       const px = worldX(eff.x), py = worldY(eff.y);
       if (px < -TILE || py < -TILE || px > camera.w || py > camera.h) continue;
-      if (FieldAssets.tile(ctx, 'tile_fire', px, py, TILE)) continue;
+      const wave = time * 9 + eff.x * 1.3 + eff.y;
       ctx.save();
       ctx.translate(px + TILE / 2, py + TILE * 0.6);
-      ctx.scale(flicker, flicker);
+      ctx.scale(1 + .11 * Math.sin(wave), 1 + .15 * Math.cos(wave));
+      const tip = 4 * Math.sin(wave);
       ctx.fillStyle = 'rgba(210,50,20,.5)';
       ctx.beginPath(); ctx.ellipse(0, 3, 13, 8, 0, 0, Math.PI * 2); ctx.fill();
       ctx.fillStyle = 'rgba(255,130,30,.88)';
       ctx.beginPath();
-      ctx.moveTo(0, -15); ctx.quadraticCurveTo(10, -1, 4, 9); ctx.quadraticCurveTo(9, 3, 0, 11);
-      ctx.quadraticCurveTo(-9, 3, -4, 9); ctx.quadraticCurveTo(-10, -1, 0, -15);
+      ctx.moveTo(tip, -15); ctx.quadraticCurveTo(10, -1, 4, 9); ctx.quadraticCurveTo(9, 3, 0, 11);
+      ctx.quadraticCurveTo(-9, 3, -4, 9); ctx.quadraticCurveTo(-10, -1, tip, -15);
       ctx.closePath(); ctx.fill();
       ctx.fillStyle = 'rgba(255,215,90,.92)';
       ctx.beginPath();
@@ -650,6 +678,93 @@ const MapView = (function () {
       ctx.closePath(); ctx.fill();
       ctx.restore();
     }
+  }
+
+  const statusShortNames = {
+    stratBlocked:'책략봉쇄', noCounter:'반격불가', guaranteedCapture:'포박 가능',
+    moveMoraleCost:'이동 시 사기↓', forceFirstStrike:'선제공격', doubleAttack:'연속 공격',
+    ganpa:'간파', bangye:'반계', immune:'면역', evade:'회피', rangeOverride:'사거리↑',
+    forceTypeAdvantage:'상성 우위', ignoreTypeDisadvantage:'상성 불리 무효',
+  };
+  const statusPriority = ['confuse','fear','taunt','stratBlocked','apMult','moveCostMult','noCounter'];
+
+  function armyStatusText(status) {
+    const {type,magnitude,turnsLeft,untilUsed} = status;
+    const signed = {apMult:'행동력', moveCostMult:'이동비용', dmgDealtMult:'주는 피해',
+      dmgTakenMult:'받는 피해', stratSuccessMult:'책략 성공률'}[type];
+    const name = signed ? signed + (magnitude < 1 ? '↓' : '↑')
+      : type === 'gradeBoost' ? '등급' + (magnitude < 0 ? '↓' : '↑')
+      : statusShortNames[type] || StatusEffects.LABELS[type];
+    return name + (untilUsed ? ' 1회' : ` ${turnsLeft}턴`);
+  }
+
+  function drawArmyStatuses(actors) {
+    const now = performance.now();
+    for (const [id, effect] of statusMotions) {
+      if (now - effect.started >= STATUS_MOTION_MS || !StatusEffects.hasStatus(id,effect.type)) statusMotions.delete(id);
+    }
+    const fires = StatusEffects.fireTilesForMap(mapId);
+    for (const {type,data} of actors) {
+      if (type === 'ambient') continue;
+      const id = type === 'player' ? GameState.mainHero : data.id;
+      const army = type === 'player' ? GameState.army : ROSTER[id];
+      const deputy = id === GameState.allyArmy?.commanderId ? GameState.allyArmy.deputy : army?.deputy;
+      const statuses = [...StatusEffects.activeStatuses(id), ...StatusEffects.activeStatuses(deputy)]
+        .filter((status,i,all) => all.findIndex(other => other.type === status.type) === i)
+        .sort((a,b) => (statusPriority.indexOf(a.type)+1 || 99) - (statusPriority.indexOf(b.type)+1 || 99));
+      const labels = statuses.map(armyStatusText);
+      if (StatusEffects.chainedWith(id).length) labels.push('연환');
+      if ((type === 'player' ? !!army : army?.troop > 0 || id === GameState.allyArmy?.commanderId) &&
+          fires.some(fire => fire.x === data.x && fire.y === data.y)) labels.unshift('화염 위');
+      const x = worldX(data.x) + TILE/2;
+      let y = worldY(data.y) - (type === 'player' ? 59 : 42);
+      for (let i = 0; i < labels.length; i += 2) {
+        drawTag(x,y,labels.slice(i,i+2).join(' · '),'rgba(61,37,49,.94)');
+        y -= 19;
+      }
+      const effect = statusMotions.get(id);
+      if (effect) drawStatusMotion(effect,data,x,y-12,(now-effect.started)/STATUS_MOTION_MS);
+    }
+  }
+
+  function drawStatusMotion(effect, data, x, y, progress) {
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.globalAlpha = Math.min(1,(1-progress)*3);
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    if (effect.type === 'confuse') {
+      ctx.rotate(progress * Math.PI * 2);
+      ctx.strokeStyle = '#ffd57d';
+      ctx.beginPath();
+      for (let i = 0; i <= 30; i++) {
+        const angle = i/30 * Math.PI * 3;
+        const radius = 1 + i/3;
+        ctx.lineTo(Math.cos(angle)*radius,Math.sin(angle)*radius);
+      }
+      ctx.stroke();
+    } else if (effect.type === 'fear') {
+      ctx.translate(0,progress * 14 - 9);
+      ctx.strokeStyle = '#bd8bff';
+      ctx.shadowColor = '#a65cff';
+      ctx.shadowBlur = 9;
+      for (let offset = -6; offset <= 6; offset += 6) {
+        ctx.beginPath();
+        ctx.moveTo(-10,offset-4); ctx.lineTo(0,offset+2); ctx.lineTo(10,offset-4);
+        ctx.stroke();
+      }
+    } else {
+      const caster = effect.sourceId && liveNpcs.find(n => n.id === effect.sourceId || ROSTER[n.id]?.deputy === effect.sourceId ||
+        (n.id === GameState.allyArmy?.commanderId && GameState.allyArmy.deputy === effect.sourceId));
+      const source = caster || (effect.sourceId && [GameState.mainHero,GameState.army?.deputy].includes(effect.sourceId) ? player : null);
+      ctx.rotate(source ? Math.atan2(source.y-data.y,source.x-data.x) : -Math.PI/2);
+      ctx.translate(progress*12,0);
+      ctx.strokeStyle = '#ff8068';
+      ctx.beginPath();
+      ctx.moveTo(-10,0); ctx.lineTo(9,0); ctx.lineTo(3,-6);
+      ctx.moveTo(9,0); ctx.lineTo(3,6); ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function decorBuildingKey(d) {

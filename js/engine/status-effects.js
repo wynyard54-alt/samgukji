@@ -71,6 +71,7 @@ const StatusEffects = (function () {
     const existing = arr.find((s) => s.type === type);
     if (existing) { existing.turnsLeft = turns; existing.sourceId = sourceId; existing.magnitude = magnitude; existing.untilUsed = untilUsed; }
     else arr.push({ type, turnsLeft: turns, sourceId, magnitude, untilUsed });
+    window.dispatchEvent(new CustomEvent('army-status-applied', { detail:{id,type,sourceId} }));
   }
 
   function clearArmyStatus(id, type) {
@@ -184,6 +185,7 @@ const StatusEffects = (function () {
     const dps = (opts && opts.dps) || 300;
     const ticks = (opts && opts.ticks) || 3;
     GameState.tileEffects[tileKey(mapId, x, y)] = { type: 'fire', x, y, ticksLeft: ticks, dps };
+    window.dispatchEvent(new CustomEvent('field-fire-ignited', { detail:mapId }));
   }
   function extinguishTile(mapId, x, y) { delete GameState.tileEffects[tileKey(mapId, x, y)]; }
   function fireTilesForMap(mapId) {
