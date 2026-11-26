@@ -1275,6 +1275,10 @@ function dissolveArmy(field) {
   if (army.unitType === 'archer') refund.bow = army.troop;
   else if (army.unitType === 'cavalry') refund.horse = army.troop;
   GameState.addResource(refund);
+  for (const id of [army.commanderId, army.deputy].filter(Boolean)) {
+    StatusEffects.clearArmyStatus(id);
+    StatusEffects.unlinkChain(id);
+  }
   GameState[field] = null;
 }
 
@@ -1960,8 +1964,8 @@ function warDuelOption(commanderId, id) {
 }
 
 function attemptDuelChallenge(id) {
-  const isYeopoDuel = stage === 'bogyang' && activeCommanderId === 'yeopo';
-  if ((isYeopoDuel ? GameState.flags.bogyangYeopoHp ?? 1 : heroCurrentHp()) <= 0) { toast('휴식으로 체력을 회복한 뒤 다시 도전하자.'); return; }
+  const commanderId = stage === 'bogyang' && activeCommanderId === 'yeopo' ? 'yeopo' : GameState.mainHero;
+  if (duelCurrentHp(commanderId) <= 0) { showDuelRecoveryNotice(commanderId); return; }
   const rd = ROSTER[id];
   if (!spendCombatAP(DUEL_AP_COST)) return;
   if (id === 'jangsun') { // 장순은 절대 일기토에 응하지 않는다 - 반드시 군세전투로 넘어간다
@@ -1982,7 +1986,7 @@ function attemptDuelChallenge(id) {
       if (stage === 'warmap') checkWarmapClear();
       if (stage === 'bogyang') finishBogyangBattle();
       if (stage === 'changan' && MapView.liveNpcIds.includes(id)) openWarCommandMenu(id);
-    }, true, null, isYeopoDuel ? 'yeopo' : GameState.mainHero);
+    }, true, null, commanderId);
   } else {
     Dialogue.show([{ speaker: rd.name, text: '흥, 그런 도발에 넘어갈 성싶으냐! 정정당당히 전군으로 붙어보자!' }], () => {
       toast(`${rd.name}이(가) 일기토를 거절했다. (수락 확률 ${Math.round(chance)}%)`);
@@ -2247,11 +2251,22 @@ function resolveArmyBattle(id, opts) {
 // discoverable(이름없이 있다가 근처에 가면 발견되는) 적장은 context로 discoveryText가
 // 넘어온다 - challengeWarrior와 같은 이유로, 예전엔 이 함수가 context 자체를 받지
 // 않아 kind:'enemy'인 태산군 오돈 등은 discoveryText를 설정해둬도 화면에 안 떴다.
+function duelCurrentHp(commanderId) {
+  if (commanderId === GameState.mainHero) return heroCurrentHp();
+  return GameState.flags.bogyangYeopoHp ?? Battle.maxHP(GameState.officerData(commanderId).stats);
+}
+
+function showDuelRecoveryNotice(commanderId) {
+  const name = ROSTER[commanderId].name;
+  const action = warRoundActive ? '군세 행동종료로 다음 달을 진행한 뒤' : '휴식한 뒤';
+  toast(`${name}의 체력이 0입니다. ${action} 다시 도전하세요.`);
+}
+
 function startFreeBattle(id, afterCb, persistHp, context, commanderId = GameState.mainHero) {
   const isMainHero = commanderId === GameState.mainHero;
-  const hp = isMainHero ? heroCurrentHp() : GameState.flags.bogyangYeopoHp;
+  const hp = duelCurrentHp(commanderId);
   if (persistHp && hp <= 0) {
-    toast('휴식으로 체력을 회복한 뒤 다시 도전하자.');
+    showDuelRecoveryNotice(commanderId);
     if (afterCb) afterCb();
     return;
   }

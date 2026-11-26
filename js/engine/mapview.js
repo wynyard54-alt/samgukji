@@ -716,15 +716,16 @@ const MapView = (function () {
     for (const {type,data} of actors) {
       if (type === 'ambient') continue;
       const id = type === 'player' ? GameState.mainHero : data.id;
-      const army = type === 'player' ? GameState.army : ROSTER[id];
-      const deputy = id === GameState.allyArmy?.commanderId ? GameState.allyArmy.deputy : army?.deputy;
+      const army = type === 'player' ? GameState.army : data.personOnly ? null
+        : id === GameState.allyArmy?.commanderId ? GameState.allyArmy : ROSTER[id];
+      if (!(army?.troop > 0)) continue;
+      const deputy = army.deputy;
       const statuses = [...StatusEffects.activeStatuses(id), ...StatusEffects.activeStatuses(deputy)]
         .filter((status,i,all) => all.findIndex(other => other.type === status.type) === i)
         .sort((a,b) => (statusPriority.indexOf(a.type)+1 || 99) - (statusPriority.indexOf(b.type)+1 || 99));
       const labels = statuses.map(armyStatusText);
       if (StatusEffects.chainedWith(id).length) labels.push('연환');
-      if ((type === 'player' ? !!army : army?.troop > 0 || id === GameState.allyArmy?.commanderId) &&
-          fires.some(fire => fire.x === data.x && fire.y === data.y)) labels.unshift('화염 위');
+      if (fires.some(fire => fire.x === data.x && fire.y === data.y)) labels.unshift('화염 위');
       const x = worldX(data.x) + TILE/2;
       let y = worldY(data.y) - (type === 'player' ? 59 : 42);
       for (let i = 0; i < labels.length; i += 2) {
@@ -919,7 +920,7 @@ const MapView = (function () {
       // 유비 본인(ROSTER.yubi)에는 troop 필드가 없으므로 rd.troop 분기로는 못 잡는다.
       // 특정 지도로 한정하지 않는다 - 유비군이 등장하는 지도라면 어디서든 보여야 한다.
       const baseLabel = n.label || rd.name;
-      const label = n.labelFromArmy ? n.labelFromArmy() : n.formation ? baseLabel : (rd.kind === 'enemy' && rd.troop != null)
+      const label = n.labelFromArmy ? n.labelFromArmy() : (n.formation || n.personOnly) ? baseLabel : (rd.kind === 'enemy' && rd.troop != null)
         ? `${baseLabel} · 병${rd.troop} · 무${enemyArmyGrade(rd)} · 지${gradeFor(rd.stats.int, JIRYEOK_GRADES)}`
         : (n.id === 'yubi' && GameState.allyArmy)
           ? `${baseLabel} · 병${GameState.allyArmy.troop} · 무${warArmyGrade({ commanderId:'yubi', army:GameState.allyArmy })} · 지${gradeFor(GameState.allyArmy.deputy && ROSTER[GameState.allyArmy.deputy] ? ROSTER[GameState.allyArmy.deputy].stats.int : 0, JIRYEOK_GRADES)}`
@@ -1680,6 +1681,7 @@ const MapView = (function () {
     if (hidden) return null;
     if (n.labelFromArmy) return n.labelFromArmy();
     const baseLabel = n.label || rd.name;
+    if (n.personOnly) return baseLabel;
     if (rd.kind === 'enemy' && rd.troop != null) {
       return `${baseLabel} · 병${rd.troop} · 무${enemyArmyGrade(rd)} · 지${gradeFor(rd.stats.int, JIRYEOK_GRADES)}`;
     }

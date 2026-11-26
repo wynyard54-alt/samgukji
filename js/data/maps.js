@@ -988,7 +988,7 @@ const CHANGAN_GUARD_TROOPS = { changan_market_guard:800, changan_east_guard:450 
       { id:'jangyang', x:15, y:5, label:'장양', fixed:true },
       { id:'yangchu_hanae', x:12, y:6, label:'양추', fixed:true },
       { id:'sugo', x:18, y:6, label:'수고', fixed:true },
-      { id:'yeopo', x:15, y:7, label:'여포', fixed:true },
+      { id:'yeopo', x:15, y:7, label:'여포', fixed:true, personOnly:true },
       { id:'hakmaeng', x:26, y:7, label:'', fixed:true, discoverable:true, storyGate:'hanaeRecruitOpen',
         discoveryText:'병영 앞에서 군사들의 훈련을 지켜보는 장수가 있다.' },
       { id:'joseong', x:6, y:15, label:'', fixed:true, discoverable:true, storyGate:'hanaeRecruitOpen',

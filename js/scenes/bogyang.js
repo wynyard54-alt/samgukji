@@ -48,7 +48,7 @@ for (const baseId of new Set([...Object.keys(BOGYANG_GARRISON), ...Object.keys(B
     foregroundCrops:[{x:.186,y:.225,w:.045,h:.119},{x:.584,y:.566,w:.094,h:.066}],
     npcs:[
       {id:'jingung',x:22,y:5,label:'진궁',fixed:true,storyGate:'bogyangTown'},
-      {id:'yeopo',x:21,y:5,label:'여포',fixed:true,storyGate:'bogyangTown'},
+      {id:'yeopo',x:21,y:5,label:'여포',fixed:true,storyGate:'bogyangTown', personOnly:true },
       {id:'sangin',x:29,y:11,label:'상인',fixed:true,storyGate:'bogyangTown'},
       {id:'songheon',x:13,y:6,label:'',fixed:true,discoverable:true,storyGate:'bogyangTown',
         discoveryText:'병영 아래 돌길에서 한 장수가 군사들의 움직임을 살피고 있다.'},
