@@ -109,13 +109,29 @@ function showScreen(id) {
 // 구석의 작은 토스트는 모바일 화면에서 특히 잘 안 보인다는 피드백이 있어,
 // 모든 안내 메시지를 화면 정중앙에 큼직하게 띄운다. toast()는 하위 호환을
 // 위해 이름만 남겨두고 centerAlert()로 위임한다.
+let centerAlertShownAt = 0;
 function centerAlert(msg, holdMs) {
   const el = document.getElementById('center-alert');
   el.textContent = msg;
   el.classList.remove('hidden');
+  centerAlertShownAt = Date.now();
   clearTimeout(centerAlertTimer);
   centerAlertTimer = setTimeout(() => el.classList.add('hidden'), holdMs || 2200);
 }
+
+// center-alert는 지도/대사 클릭을 가로채지 않도록 pointer-events:none이라
+// (주석 참고: css/style.css #center-alert) 메시지 자신은 클릭을 받을 수 없다.
+// 그래서 문서 전체의 클릭을 엿듣다가, 메시지가 떠 있으면 대신 닫아준다 -
+// 실제 클릭은 그대로 아래(지도/대사)로 전달된 뒤라 다른 동작을 막지 않는다.
+// "지금 이 클릭으로 막 띄운 메시지"까지 같은 틱에서 바로 닫혀버리는 것만
+// shownAt 비교로 막는다(동일 틱이면 Date.now() 차이가 0).
+window.addEventListener('click', () => {
+  const el = document.getElementById('center-alert');
+  if (!el.classList.contains('hidden') && Date.now() - centerAlertShownAt > 0) {
+    clearTimeout(centerAlertTimer);
+    el.classList.add('hidden');
+  }
+});
 
 function toast(msg) {
   centerAlert(msg);
@@ -4877,8 +4893,12 @@ function makeArmySlider(key, maxGetter, step) {
 function renderArmyGenerals() {
   const wrap = document.getElementById('army-generals-list');
   wrap.innerHTML = '';
+  // 지휘관 본인은 자기 군세의 부장(일반 장수) 후보에서 항상 제외한다 - 안
+  // 그러면 고순처럼 등용된 장수가 자기 자신이 지휘관인 군세를 편성할 때
+  // 스스로를 부장으로 고를 수 있는 모순이 생긴다(excludeIds는 "다른 군세에
+  // 이미 배정된 인물"만 가리지, 지금 군세의 지휘관 자신은 가리지 않았다).
   const candidates = GameState.recruited.filter((id) => ROSTER[id] && !isScholarType(ROSTER[id])
-    && !armyComposingCtx.excludeIds.includes(id));
+    && id !== armyComposingCtx.commanderId && !armyComposingCtx.excludeIds.includes(id));
   if (!candidates.length) {
     wrap.innerHTML = '<div class="army-empty-hint">등용한 무력형 장수가 없습니다.</div>';
     return;
@@ -5014,9 +5034,10 @@ function openArmyBox(onConfirm, opts) {
 
   const select = document.getElementById('army-deputy');
   select.innerHTML = '<option value="">없음</option>';
+  // 부장 후보와 마찬가지로, 책사 후보에서도 이 군세의 지휘관 본인은 제외한다.
   availableOfficerIds().forEach((id) => {
     const rd = ROSTER[id];
-    if (!rd || !isScholarType(rd) || excludeIds.includes(id)) return;
+    if (!rd || !isScholarType(rd) || id === commanderId || excludeIds.includes(id)) return;
     const opt = document.createElement('option');
     opt.value = id;
     const topStrategy = strategiesFor(id)[0];

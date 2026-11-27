@@ -969,7 +969,12 @@ h1,h2{ font-family:"Song Myung",serif; margin:0 0 8px; }
   filter:drop-shadow(0 9px 5px rgba(0,0,0,.55));
 }
 .duel-actor.raster-art.player .duel-body{transform:none}
+/* 원래 적으로만 쓰도록 준비된 원화(여포/장료 등)는 그 원본 방향이 player
+   슬롯 기준으로는 반대라, 캐릭터별로 개별 보정이 필요하다 - 새 장면에서
+   기존에 적으로만 나오던 인물을 player(아군) 슬롯에 세우게 되면 여기에
+   data-id 규칙을 추가한다. */
 .duel-actor.player[data-id="jangryo"] .duel-body{scale:-1 1}
+.duel-actor.player[data-id="yeopo"] .duel-body{scale:-1 1}
 .duel-actor.enemy .duel-glyph,.duel-actor.enemy .duel-actor-label{transform:none}
 .duel-actor[data-id="gwanwoo"]{aspect-ratio:1312/1199}
 .duel-actor[data-id="hwaung"],.duel-actor[data-id="yeopo"],.duel-actor[data-id="jangryo"]{aspect-ratio:1536/1024}
