@@ -429,7 +429,7 @@ function migrateBogyangSave(playerPos) {
 }
 
 const BOGYANG_FOOD_TRIGGER = 80000;
-const BOGYANG_GATE_ILLUST = 'assets/illust/bogyang_closed_gate.jpg';
+const BOGYANG_GATE_ILLUST = 'assets/illust/bogyang_closed_gate.png';
 const BOGYANG_DEPARTURE_ILLUST = 'assets/illust/habi_yeopo_march.jpg';
 const BOGYANG_BANDITS = {
   hwangeonjan1:{x:4,y:5,before:'크하하! 멍청한 관군들, 농민들을 약탈하면 쉽게 식량이 해결되는 것을!',after:'피같이 모아둔 내 식량…!'},
