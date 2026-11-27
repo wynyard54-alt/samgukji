@@ -323,12 +323,13 @@ const Battle = (function () {
     start({ ...opts, exhibition: true });
     const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     await wait(1100);
-    for (const dodge of opts.dodgeRounds) {
+    rounds: for (const dodge of opts.dodgeRounds) {
       for (const [attacker, defender] of [[p, e], [e, p]]) {
         dealDamage(attacker, defender, 'attack', null, dodge);
         render();
         emitStatus();
         await wait(650);
+        if (opts.stopAtHpRatio && [p,e].some(fighter => fighter.hp / fighter.maxHp <= opts.stopAtHpRatio)) break rounds;
       }
       BattleEvents.emit('roundEnd', { round: ++round });
     }

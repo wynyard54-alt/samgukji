@@ -10,7 +10,7 @@
     'assets/illust/dowon_market.jpg', 'assets/illust/dowon_oath.jpg', 'assets/illust/pyeongwon_urgent.jpg',
     'assets/illust/anhee_dokwoo.jpg', 'assets/illust/sasugwan_pledge.jpg', 'assets/illust/sasugwan_victory.jpg',
     'assets/illust/hogwan_yeopo_retreat.jpg', 'assets/illust/worldmap.jpg',
-    BOGYANG_ILLUST,
+    BOGYANG_ILLUST, BOGYANG_GATE_ILLUST, BOGYANG_DEPARTURE_ILLUST,
     ...new Set([...STORY.changan_coup, ...STORY.hanae_intro, ...STORY.hanae_family].map((line) => line.scene).filter(Boolean)),
     'assets/ui/portrait_gwanwoo.png', 'assets/battle/duel_generic_officer_v2.png',
     ...new Set(Object.values(ROSTER).map((officer) => officer.battleArt?.src).filter(Boolean)),
@@ -256,6 +256,10 @@ function getObjectives() {
   const list = [];
   if (stage === 'bogyang') {
     list.push(bogyangObjective());
+    if (gs.flags.bogyangPhase === 'supplies') list.push('상인에게 군량 사기','미니맵의 황건적 잔당 소탕','휴식하면 소유한 성에서 군량이 들어옴');
+    if (gs.flags.bogyangPhase === 'rescue') list.push('전위·하후돈·이전 중 한 부대를 격파','여포 본대가 전멸하면 패배');
+  } else if (stage === 'jangryo_seoju') {
+    list.push('서주 · 유비를 찾아가자');
   } else if (stage === 'changan') {
     const objectives = {
       rumors:`장안 탐색 · 주민들의 이야기를 들어보자 ${CHANGAN_RESIDENTS.length - unheardChanganResidents().length}/${CHANGAN_RESIDENTS.length}`,
@@ -456,10 +460,12 @@ function renderMinimap() {
   }
 
   if (mapId === 'bogyang') {
-    for (const id of [bogyangId('jangmak'), bogyangId('jangpae'), 'jingung']) {
+    for (const id of [bogyangId('jangmak'), bogyangId('jangpae'), 'jingung', ...Object.keys(BOGYANG_BANDITS),
+      ...(GameState.flags.bogyangPhase === 'rescue' ? [...Object.keys(BOGYANG_BREAKOUT).map(bogyangId),bogyangId('yeopo')] : [])]) {
       const pos = MapView.npcPos(id);
       if (pos) {
-        ctx.fillStyle = '#6fcdfa';
+        ctx.fillStyle = id === bogyangId('yeopo') ? '#ffd752'
+          : Object.hasOwn(BOGYANG_BANDITS,id) || Object.keys(BOGYANG_BREAKOUT).map(bogyangId).includes(id) ? '#ff775a' : '#6fcdfa';
         ctx.beginPath();
         ctx.arc(pos.x / size.w * w, pos.y / size.h * h, 3.4, 0, Math.PI * 2);
         ctx.fill();
@@ -594,9 +600,16 @@ function updateHUD() {
     }
   } else if (stage === 'bogyang') {
     const phase = gs.flags.bogyangPhase;
-    progressBtn.classList.toggle('hidden', phase !== 'prepare');
-    progressBtn.textContent = '군세 편성';
-    progressBtn.onclick = prepareBogyangArmies;
+    const actions = {
+      prepare:['군세 편성',prepareBogyangArmies],
+      won:['이어서 진행',startBogyangFamine],
+      rescueBrief:['이어서 진행',beginBogyangEncirclement],
+      rescueMuster:['구출 군세 편성',prepareBogyangRescue],
+      depart:['서주로 이동',departBogyang],
+    };
+    const action = actions[phase];
+    progressBtn.classList.toggle('hidden', !action || bogyangBusy);
+    if (action) [progressBtn.textContent, progressBtn.onclick] = action;
     checkBogyangMuster();
   } else if (stage === 'hanae') {
     const phase = gs.flags.hanaePhase;
@@ -1964,7 +1977,8 @@ function warDuelOption(commanderId, id) {
 }
 
 function attemptDuelChallenge(id) {
-  const commanderId = stage === 'bogyang' && activeCommanderId === 'yeopo' ? 'yeopo' : GameState.mainHero;
+  const commanderId = stage === 'bogyang' && activeCommanderId === GameState.allyArmy?.commanderId
+    ? activeCommanderId : GameState.mainHero;
   if (duelCurrentHp(commanderId) <= 0) { showDuelRecoveryNotice(commanderId); return; }
   const rd = ROSTER[id];
   if (!spendCombatAP(DUEL_AP_COST)) return;
@@ -2253,7 +2267,7 @@ function resolveArmyBattle(id, opts) {
 // 않아 kind:'enemy'인 태산군 오돈 등은 discoveryText를 설정해둬도 화면에 안 떴다.
 function duelCurrentHp(commanderId) {
   if (commanderId === GameState.mainHero) return heroCurrentHp();
-  return GameState.flags.bogyangYeopoHp ?? Battle.maxHP(GameState.officerData(commanderId).stats);
+  return (GameState.flags.bogyangDuelHp?.[commanderId] ?? (commanderId === 'yeopo' ? GameState.flags.bogyangYeopoHp : null)) ?? Battle.maxHP(GameState.officerData(commanderId).stats);
 }
 
 function showDuelRecoveryNotice(commanderId) {
@@ -2283,7 +2297,7 @@ function startFreeBattle(id, afterCb, persistHp, context, commanderId = GameStat
       enemy: rd,
       startHp: persistHp ? hp : undefined,
       onEnd: (result) => {
-        if (!isMainHero && persistHp) GameState.flags.bogyangYeopoHp = result.playerHp;
+        if (!isMainHero && persistHp) (GameState.flags.bogyangDuelHp ??= {})[commanderId] = result.playerHp;
         onFreeBattleEnd(id, result, afterCb, persistHp && isMainHero);
       },
     });
@@ -4502,27 +4516,31 @@ function interactHanae(id, context) {
 function prepareHanaeArmies(scene = 'hanae') {
   if (Dialogue.isActive() || isScriptedScenePlaying()) return;
   const flags = GameState.flags;
-  const phaseKey = scene === 'bogyang' ? 'bogyangPhase' : 'hanaePhase';
-  if (flags[phaseKey] !== 'prepare') return;
+  const rescue = scene === 'bogyangRescue';
+  const partner = rescue ? 'gosun' : 'yeopo';
+  const phaseKey = scene === 'hanae' ? 'hanaePhase' : 'bogyangPhase';
+  if (flags[phaseKey] !== (rescue ? 'rescueMuster' : 'prepare')) return;
   const need = GameState.army ? ARMY_MIN_TROOP : ARMY_MIN_TROOP * 2;
   if (GameState.resources.troop < need) {
-    toast('두 부대를 편성하려면 부대마다 병사 500명이 필요합니다. 하내에 남은 무장을 찾아보세요.');
+    toast('두 부대를 편성하려면 부대마다 병사 500명이 필요합니다.');
     return;
   }
   if (!GameState.army) {
     openArmyBox(() => prepareHanaeArmies(scene), {
+      excludeIds:[partner],
       reserveTroops:ARMY_MIN_TROOP,
       reserveRice:monthlyRiceUpkeep(ARMY_MIN_TROOP) * 5,
-      desc:'장료군을 꾸리세요. 여포군에 병사 500명과 기본 군량을 남겨 둡니다.',
+      desc:`장료군을 꾸리세요. ${ROSTER[partner].name}군에 병사 500명과 기본 군량을 남겨 둡니다.`,
     });
     return;
   }
   const army = GameState.army;
   openArmyBox(() => {
+    if (rescue) { startBogyangRescueBattle(); return; }
     flags[phaseKey] = 'ready';
     updateHUD();
   }, {
-    commanderId:'yeopo', field:'allyArmy',
+    commanderId:partner, field:'allyArmy',
     excludeIds:[army.deputy, ...army.generals].filter(Boolean),
     priorArmy:{
       label:'장료군', troop:army.troop, rice:army.rice,
@@ -5085,7 +5103,7 @@ window.addEventListener('keydown', (ev) => {
 // 대사, 장순의 난 행군(군세 이동모드) 중에는 되돌릴 상태가 애매해 제외한다.
 const SAVE_KEY = 'samgukji_saves_v1';
 const SAVE_SLOT_COUNT = 10;
-const SAVE_RESUMABLE_STAGES = ['takhyeon_free', 'pyeongwon_free', 'camp', 'warmap', 'seoju_free', 'habi_camp', 'sopae_free', 'changan', 'hanae', 'bogyang'];
+const SAVE_RESUMABLE_STAGES = ['takhyeon_free', 'pyeongwon_free', 'camp', 'warmap', 'seoju_free', 'habi_camp', 'sopae_free', 'changan', 'hanae', 'bogyang','jangryo_seoju'];
 // seoju_free는 도겸이 소환한 서주 대치(seoju_siege) 또는 그 뒤의 서주 자유탐방(seoju)
 // 둘 중 하나라 고정 매핑이 안 된다 - buildSaveSnapshot에서 MapView.currentMapId로 대신 구한다.
 const STAGE_MAP_ID = { takhyeon_free: 'takhyeon', pyeongwon_free: 'pyeongwon', camp: 'camp', warmap: 'warmap', habi_camp: 'habi' };
@@ -5168,7 +5186,9 @@ function resumeExploreStage(targetStage, playerPos, mapId) {
   stage = targetStage;
   showScreen('screen-explore');
   const opts = { onInteract: interactNPC, onApSpent: updateHUD, onApBlocked, onStep: renderMinimap };
-  if (targetStage === 'bogyang') {
+  if (targetStage === 'jangryo_seoju') {
+    loadJangryoSeoju();
+  } else if (targetStage === 'bogyang') {
     loadBogyang();
   } else if (targetStage === 'hanae') {
     loadHanae();
@@ -5693,9 +5713,9 @@ function renderMerchantBox() {
   wireMerchantBuyButtons();
 }
 
-function openMerchantShop(id) {
+function openMerchantShop(id, greeting = ROSTER[id].intro) {
   const rd = ROSTER[id];
-  Dialogue.show([{ speaker: rd.name, text: rd.intro }], () => {
+  Dialogue.show([{ speaker: rd.name, text: greeting }], () => {
     renderMerchantBox();
     document.getElementById('merchant-box').classList.remove('hidden');
   });
@@ -5965,12 +5985,13 @@ function runAmbientEvent(kind) {
 function monthAdvanceClick() {
   if (isScriptedScenePlaying()) return;
   if (['changan', 'hanae', 'bogyang'].includes(stage) && (Dialogue.isActive() || !document.getElementById('choice-box').classList.contains('hidden'))) return;
+  const triggerBogyangRescue = stage === 'bogyang' && GameState.flags.bogyangPhase === 'supplies' && GameState.resources.rice >= BOGYANG_FOOD_TRIGGER;
   GameState.nextMonth();
   GameState.merchantBought = { rice: 0, bow: 0, horse: 0 }; // 상인의 월간 판매 한도 초기화
   // 체력은 병사와 달리 매달 휴식하면서 회복된다 (병사수/군량처럼 전쟁 중 손실이 누적되지는 않음).
   // 같은 달 안에서 연달아 전투를 치를 때만 체력이 그대로 이어진다 - 휴식(다음달)을 거치면 항상 완전 회복.
   const inCampaign = stage === 'warmap';
-  if (stage === 'bogyang') GameState.flags.bogyangYeopoHp = null;
+  if (stage === 'bogyang') { GameState.flags.bogyangYeopoHp = null; GameState.flags.bogyangDuelHp = {}; }
   const inBogyangBattle = stage === 'bogyang' && isBogyangBattle();
   const inChanganBattle = stage === 'changan' && !!GameState.army;
   // 장순의 난: 군세로 전환된 뒤에는 어양이라도 warmap처럼 매달 행동력을 재보급받는다.
@@ -6060,6 +6081,7 @@ function monthAdvanceClick() {
     else if (!GameState.flags.changanAlarm) MapView.rollAmbientEvent(availableAmbientKinds());
   } else if (stage === 'bogyang') {
     const phase = GameState.flags.bogyangPhase;
+    if (triggerBogyangRescue) { announceBogyangRescue(); return; }
     if (phase === 'ready') bogyangApproach();
     else if (inBogyangBattle) {
       upkeepBogyangAllies();

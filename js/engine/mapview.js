@@ -34,6 +34,7 @@ const MapView = (function () {
   let liveNpcs = [];
   let sceneExtras = [];
   let sceneEffectsTimer;
+  let sceneOverlay;
   const statusMotions = new Map();
   const STATUS_MOTION_MS = 850;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -202,6 +203,7 @@ const MapView = (function () {
     spawnDeadlineAbs = (opts && opts.spawnDeadlineAbsMonth) || null;
     ambientEvents = [];
     sceneExtras = [];
+    sceneOverlay = null;
     statusMotions.clear();
     controlledId = null;
     clearInterval(sceneEffectsTimer);
@@ -209,6 +211,7 @@ const MapView = (function () {
     closedSceneGates.clear();
 
     liveNpcs = map.npcs.filter((n) => {
+      if (opts?.npcFilter && !opts.npcFilter(n)) return false;
       const rd = ROSTER[n.id];
       const status = GameState.npcStatus[n.id];
       // 이미 한 번이라도 만났거나(met) 등용/처치 등으로 상태가 확정된 인물은
@@ -499,6 +502,7 @@ const MapView = (function () {
     }
     else drawFrontDecor();
     drawArmyStatuses(actors);
+    if (sceneOverlay) { sceneOverlay(ctx,camera); scheduleEffectFrame(); }
     drawLocationRibbon();
     if (!reducedMotion.matches && (statusMotions.size || StatusEffects.fireTilesForMap(mapId).length)) scheduleEffectFrame();
     updateHudFade();
@@ -547,10 +551,13 @@ const MapView = (function () {
     FieldAssets.draw(ctx,map.backgroundKey,worldX(0),worldY(0),map.width*TILE,map.height*TILE);
   }
 
+  function setSceneOverlay(draw) { sceneOverlay = draw; render(); }
+
   function drawClosedSceneGates() {
     for (const id of closedSceneGates) {
-      const { x, y, w, h, drawDoor = true } = map.sceneGates[id];
+      const { x, y, w, h, sprite, drawDoor = true } = map.sceneGates[id];
       if (!drawDoor) continue;
+      if (sprite && FieldAssets.draw(ctx,sprite,worldX(x),worldY(y),w*TILE,h*TILE)) continue;
       ctx.save();
       ctx.translate(worldX(x), worldY(y));
       ctx.scale(w * TILE / 100, h * TILE / 100);
@@ -1800,7 +1807,7 @@ const MapView = (function () {
   }
 
   return {
-    isRotatedPresentation,load,render,removeNpc,addNpc,walkNpcPath,setSceneExtras,setSceneEffect,marchToward,setSceneGateClosed,shelterResidents,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,clearAmbientEvents,lockMovement,setPlayerPos,
+    isRotatedPresentation,load,render,removeNpc,addNpc,walkNpcPath,setSceneExtras,setSceneEffect,setSceneOverlay,marchToward,setSceneGateClosed,shelterResidents,tryMove,interactFacing,runAiTurn,checkScheduledSpawns,rollAmbientEvent,clearAmbientEvents,lockMovement,setPlayerPos,
     panCameraTo,clearCameraFocus,startNpcStir,stopNpcStir,showDamageFloat,showAttackBump,setControlledUnit,npcPos,
     get currentMapId(){return mapId;},
     get camera(){return {...camera};},
